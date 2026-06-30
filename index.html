@@ -32,23 +32,34 @@
     display:none;
   }
   #warn.on { display:block; }
+  #pause {
+    position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+    background:rgba(8,0,18,.9);
+    border:1px solid rgba(180,60,255,.45);
+    border-radius:14px; padding:22px 30px;
+    text-align:center; pointer-events:none;
+    display:none;
+  }
+  #pause.on { display:block; }
+  #pause b { color:#ff4b7a; font-size:16px; }
+  #pause span { color:#9a7aaa; font-size:13px; }
 </style>
 </head>
 <body>
 <canvas id="c"></canvas>
 <div id="hud">
   <div><b>🎃 CHASE'S HALLOWEEN HEAT</b></div>
-  <div class="lbl">WASD / Arrows = move · Mouse = look</div>
+  <div class="lbl">WASD = move · Mouse = look · Click = 🥚 egg cannon</div>
   <div id="dist">Distance to slasher: —</div>
+  <div id="score">Eggs hit: 0</div>
   <div id="fps">— fps</div>
 </div>
-<div id="hint">Sprint 1 — Fog / Player / Slasher AI</div>
+<div id="hint">Sprint 2 — Egg Cannon / Combat</div>
 <div id="warn">⚠️ HE'S CLOSE!</div>
+<div id="pause"><b>⏸ PAUSED</b><br><span>Click to lock mouse and resume<br>ESC to free mouse</span></div>
 
 <script type="importmap">{
-  "imports": {
-    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"
-  }
+  "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js" }
 }</script>
 <script type="module">
 import * as THREE from 'three';
@@ -56,161 +67,140 @@ import * as THREE from 'three';
 // ===== SCENE / RENDERER =====
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x070508);
-// 1. Heavy oppressive fog — dark purple/black
-scene.fog = new THREE.FogExp2(0x140818, 0.032);
+scene.fog = new THREE.FogExp2(0x140818, 0.028);
 
 const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('c'), antialias: true });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.setSize(window.innerWidth, window.innerHeight);
-// 1. shadow mapping enabled
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 0.85;
+renderer.toneMappingExposure = 0.92;
 
 // ===== CAMERA =====
-const camera = new THREE.PerspectiveCamera(68, window.innerWidth/windowHeight(), 0.1, 120);
-let camYaw = 0;
-let camPitch = 0.38;
+const camera = new THREE.PerspectiveCamera(68, innerWidth/innerHeight, 0.1, 120);
+let camYaw = 0, camPitch = 0.38;
 
-// ===== GROUND — wet pavement PBR =====
+// ===== GROUND =====
 const groundGeo = new THREE.PlaneGeometry(200, 200, 32, 32);
-// subtle displacement for uneven asphalt
 const pos = groundGeo.attributes.position;
-for (let i = 0; i < pos.count; i++) {
-  pos.setZ(i, (Math.random() - 0.5) * 0.035);
-}
-pos.needsUpdate = true;
-groundGeo.computeVertexNormals();
+for (let i = 0; i < pos.count; i++) pos.setZ(i, (Math.random() - 0.5) * 0.035);
+pos.needsUpdate = true; groundGeo.computeVertexNormals();
+const ground = new THREE.Mesh(groundGeo, new THREE.MeshStandardMaterial({ color: 0x16161c, roughness: 0.32, metalness: 0.08 }));
+ground.rotation.x = -Math.PI/2; ground.receiveShadow = true; scene.add(ground);
 
-const groundMat = new THREE.MeshStandardMaterial({
-  color: 0x16161c,
-  roughness: 0.32,   // wet look — low roughness so lights catch
-  metalness: 0.08,
-});
-const ground = new THREE.Mesh(groundGeo, groundMat);
-ground.rotation.x = -Math.PI / 2;
-ground.receiveShadow = true;
-scene.add(ground);
-
-// ground fog cards for extra thickness near the floor
+// fog cards
 for (let i = 0; i < 18; i++) {
-  const fg = new THREE.PlaneGeometry(12 + Math.random()*8, 4 + Math.random()*3);
-  const fm = new THREE.MeshBasicMaterial({
-    color: 0x1a0c24,
-    transparent: true,
-    opacity: 0.065 + Math.random()*0.05,
-    side: THREE.DoubleSide,
-    depthWrite: false
-  });
-  const fp = new THREE.Mesh(fg, fm);
-  const a = Math.random() * Math.PI * 2;
-  const r = 6 + Math.random() * 28;
+  const fp = new THREE.Mesh(
+    new THREE.PlaneGeometry(12 + Math.random()*8, 4 + Math.random()*3),
+    new THREE.MeshBasicMaterial({ color: 0x1a0c24, transparent: true, opacity: 0.065 + Math.random()*0.05, side: THREE.DoubleSide, depthWrite: false })
+  );
+  const a = Math.random()*Math.PI*2, r = 6 + Math.random()*28;
   fp.position.set(Math.cos(a)*r, 0.4 + Math.random()*1.2, Math.sin(a)*r);
-  fp.rotation.y = Math.random() * Math.PI;
-  scene.add(fp);
+  fp.rotation.y = Math.random()*Math.PI; scene.add(fp);
 }
 
-// ===== LIGHTING =====
-// 1. very dim ambient — classic slasher
-const ambient = new THREE.AmbientLight(0x251830, 0.22);
+// ===== LIGHTING — brighter ambient per feedback =====
+const ambient = new THREE.AmbientLight(0x3a2450, 0.52);  // was 0x251830, 0.22 — cranked up
 scene.add(ambient);
 
-// 1. moonlight — directional, casts shadows
-const moon = new THREE.DirectionalLight(0xb8c8ff, 0.55);
+const moon = new THREE.DirectionalLight(0xb8c8ff, 0.58);
 moon.position.set(18, 28, 12);
 moon.castShadow = true;
 moon.shadow.mapSize.set(2048, 2048);
-moon.shadow.camera.near = 1;
-moon.shadow.camera.far = 80;
-moon.shadow.camera.left = -35;
-moon.shadow.camera.right = 35;
-moon.shadow.camera.top = 35;
-moon.shadow.camera.bottom = -35;
+moon.shadow.camera.near = 1; moon.shadow.camera.far = 80;
+moon.shadow.camera.left = -35; moon.shadow.camera.right = 35;
+moon.shadow.camera.top = 35; moon.shadow.camera.bottom = -35;
 moon.shadow.bias = -0.0004;
 scene.add(moon);
 
-// a couple of flickering streetlamps for atmosphere
 function streetLamp(x, z, color = 0xffb070) {
-  const pole = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.06, 0.08, 4.5, 8),
-    new THREE.MeshStandardMaterial({ color: 0x2a2a30, roughness: 0.8 })
-  );
-  pole.position.set(x, 2.25, z);
-  pole.castShadow = true;
-  scene.add(pole);
-  const glow = new THREE.PointLight(color, 2.2, 16, 2.2);
-  glow.position.set(x, 4.1, z);
-  glow.castShadow = true;
-  glow.shadow.mapSize.set(512, 512);
-  scene.add(glow);
-  return glow;
+  const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.08, 4.5, 8),
+    new THREE.MeshStandardMaterial({ color: 0x2a2a30, roughness: 0.8 }));
+  pole.position.set(x, 2.25, z); pole.castShadow = true; scene.add(pole);
+  const glow = new THREE.PointLight(color, 2.6, 18, 2.1);  // brighter than v1
+  glow.position.set(x, 4.1, z); glow.castShadow = true;
+  glow.shadow.mapSize.set(512, 512); scene.add(glow); return glow;
 }
 const lamps = [
   streetLamp(-10, -8, 0xffa060),
   streetLamp(12, 6, 0xff9060),
   streetLamp(-5, 15, 0xffb078),
   streetLamp(14, -12, 0xffa055),
+  streetLamp(0, -18, 0xffb060),
+  streetLamp(-16, 10, 0xffa060),
 ];
 
-// spooky rim / fill
-scene.add(new THREE.DirectionalLight(0x402040, 0.18));
-const hemi = new THREE.HemisphereLight(0x1a0a2a, 0x080508, 0.25);
-scene.add(hemi);
+scene.add(new THREE.DirectionalLight(0x503050, 0.28));  // fill — brighter
+scene.add(new THREE.HemisphereLight(0x2a1a3a, 0x0c080c, 0.38));  // was 0.25
 
-// ===== PROPS — scatter some pumpkins / debris for the vibe =====
+// ===== PROPS =====
 const pumpkinGeo = new THREE.SphereGeometry(0.28, 12, 10);
-const pumpkinMat = new THREE.MeshStandardMaterial({ color: 0xd45500, roughness: 0.65, metalness: 0 });
-for (let i = 0; i < 14; i++) {
+const pumpkinMat = new THREE.MeshStandardMaterial({ color: 0xd45500, roughness: 0.65 });
+for (let i = 0; i < 18; i++) {
   const p = new THREE.Mesh(pumpkinGeo, pumpkinMat);
-  const a = Math.random() * Math.PI * 2;
-  const r = 5 + Math.random() * 22;
+  const a = Math.random()*Math.PI*2, r = 5 + Math.random()*26;
   p.position.set(Math.cos(a)*r, 0.28, Math.sin(a)*r);
-  p.rotation.y = Math.random() * Math.PI;
-  p.scale.y = 0.85;
-  p.castShadow = true;
-  p.receiveShadow = true;
-  scene.add(p);
-  // stem
-  const stem = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.03, 0.045, 0.12, 6),
-    new THREE.MeshStandardMaterial({ color: 0x2a4a18, roughness: 0.9 })
-  );
-  stem.position.copy(p.position);
-  stem.position.y += 0.32;
-  scene.add(stem);
+  p.rotation.y = Math.random()*Math.PI; p.scale.y = 0.85;
+  p.castShadow = true; p.receiveShadow = true; scene.add(p);
+  const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.045, 0.12, 6),
+    new THREE.MeshStandardMaterial({ color: 0x2a4a18, roughness: 0.9 }));
+  stem.position.copy(p.position); stem.position.y += 0.32; scene.add(stem);
 }
 
-// ===== PLAYER — blue box =====
-const playerGeo = new THREE.BoxGeometry(0.65, 1.55, 0.65);
-const playerMat = new THREE.MeshStandardMaterial({ color: 0x2890ff, roughness: 0.55, metalness: 0.1 });
-const player = new THREE.Mesh(playerGeo, playerMat);
-player.position.set(0, 0.775, 0);
-player.castShadow = true;
-scene.add(player);
-
-// ===== SLASHER — tall red cylinder ("Michael") =====
-const slasherGeo = new THREE.CylinderGeometry(0.38, 0.42, 1.95, 16);
-const slasherMat = new THREE.MeshStandardMaterial({ color: 0xd01818, roughness: 0.7, metalness: 0.05, emissive: 0x200000, emissiveIntensity: 0.12 });
-const slasher = new THREE.Mesh(slasherGeo, slasherMat);
-slasher.position.set(-9, 0.975, -11);
-slasher.castShadow = true;
-scene.add(slasher);
-// little white mask dot
-const mask = new THREE.Mesh(
-  new THREE.SphereGeometry(0.16, 12, 10),
-  new THREE.MeshStandardMaterial({ color: 0xddd6cc, roughness: 0.5 })
+// ===== PLAYER =====
+const player = new THREE.Mesh(
+  new THREE.BoxGeometry(0.65, 1.55, 0.65),
+  new THREE.MeshStandardMaterial({ color: 0x2890ff, roughness: 0.55, metalness: 0.1 })
 );
-mask.position.y = 0.55;
-slasher.add(mask);
+player.position.set(0, 0.775, 0); player.castShadow = true; scene.add(player);
+
+// ===== SLASHER =====
+const slasherMat = new THREE.MeshStandardMaterial({ color: 0xd01818, roughness: 0.7, metalness: 0.05, emissive: 0x200000, emissiveIntensity: 0.12 });
+const slasher = new THREE.Mesh(new THREE.CylinderGeometry(0.38, 0.42, 1.95, 16), slasherMat);
+slasher.position.set(-9, 0.975, -11); slasher.castShadow = true; scene.add(slasher);
+const mask = new THREE.Mesh(new THREE.SphereGeometry(0.16, 12, 10),
+  new THREE.MeshStandardMaterial({ color: 0xddd6cc, roughness: 0.5 }));
+mask.position.y = 0.55; slasher.add(mask);
+
+// slasher state
+let slasherHitFlash = 0;
+let slasherKnockback = new THREE.Vector3();
+let hits = 0;
+
+// ===== EGG CANNON =====
+const eggs = [];
+const eggGeo = new THREE.SphereGeometry(0.14, 10, 8);
+const eggMat = new THREE.MeshStandardMaterial({ color: 0xf2e8d5, roughness: 0.85 });
+
+function shootEgg() {
+  if (!pointerLocked) return;
+  // spawn at camera / head height, shoot forward from camera angle
+  const dir = new THREE.Vector3();
+  camera.getWorldDirection(dir);
+  const spawnPos = camera.position.clone();
+  const vel = dir.clone().multiplyScalar(16);  // muzzle velocity
+  vel.y += 1.8;  // slight upward arc
+  const mesh = new THREE.Mesh(eggGeo, eggMat.clone());
+  mesh.position.copy(spawnPos);
+  mesh.castShadow = true;
+  scene.add(mesh);
+  eggs.push({ mesh, vel: vel, age: 0 });
+}
+
+renderer.domElement.addEventListener('mousedown', e => {
+  if (e.button === 0) {  // left click
+    if (!pointerLocked) { renderer.domElement.requestPointerLock(); return; }
+    shootEgg();
+  }
+});
 
 // ===== INPUT =====
 const keys = {};
-window.addEventListener('keydown', e => {
-  keys[e.code] = true;
+addEventListener('keydown', e => { keys[e.code] = true;
   if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','KeyW','KeyA','KeyS','KeyD','Space'].includes(e.code)) e.preventDefault();
 });
-window.addEventListener('keyup', e => { keys[e.code] = false; });
+addEventListener('keyup', e => { keys[e.code] = false; });
 
 let pointerLocked = false;
 renderer.domElement.addEventListener('click', () => {
@@ -218,6 +208,8 @@ renderer.domElement.addEventListener('click', () => {
 });
 document.addEventListener('pointerlockchange', () => {
   pointerLocked = document.pointerLockElement === renderer.domElement;
+  // pause HUD when mouse is freed
+  document.getElementById('pause').classList.toggle('on', !pointerLocked);
 });
 document.addEventListener('mousemove', e => {
   if (!pointerLocked) return;
@@ -225,11 +217,9 @@ document.addEventListener('mousemove', e => {
   camPitch = THREE.MathUtils.clamp(camPitch - e.movementY * 0.002, 0.06, 1.15);
 });
 
-function windowHeight() { return window.innerHeight; }
-window.addEventListener('resize', () => {
-  camera.aspect = window.innerWidth / window.innerHeight;
-  camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
+addEventListener('resize', () => {
+  camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
 });
 
 // ===== GAME LOOP =====
@@ -241,49 +231,89 @@ function tick() {
   const dt = Math.min(clock.getDelta(), 0.033);
   const t = clock.elapsedTime;
 
-  // --- player movement (WASD / arrows), camera-relative ---
+  // player movement
   const input = new THREE.Vector2(
     (keys.KeyD || keys.ArrowRight ? 1 : 0) - (keys.KeyA || keys.ArrowLeft ? 1 : 0),
     (keys.KeyW || keys.ArrowUp ? 1 : 0) - (keys.KeyS || keys.ArrowDown ? 1 : 0)
   );
-  if (input.lengthSq() > 0) {
+  if (input.lengthSq() > 0 && pointerLocked) {
     input.normalize();
     const playerSpeed = 4.6;
     const forward = new THREE.Vector3(-Math.sin(camYaw), 0, -Math.cos(camYaw));
     const right   = new THREE.Vector3(Math.cos(camYaw), 0, -Math.sin(camYaw));
     const move = forward.multiplyScalar(input.y).add(right.multiplyScalar(input.x)).normalize();
     player.position.addScaledVector(move, playerSpeed * dt);
-    // face movement dir
     player.rotation.y = Math.atan2(move.x, move.z);
   }
-
-  // keep player in bounds (soft)
   const B = 88;
   player.position.x = THREE.MathUtils.clamp(player.position.x, -B, B);
   player.position.z = THREE.MathUtils.clamp(player.position.z, -B, B);
 
-  // --- 3. SLASHER AI ---
-  // constantly lookAt player
+  // slasher AI — slowed/stunned during knockback
   slasher.lookAt(player.position.x, slasher.position.y, player.position.z);
-
   const toPlayer = new THREE.Vector3().subVectors(player.position, slasher.position);
   const dist = toPlayer.length();
-  const slasherSpeed = 2.15; // slower than player — relentless creep
-
-  // 3. if distance > 1 unit, translate forward (toward player)
+  let slasherSpeed = 2.15;
+  // apply knockback decay
+  if (slasherKnockback.lengthSq() > 0.0001) {
+    slasher.position.addScaledVector(slasherKnockback, dt);
+    slasherKnockback.multiplyScalar(Math.exp(-7 * dt));
+    slasherSpeed = 0.4; // stunned / slowed while knocked back
+  }
   if (dist > 1.0) {
-    toPlayer.y = 0;
-    toPlayer.normalize();
+    toPlayer.y = 0; toPlayer.normalize();
     slasher.position.addScaledVector(toPlayer, slasherSpeed * dt);
   }
 
-  // close-range warning
-  document.getElementById('warn').classList.toggle('on', dist < 5.5);
-  document.getElementById('dist').textContent = `Distance to slasher: ${dist.toFixed(1)} m  ${dist < 3 ? '🔪 RUN!' : dist < 7 ? '👀 he sees you' : '🌫️ lost in fog'}`;
+  // egg projectiles — gravity + collision
+  for (let i = eggs.length - 1; i >= 0; i--) {
+    const e = eggs[i];
+    e.age += dt;
+    // gravity
+    e.vel.y -= 9.8 * dt;
+    e.mesh.position.addScaledVector(e.vel, dt);
+    e.mesh.rotation.x += dt * 8; e.mesh.rotation.z += dt * 5;
 
-  // --- third-person camera: over-the-shoulder follow ---
-  const camDist = 4.2;
-  const camHeight = 2.15;
+    const hitFloor = e.mesh.position.y < 0.14;
+    const toSlasher = slasher.position.clone().sub(e.mesh.position);
+    const hitSlasher = toSlasher.length() < 0.65;
+    const expired = e.age > 4.0;
+
+    if (hitSlasher) {
+      // knockback — XZ only, no Y launch
+      const kbDir = new THREE.Vector3(toSlasher.x, 0, toSlasher.z).normalize().multiplyScalar(-1);
+      slasherKnockback.addScaledVector(kbDir, 4.5);
+      // flash white
+      slasherMat.emissive.setHex(0xffffff);
+      slasherMat.emissiveIntensity = 0.9;
+      slasherHitFlash = 0.18;
+      hits++;
+      document.getElementById('score').textContent = `Eggs hit: ${hits}`;
+    }
+
+    if (hitFloor || hitSlasher || expired) {
+      scene.remove(e.mesh);
+      eggs.splice(i, 1);
+      continue;
+    }
+  }
+
+  // slasher hit flash decay
+  if (slasherHitFlash > 0) {
+    slasherHitFlash -= dt;
+    if (slasherHitFlash <= 0) {
+      slasherMat.emissive.setHex(0x200000);
+      slasherMat.emissiveIntensity = 0.12;
+    }
+  }
+
+  // HUD
+  document.getElementById('warn').classList.toggle('on', dist < 5.5);
+  document.getElementById('dist').textContent =
+    `Distance to slasher: ${dist.toFixed(1)} m  ${dist < 3 ? '🔪 RUN!' : dist < 7 ? '👀 he sees you' : '🌫️ lost in fog'}`;
+
+  // camera
+  const camDist = 4.2, camHeight = 2.15;
   const idealCamPos = new THREE.Vector3(
     player.position.x + Math.sin(camYaw) * camDist,
     player.position.y + camHeight + Math.sin(camPitch) * 1.1,
@@ -292,28 +322,24 @@ function tick() {
   camera.position.lerp(idealCamPos, 1 - Math.exp(-9 * dt));
   camera.lookAt(player.position.x, player.position.y + 0.7, player.position.z);
 
-  // flicker streetlamps
-  lamps.forEach((l, i) => {
-    l.intensity = 1.85 + Math.sin(t * 7 + i * 1.7) * 0.12 + Math.random() * 0.04;
-  });
+  // lamp flicker
+  lamps.forEach((l, i) => { l.intensity = 2.2 + Math.sin(t * 7 + i * 1.7) * 0.12 + Math.random() * 0.04; });
 
   // fps
   fpsT += dt; fpsCount++;
   if (fpsT > 0.25) { fpsOut = Math.round(fpsCount / fpsT); fpsT = 0; fpsCount = 0;
-    document.getElementById('fps').textContent = fpsOut + ' fps';
-  }
+    document.getElementById('fps').textContent = fpsOut + ' fps'; }
 
   renderer.render(scene, camera);
 }
-
 tick();
 
-// click to start
+// start overlay
 const startMsg = document.createElement('div');
-startMsg.style.cssText = 'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,.78);border:1px solid rgba(255,60,100,.4);border-radius:12px;padding:18px 26px;font-size:15px;text-align:center;pointer-events:none;transition:opacity .4s';
-startMsg.innerHTML = '<b style="color:#ff4b7a">🎃 CHASE\'S HALLOWEEN HEAT</b><br><span style="color:#9a7aaa;font-size:13px">Click to lock mouse · WASD to move<br>Don\'t let Michael catch you…</span>';
+startMsg.style.cssText = 'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,.82);border:1px solid rgba(255,60,100,.4);border-radius:12px;padding:18px 26px;font-size:15px;text-align:center;pointer-events:none;transition:opacity .4s';
+startMsg.innerHTML = '<b style="color:#ff4b7a">🎃 CHASE\'S HALLOWEEN HEAT</b><br><span style="color:#9a7aaa;font-size:13px">Click to lock mouse · WASD to move · Click to 🥚 egg him!<br>Don\'t let Michael catch you…</span>';
 document.body.appendChild(startMsg);
-window.addEventListener('mousedown', () => { startMsg.style.opacity = '0'; setTimeout(() => startMsg.remove(), 500); }, { once: true });
+addEventListener('mousedown', () => { startMsg.style.opacity = '0'; setTimeout(() => startMsg.remove(), 500); }, { once: true });
 
 </script>
 </body>
