@@ -2,345 +2,2041 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Chase's Halloween Heat 🔪🎃</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chase's Halloween Heat</title>
+<meta name="description" content="A stormy Halloween parody game where Chase raids the neighborhood, dodges No-Face, and makes it home alive.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Azeret+Mono:wght@400;700&family=Bungee&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
-  * { margin:0; padding:0; box-sizing:border-box; }
-  body { background:#000; color:#eee; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; overflow:hidden; }
-  #c { display:block; width:100vw; height:100vh; }
+  :root {
+    --bg-top: #070b16;
+    --bg-bottom: #12030a;
+    --panel: rgba(8, 12, 25, 0.76);
+    --panel-border: rgba(255, 153, 71, 0.34);
+    --accent: #ff8f3d;
+    --accent-hot: #ff543d;
+    --accent-cool: #7cf4da;
+    --danger: #ff485d;
+    --muted: #aeb6d0;
+    --ink: #f6ede6;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  html, body {
+    margin: 0;
+    min-height: 100%;
+    overflow: hidden;
+    background:
+      radial-gradient(circle at top, rgba(71, 88, 159, 0.12), transparent 34%),
+      linear-gradient(180deg, var(--bg-top), var(--bg-bottom));
+    color: var(--ink);
+    font-family: "Space Grotesk", system-ui, sans-serif;
+  }
+
+  body {
+    position: relative;
+  }
+
+  #scene {
+    display: block;
+    width: 100vw;
+    height: 100vh;
+    cursor: crosshair;
+  }
+
+  .overlay {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+
+  .vignette {
+    background:
+      radial-gradient(circle at center, transparent 42%, rgba(5, 7, 14, 0.42) 68%, rgba(1, 1, 3, 0.82) 100%),
+      linear-gradient(180deg, rgba(0, 0, 0, 0.05), rgba(0, 0, 0, 0.28));
+  }
+
+  .scanlines {
+    opacity: 0.16;
+    background:
+      repeating-linear-gradient(
+        180deg,
+        rgba(255, 255, 255, 0.04) 0,
+        rgba(255, 255, 255, 0.04) 1px,
+        transparent 1px,
+        transparent 4px
+      );
+    mix-blend-mode: screen;
+  }
+
+  #flash {
+    background: rgba(198, 227, 255, 0);
+    transition: background 140ms linear;
+  }
+
   #hud {
-    position:absolute; top:14px; left:14px;
-    background:rgba(10,0,20,.72);
-    border:1px solid rgba(180,40,255,.35);
-    border-radius:10px; padding:10px 14px;
-    font-size:13px; line-height:1.55;
-    text-shadow:0 1px 4px #000;
-    pointer-events:none;
+    position: absolute;
+    inset: 0;
+    display: grid;
+    grid-template-columns: minmax(280px, 360px) minmax(0, 1fr) minmax(250px, 320px);
+    grid-template-rows: auto 1fr auto;
+    gap: 16px;
+    padding: 18px;
+    pointer-events: none;
   }
-  #hud b { color:#ff4b8a; }
-  #hud .lbl { color:#a88fc7; }
-  #hint {
-    position:absolute; bottom:14px; left:14px;
-    font-size:12px; color:#7a6a8a;
+
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    border-radius: 20px;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.36);
+    backdrop-filter: blur(16px);
   }
-  #warn {
-    position:absolute; top:14px; right:14px;
-    background:rgba(120,0,30,.75);
-    border:1px solid rgba(255,60,80,.5);
-    border-radius:10px; padding:10px 14px;
-    font-size:13px; max-width:260px;
-    display:none;
+
+  .hud-card {
+    padding: 16px 18px;
   }
-  #warn.on { display:block; }
-  #pause {
-    position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
-    background:rgba(8,0,18,.9);
-    border:1px solid rgba(180,60,255,.45);
-    border-radius:14px; padding:22px 30px;
-    text-align:center; pointer-events:none;
-    display:none;
+
+  .brand {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-self: start;
   }
-  #pause.on { display:block; }
-  #pause b { color:#ff4b7a; font-size:16px; }
-  #pause span { color:#9a7aaa; font-size:13px; }
+
+  .eyebrow,
+  .utility {
+    color: var(--accent-cool);
+    font: 700 11px/1 "Azeret Mono", monospace;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+  }
+
+  .brand h1 {
+    margin: 0;
+    color: var(--ink);
+    font: 400 clamp(2rem, 3vw, 3rem)/0.9 "Bungee", sans-serif;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .brand p {
+    margin: 0;
+    max-width: 30ch;
+    color: var(--muted);
+    font-size: 0.95rem;
+    line-height: 1.45;
+  }
+
+  #statusCard {
+    align-self: start;
+  }
+
+  .meter {
+    margin-top: 12px;
+    display: grid;
+    gap: 10px;
+  }
+
+  .meter-row {
+    display: grid;
+    gap: 6px;
+  }
+
+  .meter-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    color: var(--muted);
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .track {
+    height: 10px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.08);
+    overflow: hidden;
+  }
+
+  .fill {
+    height: 100%;
+    border-radius: inherit;
+    transition: width 120ms linear, background 120ms linear;
+  }
+
+  .health { background: linear-gradient(90deg, #36e2b4, #7cf4da); }
+  .fear { background: linear-gradient(90deg, #ff5d53, #ffb347); }
+  .stamina { background: linear-gradient(90deg, #87a7ff, #b4d2ff); }
+
+  .stats {
+    margin-top: 16px;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .stat {
+    padding: 10px 12px;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.05);
+  }
+
+  .stat .utility {
+    color: var(--muted);
+  }
+
+  .stat strong {
+    display: block;
+    margin-top: 6px;
+    font-size: 1.15rem;
+  }
+
+  #objectiveCard {
+    grid-column: 2;
+    justify-self: center;
+    align-self: start;
+    min-width: min(520px, calc(100vw - 48px));
+    max-width: 700px;
+    padding: 14px 18px;
+    display: grid;
+    gap: 10px;
+    text-align: center;
+  }
+
+  #objectiveTitle {
+    margin: 0;
+    font: 700 0.78rem/1 "Azeret Mono", monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    color: var(--accent-cool);
+  }
+
+  #objectiveText {
+    margin: 0;
+    font: 700 clamp(1rem, 2vw, 1.35rem)/1.2 "Space Grotesk", sans-serif;
+  }
+
+  #objectiveHint {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.9rem;
+  }
+
+  #radioCard {
+    grid-column: 1;
+    grid-row: 3;
+    align-self: end;
+  }
+
+  #radioText {
+    margin-top: 8px;
+    color: var(--ink);
+    font-size: 1rem;
+  }
+
+  #promptCard {
+    grid-column: 2;
+    grid-row: 3;
+    align-self: end;
+    justify-self: center;
+    padding: 12px 16px;
+    min-width: min(440px, calc(100vw - 48px));
+    text-align: center;
+    opacity: 0;
+    transform: translateY(8px);
+    transition: opacity 120ms linear, transform 120ms linear;
+  }
+
+  #promptCard.on {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  #promptText {
+    margin: 0;
+    font-size: 0.98rem;
+  }
+
+  #controlsCard {
+    grid-column: 3;
+    grid-row: 3;
+    align-self: end;
+  }
+
+  .controls-list {
+    margin: 10px 0 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    gap: 6px;
+    color: var(--muted);
+    font-size: 0.92rem;
+  }
+
+  .controls-list code {
+    font-family: "Azeret Mono", monospace;
+    color: var(--ink);
+  }
+
+  #warnBadge {
+    margin-top: 12px;
+    padding: 10px 12px;
+    border-radius: 14px;
+    border: 1px solid rgba(255, 101, 118, 0.4);
+    background: rgba(110, 10, 18, 0.45);
+    color: #ffd5da;
+    font: 700 0.84rem/1.2 "Azeret Mono", monospace;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    opacity: 0;
+    transition: opacity 120ms linear, transform 120ms linear;
+    transform: translateY(-6px);
+  }
+
+  #warnBadge.on {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  #centerCard {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: min(560px, calc(100vw - 32px));
+    transform: translate(-50%, -50%);
+    padding: 24px;
+    pointer-events: auto;
+    text-align: center;
+  }
+
+  #centerCard h2 {
+    margin: 0;
+    font: 400 clamp(1.8rem, 4vw, 3rem)/0.9 "Bungee", sans-serif;
+    text-transform: uppercase;
+  }
+
+  #centerCard p {
+    margin: 14px auto 0;
+    max-width: 38ch;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+
+  .button-row {
+    margin-top: 18px;
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  button {
+    appearance: none;
+    border: 0;
+    border-radius: 999px;
+    padding: 12px 18px;
+    cursor: pointer;
+    font: 700 0.9rem/1 "Azeret Mono", monospace;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #090d17;
+    background: linear-gradient(135deg, #ffe7ae, var(--accent));
+  }
+
+  button.secondary {
+    color: var(--ink);
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+  }
+
+  #toast {
+    position: absolute;
+    left: 50%;
+    bottom: 118px;
+    transform: translate(-50%, 12px);
+    padding: 12px 16px;
+    border-radius: 999px;
+    background: rgba(8, 12, 25, 0.86);
+    border: 1px solid rgba(124, 244, 218, 0.24);
+    color: var(--ink);
+    font: 700 0.82rem/1 "Azeret Mono", monospace;
+    letter-spacing: 0.04em;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 120ms linear, transform 120ms linear;
+  }
+
+  #toast.on {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+
+  #crosshair {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 22px;
+    height: 22px;
+    margin-left: -11px;
+    margin-top: -11px;
+    pointer-events: none;
+    opacity: 0.8;
+  }
+
+  #crosshair::before,
+  #crosshair::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border: 1px solid rgba(124, 244, 218, 0.48);
+    border-radius: 999px;
+  }
+
+  #crosshair::after {
+    inset: 8px;
+    background: rgba(255, 143, 61, 0.82);
+    border: 0;
+    box-shadow: 0 0 22px rgba(255, 143, 61, 0.46);
+  }
+
+  .hidden {
+    display: none;
+  }
+
+  @media (max-width: 980px) {
+    #hud {
+      grid-template-columns: 1fr;
+      grid-template-rows: auto auto 1fr auto auto auto;
+      gap: 12px;
+      padding: 12px;
+    }
+
+    .brand,
+    #statusCard,
+    #objectiveCard,
+    #controlsCard,
+    #radioCard,
+    #promptCard {
+      grid-column: 1;
+      justify-self: stretch;
+      min-width: 0;
+    }
+
+    #objectiveCard,
+    #promptCard {
+      justify-self: stretch;
+    }
+
+    #statusCard,
+    #controlsCard,
+    #radioCard,
+    #promptCard {
+      align-self: auto;
+    }
+
+    .stats {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
 </style>
 </head>
 <body>
-<canvas id="c"></canvas>
+<canvas id="scene"></canvas>
+
+<div class="overlay vignette"></div>
+<div class="overlay scanlines"></div>
+<div class="overlay" id="flash"></div>
+
 <div id="hud">
-  <div><b>🎃 CHASE'S HALLOWEEN HEAT</b></div>
-  <div class="lbl">WASD = move · Mouse = look · Click = 🥚 egg cannon</div>
-  <div id="dist">Distance to slasher: —</div>
-  <div id="score">Eggs hit: 0</div>
-  <div id="fps">— fps</div>
+  <section class="panel hud-card brand">
+    <span class="eyebrow">Pumpkin FM 104.6</span>
+    <h1>Halloween Heat</h1>
+    <p>Chase has one bad idea: loot the candy-rich blocks, dodge No-Face, hit the beacon, and get back to the safehouse before the whole street goes feral.</p>
+  </section>
+
+  <section class="panel hud-card" id="objectiveCard">
+    <p id="objectiveTitle">Current Objective</p>
+    <p id="objectiveText">Collect six candy stashes.</p>
+    <p id="objectiveHint">Stay near streetlamps to cool fear, throw eggs to stun No-Face, and use shops to upgrade between runs.</p>
+  </section>
+
+  <section class="panel hud-card" id="statusCard">
+    <span class="utility">Status</span>
+    <div class="meter">
+      <div class="meter-row">
+        <div class="meter-head"><span>Health</span><span id="healthValue">100</span></div>
+        <div class="track"><div class="fill health" id="healthFill" style="width:100%"></div></div>
+      </div>
+      <div class="meter-row">
+        <div class="meter-head"><span>Fear</span><span id="fearValue">20</span></div>
+        <div class="track"><div class="fill fear" id="fearFill" style="width:20%"></div></div>
+      </div>
+      <div class="meter-row">
+        <div class="meter-head"><span>Stamina</span><span id="staminaValue">100</span></div>
+        <div class="track"><div class="fill stamina" id="staminaFill" style="width:100%"></div></div>
+      </div>
+    </div>
+    <div class="stats">
+      <div class="stat">
+        <span class="utility">Cash</span>
+        <strong id="cashValue">$0</strong>
+      </div>
+      <div class="stat">
+        <span class="utility">Candy</span>
+        <strong id="candyValue">0 / 6</strong>
+      </div>
+      <div class="stat">
+        <span class="utility">Eggs</span>
+        <strong id="eggValue">12</strong>
+      </div>
+    </div>
+    <div id="warnBadge">No-Face is breathing down your neck.</div>
+  </section>
+
+  <section class="panel hud-card" id="radioCard">
+    <span class="utility">Radio Chatter</span>
+    <p id="radioText">"Los Pumpkintos traffic is pure chaos tonight. Maybe keep your head on a swivel, Chase."</p>
+  </section>
+
+  <section class="panel hud-card" id="promptCard">
+    <p id="promptText">Press E to interact.</p>
+  </section>
+
+  <section class="panel hud-card" id="controlsCard">
+    <span class="utility">Controls</span>
+    <ul class="controls-list">
+      <li><code>WASD</code> move</li>
+      <li><code>Shift</code> sprint</li>
+      <li><code>Left click</code> or <code>Space</code> throw egg</li>
+      <li><code>Right drag</code> orbit camera</li>
+      <li><code>E</code> use shop or safehouse</li>
+      <li><code>R</code> restart after win or loss</li>
+    </ul>
+  </section>
 </div>
-<div id="hint">Sprint 2 — Egg Cannon / Combat</div>
-<div id="warn">⚠️ HE'S CLOSE!</div>
-<div id="pause"><b>⏸ PAUSED</b><br><span>Click to lock mouse and resume<br>ESC to free mouse</span></div>
 
-<script type="importmap">{
-  "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js" }
-}</script>
+<div id="crosshair"></div>
+<div id="toast"></div>
+
+<section class="panel" id="centerCard">
+  <span class="eyebrow">Single-file browser game</span>
+  <h2>Storm the Block</h2>
+  <p>This version is built to actually play: smoother controls, a visible Chase model, shops, candy routes, weather, audio, and a real mission loop.</p>
+  <div class="button-row">
+    <button id="startButton">Start the Night</button>
+    <button class="secondary" id="howButton">Show Mission</button>
+  </div>
+</section>
+
 <script type="module">
-import * as THREE from 'three';
+import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js";
 
-// ===== SCENE / RENDERER =====
-const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x070508);
-scene.fog = new THREE.FogExp2(0x140818, 0.028);
-
-const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('c'), antialias: true });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+const canvas = document.getElementById("scene");
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
 renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 0.92;
+renderer.toneMappingExposure = 1.08;
+renderer.shadowMap.enabled = false;
 
-// ===== CAMERA =====
-const camera = new THREE.PerspectiveCamera(68, innerWidth/innerHeight, 0.1, 120);
-let camYaw = 0, camPitch = 0.38;
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x070b16);
+scene.fog = new THREE.FogExp2(0x100713, 0.02);
 
-// ===== GROUND =====
-const groundGeo = new THREE.PlaneGeometry(200, 200, 32, 32);
-const pos = groundGeo.attributes.position;
-for (let i = 0; i < pos.count; i++) pos.setZ(i, (Math.random() - 0.5) * 0.035);
-pos.needsUpdate = true; groundGeo.computeVertexNormals();
-const ground = new THREE.Mesh(groundGeo, new THREE.MeshStandardMaterial({ color: 0x16161c, roughness: 0.32, metalness: 0.08 }));
-ground.rotation.x = -Math.PI/2; ground.receiveShadow = true; scene.add(ground);
+const camera = new THREE.PerspectiveCamera(62, window.innerWidth / window.innerHeight, 0.1, 220);
 
-// fog cards
-for (let i = 0; i < 18; i++) {
-  const fp = new THREE.Mesh(
-    new THREE.PlaneGeometry(12 + Math.random()*8, 4 + Math.random()*3),
-    new THREE.MeshBasicMaterial({ color: 0x1a0c24, transparent: true, opacity: 0.065 + Math.random()*0.05, side: THREE.DoubleSide, depthWrite: false })
-  );
-  const a = Math.random()*Math.PI*2, r = 6 + Math.random()*28;
-  fp.position.set(Math.cos(a)*r, 0.4 + Math.random()*1.2, Math.sin(a)*r);
-  fp.rotation.y = Math.random()*Math.PI; scene.add(fp);
+const ui = {
+  healthFill: document.getElementById("healthFill"),
+  fearFill: document.getElementById("fearFill"),
+  staminaFill: document.getElementById("staminaFill"),
+  healthValue: document.getElementById("healthValue"),
+  fearValue: document.getElementById("fearValue"),
+  staminaValue: document.getElementById("staminaValue"),
+  cashValue: document.getElementById("cashValue"),
+  candyValue: document.getElementById("candyValue"),
+  eggValue: document.getElementById("eggValue"),
+  warnBadge: document.getElementById("warnBadge"),
+  objectiveText: document.getElementById("objectiveText"),
+  objectiveHint: document.getElementById("objectiveHint"),
+  radioText: document.getElementById("radioText"),
+  promptCard: document.getElementById("promptCard"),
+  promptText: document.getElementById("promptText"),
+  toast: document.getElementById("toast"),
+  centerCard: document.getElementById("centerCard"),
+  startButton: document.getElementById("startButton"),
+  howButton: document.getElementById("howButton"),
+  flash: document.getElementById("flash")
+};
+
+const world = {
+  roads: [],
+  lamps: [],
+  houses: [],
+  trees: [],
+  pumpkins: [],
+  cars: [],
+  graves: [],
+  kids: [],
+  ghosts: [],
+  candies: [],
+  zones: [],
+  projectiles: [],
+  arrows: [],
+  signs: []
+};
+
+const input = {
+  forward: 0,
+  strafe: 0,
+  sprint: false,
+  dragging: false,
+  fireQueued: false,
+  interactQueued: false,
+  yaw: Math.PI * 0.1,
+  pitch: 0.48,
+  lastPointerX: 0,
+  lastPointerY: 0
+};
+
+const state = {
+  started: false,
+  ended: false,
+  win: false,
+  health: 100,
+  fear: 20,
+  stamina: 100,
+  cash: 0,
+  candy: 0,
+  eggs: 12,
+  hits: 0,
+  mission: "collect",
+  objectiveDistance: 0,
+  lastDamageTime: 0,
+  eggCooldown: 0,
+  interactCooldown: 0,
+  toastTimer: 0,
+  radioTimer: 0,
+  lightningTimer: 5,
+  unlockedAudio: false,
+  upgrades: {
+    stickyEggs: false,
+    costume: false,
+    sprintBoost: false,
+    ward: false
+  }
+};
+
+const clock = new THREE.Clock();
+const listener = { ctx: null, gain: null };
+const worldBounds = 48;
+
+function clamp(value, min, max) {
+  return Math.min(max, Math.max(min, value));
 }
 
-// ===== LIGHTING — brighter ambient per feedback =====
-const ambient = new THREE.AmbientLight(0x3a2450, 0.52);  // was 0x251830, 0.22 — cranked up
-scene.add(ambient);
+function smoothstep(edge0, edge1, value) {
+  const t = clamp((value - edge0) / (edge1 - edge0), 0, 1);
+  return t * t * (3 - 2 * t);
+}
 
-const moon = new THREE.DirectionalLight(0xb8c8ff, 0.58);
-moon.position.set(18, 28, 12);
-moon.castShadow = true;
-moon.shadow.mapSize.set(2048, 2048);
-moon.shadow.camera.near = 1; moon.shadow.camera.far = 80;
-moon.shadow.camera.left = -35; moon.shadow.camera.right = 35;
-moon.shadow.camera.top = 35; moon.shadow.camera.bottom = -35;
-moon.shadow.bias = -0.0004;
+function createCanvasTexture(width, height, painter) {
+  const element = document.createElement("canvas");
+  element.width = width;
+  element.height = height;
+  const ctx = element.getContext("2d");
+  painter(ctx, width, height);
+  const texture = new THREE.CanvasTexture(element);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  return texture;
+}
+
+function createLabelTexture(text, options = {}) {
+  const {
+    width = 512,
+    height = 168,
+    background = "#0b0f1b",
+    accent = "#ff8f3d",
+    foreground = "#f6ede6",
+    secondary = "#aeb6d0"
+  } = options;
+  return createCanvasTexture(width, height, (ctx, w, h) => {
+    ctx.fillStyle = background;
+    ctx.fillRect(0, 0, w, h);
+    ctx.strokeStyle = accent;
+    ctx.lineWidth = 10;
+    ctx.strokeRect(10, 10, w - 20, h - 20);
+    ctx.fillStyle = accent;
+    ctx.fillRect(18, 18, w - 36, 28);
+    ctx.fillStyle = background;
+    ctx.font = "700 26px Azeret Mono";
+    ctx.fillText("LOS PUMPKINTOS", 32, 40);
+    ctx.fillStyle = foreground;
+    ctx.font = "700 56px Bungee";
+    ctx.fillText(text, 30, 102);
+    ctx.fillStyle = secondary;
+    ctx.font = "500 24px Space Grotesk";
+    ctx.fillText("Open late. Haunted always.", 30, 138);
+  });
+}
+
+const asphaltTexture = createCanvasTexture(512, 512, (ctx, w, h) => {
+  ctx.fillStyle = "#11151f";
+  ctx.fillRect(0, 0, w, h);
+  for (let i = 0; i < 1700; i++) {
+    const alpha = 0.05 + Math.random() * 0.08;
+    const size = 1 + Math.random() * 3;
+    ctx.fillStyle = `rgba(255,255,255,${alpha})`;
+    ctx.fillRect(Math.random() * w, Math.random() * h, size, size);
+  }
+  ctx.fillStyle = "rgba(18, 20, 27, 0.65)";
+  for (let i = 0; i < 18; i++) {
+    const y = (i / 18) * h;
+    ctx.fillRect(0, y, w, 8);
+  }
+});
+asphaltTexture.wrapS = THREE.RepeatWrapping;
+asphaltTexture.wrapT = THREE.RepeatWrapping;
+asphaltTexture.repeat.set(6, 6);
+
+const grassTexture = createCanvasTexture(512, 512, (ctx, w, h) => {
+  const gradient = ctx.createLinearGradient(0, 0, 0, h);
+  gradient.addColorStop(0, "#112214");
+  gradient.addColorStop(1, "#0a120c");
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, w, h);
+  for (let i = 0; i < 2600; i++) {
+    const alpha = 0.05 + Math.random() * 0.08;
+    const size = 1 + Math.random() * 2;
+    ctx.fillStyle = `rgba(101, 164, 103, ${alpha})`;
+    ctx.fillRect(Math.random() * w, Math.random() * h, size, size);
+  }
+});
+grassTexture.wrapS = THREE.RepeatWrapping;
+grassTexture.wrapT = THREE.RepeatWrapping;
+grassTexture.repeat.set(20, 20);
+
+const moon = new THREE.Mesh(
+  new THREE.SphereGeometry(3.4, 24, 24),
+  new THREE.MeshBasicMaterial({ color: 0xc6e6ff })
+);
+moon.position.set(-60, 40, -80);
 scene.add(moon);
 
-function streetLamp(x, z, color = 0xffb070) {
-  const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.08, 4.5, 8),
-    new THREE.MeshStandardMaterial({ color: 0x2a2a30, roughness: 0.8 }));
-  pole.position.set(x, 2.25, z); pole.castShadow = true; scene.add(pole);
-  const glow = new THREE.PointLight(color, 2.6, 18, 2.1);  // brighter than v1
-  glow.position.set(x, 4.1, z); glow.castShadow = true;
-  glow.shadow.mapSize.set(512, 512); scene.add(glow); return glow;
-}
-const lamps = [
-  streetLamp(-10, -8, 0xffa060),
-  streetLamp(12, 6, 0xff9060),
-  streetLamp(-5, 15, 0xffb078),
-  streetLamp(14, -12, 0xffa055),
-  streetLamp(0, -18, 0xffb060),
-  streetLamp(-16, 10, 0xffa060),
-];
-
-scene.add(new THREE.DirectionalLight(0x503050, 0.28));  // fill — brighter
-scene.add(new THREE.HemisphereLight(0x2a1a3a, 0x0c080c, 0.38));  // was 0.25
-
-// ===== PROPS =====
-const pumpkinGeo = new THREE.SphereGeometry(0.28, 12, 10);
-const pumpkinMat = new THREE.MeshStandardMaterial({ color: 0xd45500, roughness: 0.65 });
-for (let i = 0; i < 18; i++) {
-  const p = new THREE.Mesh(pumpkinGeo, pumpkinMat);
-  const a = Math.random()*Math.PI*2, r = 5 + Math.random()*26;
-  p.position.set(Math.cos(a)*r, 0.28, Math.sin(a)*r);
-  p.rotation.y = Math.random()*Math.PI; p.scale.y = 0.85;
-  p.castShadow = true; p.receiveShadow = true; scene.add(p);
-  const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.045, 0.12, 6),
-    new THREE.MeshStandardMaterial({ color: 0x2a4a18, roughness: 0.9 }));
-  stem.position.copy(p.position); stem.position.y += 0.32; scene.add(stem);
-}
-
-// ===== PLAYER =====
-const player = new THREE.Mesh(
-  new THREE.BoxGeometry(0.65, 1.55, 0.65),
-  new THREE.MeshStandardMaterial({ color: 0x2890ff, roughness: 0.55, metalness: 0.1 })
+const skyGlow = new THREE.Mesh(
+  new THREE.SphereGeometry(18, 24, 24),
+  new THREE.MeshBasicMaterial({ color: 0x7e93ff, transparent: true, opacity: 0.06 })
 );
-player.position.set(0, 0.775, 0); player.castShadow = true; scene.add(player);
+skyGlow.position.copy(moon.position);
+scene.add(skyGlow);
 
-// ===== SLASHER =====
-const slasherMat = new THREE.MeshStandardMaterial({ color: 0xd01818, roughness: 0.7, metalness: 0.05, emissive: 0x200000, emissiveIntensity: 0.12 });
-const slasher = new THREE.Mesh(new THREE.CylinderGeometry(0.38, 0.42, 1.95, 16), slasherMat);
-slasher.position.set(-9, 0.975, -11); slasher.castShadow = true; scene.add(slasher);
-const mask = new THREE.Mesh(new THREE.SphereGeometry(0.16, 12, 10),
-  new THREE.MeshStandardMaterial({ color: 0xddd6cc, roughness: 0.5 }));
-mask.position.y = 0.55; slasher.add(mask);
+scene.add(new THREE.AmbientLight(0x51608e, 0.7));
 
-// slasher state
-let slasherHitFlash = 0;
-let slasherKnockback = new THREE.Vector3();
-let hits = 0;
+const moonLight = new THREE.DirectionalLight(0xc7d9ff, 1.35);
+moonLight.position.set(-20, 34, -18);
+scene.add(moonLight);
 
-// ===== EGG CANNON =====
-const eggs = [];
-const eggGeo = new THREE.SphereGeometry(0.14, 10, 8);
-const eggMat = new THREE.MeshStandardMaterial({ color: 0xf2e8d5, roughness: 0.85 });
+const warmFill = new THREE.PointLight(0xff9654, 0.8, 26, 2);
+warmFill.position.set(-18, 8, 18);
+scene.add(warmFill);
+
+const grass = new THREE.Mesh(
+  new THREE.PlaneGeometry(180, 180),
+  new THREE.MeshStandardMaterial({ map: grassTexture, color: 0xd1ffd1, roughness: 1, metalness: 0 })
+);
+grass.rotation.x = -Math.PI / 2;
+scene.add(grass);
+
+const asphaltMaterial = new THREE.MeshStandardMaterial({
+  map: asphaltTexture,
+  color: 0xdfe5ff,
+  roughness: 0.86,
+  metalness: 0.1
+});
+
+function addRoad(x, z, width, depth, rotation = 0) {
+  const road = new THREE.Mesh(new THREE.PlaneGeometry(width, depth), asphaltMaterial);
+  road.rotation.x = -Math.PI / 2;
+  road.rotation.z = rotation;
+  road.position.set(x, 0.02, z);
+  scene.add(road);
+  world.roads.push(road);
+
+  const stripeMaterial = new THREE.MeshBasicMaterial({ color: 0xffc773 });
+  const stripeCount = Math.max(3, Math.floor(depth / 8));
+  for (let i = 0; i < stripeCount; i++) {
+    const stripe = new THREE.Mesh(new THREE.PlaneGeometry(0.45, 3), stripeMaterial);
+    stripe.rotation.x = -Math.PI / 2;
+    stripe.rotation.z = rotation;
+    const offset = -depth / 2 + 4 + i * ((depth - 8) / Math.max(1, stripeCount - 1));
+    const local = new THREE.Vector3(0, 0.03, offset);
+    local.applyAxisAngle(new THREE.Vector3(0, 1, 0), rotation);
+    stripe.position.set(x + local.x, local.y, z + local.z);
+    scene.add(stripe);
+  }
+}
+
+addRoad(0, 0, 16, 90, 0);
+addRoad(0, 0, 90, 16, 0);
+addRoad(-26, 14, 38, 12, Math.PI * 0.14);
+addRoad(26, -14, 42, 12, -Math.PI * 0.12);
+
+function createLamp(x, z) {
+  const group = new THREE.Group();
+
+  const pole = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.13, 0.18, 5, 8),
+    new THREE.MeshStandardMaterial({ color: 0x2d3443, roughness: 0.95 })
+  );
+  pole.position.y = 2.5;
+  group.add(pole);
+
+  const arm = new THREE.Mesh(
+    new THREE.BoxGeometry(0.16, 0.16, 1.2),
+    new THREE.MeshStandardMaterial({ color: 0x2d3443, roughness: 0.95 })
+  );
+  arm.position.set(0.45, 4.65, 0);
+  group.add(arm);
+
+  const lantern = new THREE.Mesh(
+    new THREE.BoxGeometry(0.44, 0.54, 0.44),
+    new THREE.MeshStandardMaterial({ color: 0xffbc7d, emissive: 0xff8c39, emissiveIntensity: 1.5, roughness: 0.35 })
+  );
+  lantern.position.set(0.9, 4.35, 0);
+  group.add(lantern);
+
+  const light = new THREE.PointLight(0xff9e57, 1.5, 14, 2);
+  light.position.set(0.9, 4.3, 0);
+  group.add(light);
+
+  group.position.set(x, 0, z);
+  scene.add(group);
+  world.lamps.push({ group, light, x, z, phase: Math.random() * Math.PI * 2 });
+}
+
+[
+  [-16, -10], [-12, 15], [0, -22], [16, 11], [22, -12], [-25, 26], [28, 25], [-31, -24]
+].forEach(([x, z]) => createLamp(x, z));
+
+function createHouse(config) {
+  const group = new THREE.Group();
+  const body = new THREE.Mesh(
+    new THREE.BoxGeometry(config.w, config.h, config.d),
+    new THREE.MeshStandardMaterial({ color: config.color, roughness: 0.94 })
+  );
+  body.position.y = config.h / 2;
+  group.add(body);
+
+  const roof = new THREE.Mesh(
+    new THREE.ConeGeometry(Math.max(config.w, config.d) * 0.64, config.h * 0.82, 4),
+    new THREE.MeshStandardMaterial({ color: config.roof, roughness: 0.9 })
+  );
+  roof.rotation.y = Math.PI * 0.25;
+  roof.position.y = config.h + config.h * 0.33;
+  group.add(roof);
+
+  const porch = new THREE.Mesh(
+    new THREE.BoxGeometry(config.w * 0.32, 0.18, config.d * 0.18),
+    new THREE.MeshStandardMaterial({ color: 0x44362f, roughness: 1 })
+  );
+  porch.position.set(0, 0.09, config.d * 0.36);
+  group.add(porch);
+
+  const door = new THREE.Mesh(
+    new THREE.PlaneGeometry(config.w * 0.16, config.h * 0.46),
+    new THREE.MeshBasicMaterial({ color: 0x261818 })
+  );
+  door.position.set(0, config.h * 0.26, config.d / 2 + 0.01);
+  group.add(door);
+
+  for (const side of [-1, 1]) {
+    const windowMesh = new THREE.Mesh(
+      new THREE.PlaneGeometry(config.w * 0.16, config.h * 0.18),
+      new THREE.MeshBasicMaterial({ color: config.window, transparent: true, opacity: 0.95 })
+    );
+    windowMesh.position.set(side * config.w * 0.22, config.h * 0.55, config.d / 2 + 0.02);
+    group.add(windowMesh);
+  }
+
+  if (config.sign) {
+    const sign = new THREE.Mesh(
+      new THREE.PlaneGeometry(config.w * 0.7, config.h * 0.2),
+      new THREE.MeshBasicMaterial({
+        map: createLabelTexture(config.sign, {
+          background: "#120913",
+          accent: config.signAccent,
+          foreground: "#f6ede6",
+          secondary: "#aeb6d0"
+        }),
+        transparent: true
+      })
+    );
+    sign.position.set(0, config.h + 1.8, 0);
+    group.add(sign);
+    world.signs.push(sign);
+  }
+
+  group.position.set(config.x, 0, config.z);
+  group.rotation.y = config.rotation || 0;
+  scene.add(group);
+  world.houses.push(group);
+}
+
+createHouse({ x: -18, z: 33, w: 8, h: 4.2, d: 7, color: 0x3b4359, roof: 0x2a0f12, window: 0xffcf7b, sign: "Safehouse", signAccent: "#7cf4da" });
+createHouse({ x: 22, z: 31, w: 8, h: 4.4, d: 7, color: 0x5b2f35, roof: 0x250d13, window: 0xffd69d, sign: "Candy Forge", signAccent: "#ff8f3d" });
+createHouse({ x: -33, z: -17, w: 7.4, h: 4.1, d: 6.4, color: 0x3d274c, roof: 0x160713, window: 0xff8bc3, sign: "Costume Crypt", signAccent: "#ff4f8a" });
+createHouse({ x: 33, z: -18, w: 8.4, h: 4.2, d: 6.4, color: 0x26344f, roof: 0x11161f, window: 0x8be8ff, sign: "Hearse Garage", signAccent: "#8be8ff" });
+createHouse({ x: -2, z: -34, w: 7.6, h: 4.3, d: 6.8, color: 0x40352b, roof: 0x1e1010, window: 0xb8ffcf, sign: "Hex Market", signAccent: "#87ffb4" });
+createHouse({ x: 11, z: -32, w: 7.2, h: 4, d: 6.1, color: 0x403240, roof: 0x16090b, window: 0xffcf7b });
+createHouse({ x: -32, z: 11, w: 6.8, h: 3.8, d: 6, color: 0x253344, roof: 0x14070a, window: 0xffdf8a });
+createHouse({ x: 31, z: 12, w: 6.8, h: 3.8, d: 6, color: 0x50332e, roof: 0x16080b, window: 0xffd697 });
+
+function createTree(x, z, scale = 1) {
+  const group = new THREE.Group();
+  const trunk = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.18 * scale, 0.28 * scale, 2.2 * scale, 7),
+    new THREE.MeshStandardMaterial({ color: 0x3e2718, roughness: 1 })
+  );
+  trunk.position.y = 1.1 * scale;
+  group.add(trunk);
+
+  const leaves = new THREE.Mesh(
+    new THREE.ConeGeometry(1.4 * scale, 3.3 * scale, 8),
+    new THREE.MeshStandardMaterial({ color: 0x0f2010, roughness: 1 })
+  );
+  leaves.position.y = 3.3 * scale;
+  group.add(leaves);
+
+  group.position.set(x, 0, z);
+  scene.add(group);
+  world.trees.push(group);
+}
+
+[
+  [-22, 24, 1.2], [-12, 27, 1], [14, 23, 1.15], [24, 26, 1.05], [-36, -9, 1.05],
+  [-29, -25, 1.2], [31, -26, 1.1], [18, -28, 0.95], [-8, -37, 1.2], [2, 38, 1.1]
+].forEach(([x, z, scale]) => createTree(x, z, scale));
+
+function createPumpkin(x, z, scale = 1) {
+  const group = new THREE.Group();
+  const body = new THREE.Mesh(
+    new THREE.SphereGeometry(0.56 * scale, 14, 12),
+    new THREE.MeshStandardMaterial({ color: 0xd76618, roughness: 0.82, emissive: 0x4c1807, emissiveIntensity: 0.6 })
+  );
+  body.scale.y = 0.82;
+  body.position.y = 0.46 * scale;
+  group.add(body);
+
+  const stem = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.06 * scale, 0.08 * scale, 0.22 * scale, 6),
+    new THREE.MeshStandardMaterial({ color: 0x315117, roughness: 1 })
+  );
+  stem.position.y = 0.88 * scale;
+  group.add(stem);
+
+  group.position.set(x, 0, z);
+  scene.add(group);
+  world.pumpkins.push(group);
+}
+
+for (let i = 0; i < 28; i++) {
+  const angle = (i / 28) * Math.PI * 2;
+  const radius = 12 + (i % 7) * 4.6;
+  createPumpkin(Math.cos(angle) * radius, Math.sin(angle * 1.7) * 18, 0.8 + (i % 3) * 0.15);
+}
+
+function createCar(x, z, rotation, color) {
+  const group = new THREE.Group();
+  const base = new THREE.Mesh(
+    new THREE.BoxGeometry(2.8, 0.9, 1.6),
+    new THREE.MeshStandardMaterial({ color, roughness: 0.52, metalness: 0.2 })
+  );
+  base.position.y = 0.65;
+  group.add(base);
+
+  const roof = new THREE.Mesh(
+    new THREE.BoxGeometry(1.6, 0.7, 1.35),
+    new THREE.MeshStandardMaterial({ color: 0x10151f, roughness: 0.35, metalness: 0.25 })
+  );
+  roof.position.set(0.1, 1.1, 0);
+  group.add(roof);
+
+  for (const side of [-1, 1]) {
+    for (const front of [-1, 1]) {
+      const wheel = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.34, 0.34, 0.28, 12),
+        new THREE.MeshStandardMaterial({ color: 0x0c0e10, roughness: 1 })
+      );
+      wheel.rotation.z = Math.PI / 2;
+      wheel.position.set(side * 1.02, 0.35, front * 0.72);
+      group.add(wheel);
+    }
+  }
+
+  group.position.set(x, 0, z);
+  group.rotation.y = rotation;
+  scene.add(group);
+  world.cars.push(group);
+}
+
+createCar(-8, 11, 0, 0x7c1e31);
+createCar(14, -5, Math.PI, 0x2a5c7c);
+createCar(21, 5, Math.PI / 2, 0x5d5d5d);
+createCar(-24, -2, -Math.PI / 2, 0x463f7b);
+
+function createGrave(x, z, height = 1.2) {
+  const head = new THREE.Mesh(
+    new THREE.BoxGeometry(0.75, height, 0.24),
+    new THREE.MeshStandardMaterial({ color: 0x6f7587, roughness: 1 })
+  );
+  head.position.set(x, height / 2, z);
+  scene.add(head);
+  world.graves.push(head);
+}
+
+for (let i = 0; i < 9; i++) {
+  createGrave(-37 + (i % 3) * 1.6, -33 + Math.floor(i / 3) * 2, 1 + (i % 2) * 0.2);
+}
+
+function createGhost(x, z, phase) {
+  const group = new THREE.Group();
+  const body = new THREE.Mesh(
+    new THREE.SphereGeometry(0.7, 16, 16),
+    new THREE.MeshStandardMaterial({
+      color: 0xcff7ff,
+      emissive: 0x8ef2ff,
+      emissiveIntensity: 0.8,
+      transparent: true,
+      opacity: 0.58,
+      roughness: 0.2
+    })
+  );
+  body.scale.y = 1.22;
+  group.add(body);
+
+  const tail = new THREE.Mesh(
+    new THREE.ConeGeometry(0.56, 1.1, 12),
+    new THREE.MeshStandardMaterial({
+      color: 0xbef7ff,
+      emissive: 0x8ef2ff,
+      emissiveIntensity: 0.6,
+      transparent: true,
+      opacity: 0.48
+    })
+  );
+  tail.position.y = -0.92;
+  group.add(tail);
+
+  group.position.set(x, 2.5, z);
+  scene.add(group);
+  world.ghosts.push({ group, baseX: x, baseZ: z, phase });
+}
+
+createGhost(-35, 6, 0);
+createGhost(-24, -28, 1.1);
+createGhost(18, 29, 2.5);
+createGhost(34, -16, 3.6);
+
+function createKid(x, z, hue, phase) {
+  const group = new THREE.Group();
+  const body = new THREE.Mesh(
+    new THREE.CapsuleGeometry(0.35, 0.8, 6, 10),
+    new THREE.MeshStandardMaterial({ color: hue, roughness: 0.86 })
+  );
+  body.position.y = 1;
+  group.add(body);
+
+  const head = new THREE.Mesh(
+    new THREE.SphereGeometry(0.3, 12, 12),
+    new THREE.MeshStandardMaterial({ color: 0xf1d0b6, roughness: 0.85 })
+  );
+  head.position.y = 1.75;
+  group.add(head);
+
+  const bucket = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.18, 0.22, 0.28, 10),
+    new THREE.MeshStandardMaterial({ color: 0x242424, roughness: 0.92 })
+  );
+  bucket.position.set(0.34, 0.66, 0);
+  group.add(bucket);
+
+  group.position.set(x, 0, z);
+  scene.add(group);
+  world.kids.push({ group, baseX: x, baseZ: z, phase });
+}
+
+createKid(-11, 18, 0xd9684d, 0.3);
+createKid(10, 20, 0x6d60f2, 1.5);
+createKid(30, 8, 0x50c77d, 2.1);
+createKid(-28, -8, 0xd24db4, 2.9);
+
+function createZone(config) {
+  const ring = new THREE.Mesh(
+    new THREE.TorusGeometry(config.radius, 0.12, 12, 48),
+    new THREE.MeshBasicMaterial({ color: config.color, transparent: true, opacity: 0.85 })
+  );
+  ring.rotation.x = Math.PI / 2;
+  ring.position.set(config.x, 0.08, config.z);
+  scene.add(ring);
+
+  const beam = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.16, 0.7, 8, 16, 1, true),
+    new THREE.MeshBasicMaterial({ color: config.color, transparent: true, opacity: 0.16, side: THREE.DoubleSide })
+  );
+  beam.position.set(config.x, 4, config.z);
+  scene.add(beam);
+
+  const sign = new THREE.Mesh(
+    new THREE.PlaneGeometry(5.4, 1.5),
+    new THREE.MeshBasicMaterial({
+      map: createLabelTexture(config.label, {
+        background: "#0c1222",
+        accent: config.cssColor,
+        foreground: "#f6ede6",
+        secondary: "#aeb6d0"
+      }),
+      transparent: true
+    })
+  );
+  sign.position.set(config.x, 6.3, config.z);
+  scene.add(sign);
+
+  const zone = { ...config, ring, beam, sign };
+  world.zones.push(zone);
+  return zone;
+}
+
+const safehouseZone = createZone({ type: "safehouse", label: "Safehouse", x: -18, z: 25, radius: 2.4, color: 0x7cf4da, cssColor: "#7cf4da" });
+const candyForgeZone = createZone({ type: "candyForge", label: "Candy Forge", x: 22, z: 23, radius: 2.2, color: 0xff8f3d, cssColor: "#ff8f3d" });
+const costumeZone = createZone({ type: "costume", label: "Costume Crypt", x: -33, z: -24, radius: 2.2, color: 0xff4f8a, cssColor: "#ff4f8a" });
+const garageZone = createZone({ type: "garage", label: "Hearse Garage", x: 33, z: -25, radius: 2.2, color: 0x8be8ff, cssColor: "#8be8ff" });
+const wardZone = createZone({ type: "ward", label: "Hex Market", x: -2, z: -26, radius: 2.2, color: 0x87ffb4, cssColor: "#87ffb4" });
+const beaconZone = createZone({ type: "beacon", label: "Ritual Beacon", x: 26, z: 0, radius: 2.6, color: 0xffc25f, cssColor: "#ffbf5f" });
+
+function createCandy(x, z) {
+  const group = new THREE.Group();
+  const bag = new THREE.Mesh(
+    new THREE.BoxGeometry(0.55, 0.6, 0.26),
+    new THREE.MeshStandardMaterial({ color: 0x261624, roughness: 0.95 })
+  );
+  bag.position.y = 0.4;
+  group.add(bag);
+
+  const wrap = new THREE.Mesh(
+    new THREE.SphereGeometry(0.18, 12, 12),
+    new THREE.MeshStandardMaterial({ color: 0xff8f3d, emissive: 0xb23812, emissiveIntensity: 0.9, roughness: 0.5 })
+  );
+  wrap.position.y = 0.8;
+  group.add(wrap);
+
+  group.position.set(x, 0, z);
+  scene.add(group);
+  world.candies.push({ group, x, z, phase: Math.random() * Math.PI * 2, collected: false });
+}
+
+[
+  [-7, 3], [-12, 8], [8, 8], [16, 17], [24, -6], [-26, -10], [-17, -26], [3, -18], [18, -24], [-29, 22]
+].forEach(([x, z]) => createCandy(x, z));
+
+function createCharacter(primary, accent) {
+  const group = new THREE.Group();
+
+  const torso = new THREE.Mesh(
+    new THREE.CapsuleGeometry(0.5, 1.2, 8, 16),
+    new THREE.MeshStandardMaterial({ color: primary, roughness: 0.78, metalness: 0.06 })
+  );
+  torso.position.y = 1.4;
+  group.add(torso);
+
+  const jacket = new THREE.Mesh(
+    new THREE.TorusGeometry(0.42, 0.12, 10, 24),
+    new THREE.MeshStandardMaterial({ color: accent, emissive: accent, emissiveIntensity: 0.16, roughness: 0.45 })
+  );
+  jacket.rotation.x = Math.PI / 2;
+  jacket.position.set(0, 1.44, 0.18);
+  group.add(jacket);
+
+  const head = new THREE.Mesh(
+    new THREE.SphereGeometry(0.34, 16, 16),
+    new THREE.MeshStandardMaterial({ color: 0xf2cdb1, roughness: 0.8 })
+  );
+  head.position.y = 2.35;
+  group.add(head);
+
+  const hair = new THREE.Mesh(
+    new THREE.SphereGeometry(0.36, 12, 12),
+    new THREE.MeshStandardMaterial({ color: 0x1b120d, roughness: 0.92 })
+  );
+  hair.scale.set(1, 0.7, 1);
+  hair.position.set(0, 2.5, -0.02);
+  group.add(hair);
+
+  const legMat = new THREE.MeshStandardMaterial({ color: 0x1c2029, roughness: 0.9 });
+  const leftLeg = new THREE.Mesh(new THREE.CapsuleGeometry(0.16, 0.82, 4, 8), legMat);
+  const rightLeg = leftLeg.clone();
+  leftLeg.position.set(-0.18, 0.5, 0);
+  rightLeg.position.set(0.18, 0.5, 0);
+  group.add(leftLeg, rightLeg);
+
+  const armMat = new THREE.MeshStandardMaterial({ color: primary, roughness: 0.8 });
+  const leftArm = new THREE.Mesh(new THREE.CapsuleGeometry(0.12, 0.75, 4, 8), armMat);
+  const rightArm = leftArm.clone();
+  leftArm.position.set(-0.55, 1.45, 0);
+  rightArm.position.set(0.55, 1.45, 0);
+  leftArm.rotation.z = 0.18;
+  rightArm.rotation.z = -0.18;
+  group.add(leftArm, rightArm);
+
+  const shadow = new THREE.Mesh(
+    new THREE.CircleGeometry(0.9, 24),
+    new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.3 })
+  );
+  shadow.rotation.x = -Math.PI / 2;
+  shadow.position.y = 0.02;
+  group.add(shadow);
+
+  return { group, leftLeg, rightLeg, leftArm, rightArm, shadow, torso };
+}
+
+const chaseModel = createCharacter(0x2d67c8, 0xff8f3d);
+const chase = chaseModel.group;
+chase.position.set(-18, 0, 18);
+scene.add(chase);
+
+const noFaceModel = createCharacter(0x441013, 0xff485d);
+const noFace = noFaceModel.group;
+noFace.position.set(10, 0, -10);
+scene.add(noFace);
+
+const noFaceMask = new THREE.Mesh(
+  new THREE.SphereGeometry(0.22, 12, 12),
+  new THREE.MeshStandardMaterial({ color: 0xe7e7e1, emissive: 0x7a7a7a, emissiveIntensity: 0.18, roughness: 0.55 })
+);
+noFaceMask.position.set(0, 2.35, 0.29);
+noFace.add(noFaceMask);
+
+const targetArrow = new THREE.Group();
+const arrowBody = new THREE.Mesh(
+  new THREE.ConeGeometry(0.3, 1.1, 12),
+  new THREE.MeshStandardMaterial({ color: 0xffd264, emissive: 0xffac39, emissiveIntensity: 0.9, roughness: 0.35 })
+);
+arrowBody.rotation.x = Math.PI;
+arrowBody.position.y = 3.6;
+targetArrow.add(arrowBody);
+
+const arrowRing = new THREE.Mesh(
+  new THREE.TorusGeometry(0.46, 0.08, 10, 24),
+  new THREE.MeshBasicMaterial({ color: 0x7cf4da, transparent: true, opacity: 0.85 })
+);
+arrowRing.rotation.x = Math.PI / 2;
+arrowRing.position.y = 3.05;
+targetArrow.add(arrowRing);
+scene.add(targetArrow);
+
+const rainCount = 900;
+const rainGeometry = new THREE.BufferGeometry();
+const rainPositions = new Float32Array(rainCount * 3);
+const rainVelocity = new Float32Array(rainCount);
+for (let i = 0; i < rainCount; i++) {
+  rainPositions[i * 3] = (Math.random() - 0.5) * 60;
+  rainPositions[i * 3 + 1] = Math.random() * 20 + 5;
+  rainPositions[i * 3 + 2] = (Math.random() - 0.5) * 60;
+  rainVelocity[i] = 14 + Math.random() * 10;
+}
+rainGeometry.setAttribute("position", new THREE.BufferAttribute(rainPositions, 3));
+
+const rain = new THREE.Points(
+  rainGeometry,
+  new THREE.PointsMaterial({
+    color: 0xaed1ff,
+    size: 0.08,
+    transparent: true,
+    opacity: 0.55,
+    sizeAttenuation: true
+  })
+);
+scene.add(rain);
+
+function ensureAudio() {
+  if (listener.ctx) {
+    if (listener.ctx.state === "suspended") {
+      listener.ctx.resume();
+    }
+    return;
+  }
+  const AudioContextCtor = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContextCtor) {
+    return;
+  }
+  listener.ctx = new AudioContextCtor();
+  listener.gain = listener.ctx.createGain();
+  listener.gain.gain.value = 0.08;
+  listener.gain.connect(listener.ctx.destination);
+}
+
+function playTone({ frequency = 440, frequencyEnd = frequency, duration = 0.12, type = "sine", volume = 0.4 }) {
+  if (!listener.ctx || !listener.gain) {
+    return;
+  }
+  const osc = listener.ctx.createOscillator();
+  const gain = listener.ctx.createGain();
+  const now = listener.ctx.currentTime;
+  osc.type = type;
+  osc.frequency.setValueAtTime(frequency, now);
+  osc.frequency.exponentialRampToValueAtTime(Math.max(40, frequencyEnd), now + duration);
+  gain.gain.setValueAtTime(0.0001, now);
+  gain.gain.exponentialRampToValueAtTime(volume, now + 0.01);
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+  osc.connect(gain);
+  gain.connect(listener.gain);
+  osc.start(now);
+  osc.stop(now + duration + 0.02);
+}
+
+function soundThrow() {
+  playTone({ frequency: 680, frequencyEnd: 260, duration: 0.16, type: "triangle", volume: 0.18 });
+}
+
+function soundPickup() {
+  playTone({ frequency: 520, frequencyEnd: 1040, duration: 0.12, type: "square", volume: 0.12 });
+}
+
+function soundHit() {
+  playTone({ frequency: 180, frequencyEnd: 80, duration: 0.24, type: "sawtooth", volume: 0.16 });
+}
+
+function soundUpgrade() {
+  playTone({ frequency: 330, frequencyEnd: 660, duration: 0.14, type: "triangle", volume: 0.12 });
+  playTone({ frequency: 495, frequencyEnd: 990, duration: 0.18, type: "triangle", volume: 0.09 });
+}
+
+function soundFail() {
+  playTone({ frequency: 220, frequencyEnd: 90, duration: 0.35, type: "square", volume: 0.12 });
+}
+
+function soundThunder() {
+  playTone({ frequency: 70, frequencyEnd: 45, duration: 0.7, type: "sawtooth", volume: 0.12 });
+}
+
+function setRadio(text) {
+  ui.radioText.textContent = text;
+  state.radioTimer = 6;
+}
+
+function showToast(text) {
+  ui.toast.textContent = text;
+  ui.toast.classList.add("on");
+  state.toastTimer = 2.2;
+}
+
+function hideToast() {
+  ui.toast.classList.remove("on");
+}
+
+function getFlatDistance(a, b) {
+  const dx = a.x - b.x;
+  const dz = a.z - b.z;
+  return Math.hypot(dx, dz);
+}
+
+function currentObjectiveTarget() {
+  if (state.mission === "collect") {
+    let nearest = null;
+    let nearestDist = Infinity;
+    for (const candy of world.candies) {
+      if (candy.collected) {
+        continue;
+      }
+      const distance = getFlatDistance(chase.position, candy.group.position);
+      if (distance < nearestDist) {
+        nearest = candy.group.position;
+        nearestDist = distance;
+      }
+    }
+    return nearest || beaconZone.ring.position;
+  }
+  if (state.mission === "beacon") {
+    return beaconZone.ring.position;
+  }
+  return safehouseZone.ring.position;
+}
+
+function updateObjectiveText() {
+  if (state.win) {
+    ui.objectiveText.textContent = "Night complete. Chase made it home with the haul.";
+    ui.objectiveHint.textContent = "Press R to run the route again or reload the page to share it.";
+    return;
+  }
+
+  if (state.ended) {
+    ui.objectiveText.textContent = "No-Face caught up.";
+    ui.objectiveHint.textContent = "Press R to restart the mission with the same city layout.";
+    return;
+  }
+
+  if (state.mission === "collect") {
+    ui.objectiveText.textContent = `Collect candy stashes: ${state.candy} / 6`;
+    ui.objectiveHint.textContent = "There are extra stashes on the map. Grab any six, then hit the ritual beacon.";
+  } else if (state.mission === "beacon") {
+    ui.objectiveText.textContent = "Reach the ritual beacon in the center district.";
+    ui.objectiveHint.textContent = "No-Face gets meaner when the beacon lights up. Keep some stamina in reserve.";
+  } else {
+    ui.objectiveText.textContent = "Return to the safehouse to finish the run.";
+    ui.objectiveHint.textContent = "If you are hurt, break line of sight, hug lamp light, then sprint the last block.";
+  }
+}
+
+function updateStatusUI() {
+  ui.healthFill.style.width = `${state.health}%`;
+  ui.fearFill.style.width = `${state.fear}%`;
+  ui.staminaFill.style.width = `${state.stamina}%`;
+  ui.healthValue.textContent = `${Math.round(state.health)}`;
+  ui.fearValue.textContent = `${Math.round(state.fear)}`;
+  ui.staminaValue.textContent = `${Math.round(state.stamina)}`;
+  ui.cashValue.textContent = `$${state.cash}`;
+  ui.candyValue.textContent = `${state.candy} / 6`;
+  ui.eggValue.textContent = `${state.eggs}`;
+
+  ui.warnBadge.classList.toggle("on", getFlatDistance(chase.position, noFace.position) < 6.5 && state.started && !state.ended && !state.win);
+}
+
+function nearestZone() {
+  let best = null;
+  let bestDistance = Infinity;
+  for (const zone of world.zones) {
+    const distance = getFlatDistance(chase.position, zone.ring.position);
+    if (distance < bestDistance) {
+      bestDistance = distance;
+      best = zone;
+    }
+  }
+  return { zone: best, distance: bestDistance };
+}
+
+function updatePrompt() {
+  if (!state.started || state.ended || state.win) {
+    ui.promptCard.classList.remove("on");
+    return;
+  }
+
+  const { zone, distance } = nearestZone();
+  const threshold = zone ? zone.radius + 1.1 : Infinity;
+  if (!zone || distance > threshold) {
+    ui.promptCard.classList.remove("on");
+    return;
+  }
+
+  let text = "Press E to interact.";
+  if (zone.type === "safehouse") {
+    text = "Press E to heal, calm down, and refill eggs at the safehouse.";
+  } else if (zone.type === "candyForge") {
+    text = state.upgrades.stickyEggs ? "Press E to refill eggs at the Candy Forge." : "Press E to buy Sticky Eggs for $150.";
+  } else if (zone.type === "costume") {
+    text = state.upgrades.costume ? "Costume upgrade bought. Fear rises slower now." : "Press E to buy Ghoul Suit for $200.";
+  } else if (zone.type === "garage") {
+    text = state.upgrades.sprintBoost ? "Garage tune installed. Your sprint is juiced." : "Press E to buy Sprint Boost for $250.";
+  } else if (zone.type === "ward") {
+    text = state.upgrades.ward ? "Ward active. Stuns last longer." : "Press E to buy Ward Sigil for $300.";
+  } else if (zone.type === "beacon") {
+    text = state.mission === "beacon" ? "Press E to light the beacon." : "The beacon unlocks after six candy stashes.";
+  }
+  ui.promptText.textContent = text;
+  ui.promptCard.classList.add("on");
+}
+
+function triggerLightning() {
+  ui.flash.style.background = "rgba(198, 227, 255, 0.45)";
+  scene.background.set(0x2d3750);
+  setTimeout(() => {
+    ui.flash.style.background = "rgba(198, 227, 255, 0)";
+    scene.background.set(0x070b16);
+  }, 130);
+  soundThunder();
+  setRadio("Pumpkin FM weather alert: lightning over Raccoon Heights. Keep moving.");
+}
+
+function refreshMissionProgress() {
+  if (state.candy >= 6 && state.mission === "collect") {
+    state.mission = "beacon";
+    showToast("Beacon unlocked.");
+    setRadio("You got the haul. Light the beacon and run for home.");
+    soundUpgrade();
+  }
+  updateObjectiveText();
+}
+
+function collectCandy(candy) {
+  candy.collected = true;
+  candy.group.visible = false;
+  state.candy = Math.min(6, state.candy + 1);
+  state.cash += 50;
+  state.fear = Math.max(0, state.fear - 8);
+  soundPickup();
+  showToast("+1 candy stash   +$50");
+  setRadio("Candy bag secured. No-Face is not going to like that.");
+  refreshMissionProgress();
+}
+
+function canAfford(cost) {
+  return state.cash >= cost;
+}
+
+function spend(cost) {
+  state.cash -= cost;
+}
+
+function interactWithZone(zone) {
+  if (!zone || state.ended || state.win) {
+    return;
+  }
+
+  if (zone.type === "safehouse") {
+    if (state.mission === "escape") {
+      state.win = true;
+      state.ended = true;
+      state.health = Math.max(state.health, 35);
+      showToast("Run complete.");
+      soundUpgrade();
+      setRadio("Chase made it home. Somebody hide the candy before he loads another run.");
+      ui.centerCard.classList.remove("hidden");
+      ui.centerCard.innerHTML = `
+        <span class="eyebrow">Mission complete</span>
+        <h2>Safehouse Secured</h2>
+        <p>You escaped with ${state.candy} candy stashes, $${state.cash} cash, and ${state.hits} egg hits landed on No-Face.</p>
+        <div class="button-row">
+          <button id="restartWin">Run It Again</button>
+        </div>
+      `;
+      document.getElementById("restartWin").addEventListener("click", restartGame);
+      updateObjectiveText();
+      return;
+    }
+    state.health = Math.min(100, state.health + 45);
+    state.fear = Math.max(0, state.fear - 35);
+    state.stamina = 100;
+    state.eggs = Math.max(state.eggs, 12);
+    showToast("Safehouse reset.");
+    setRadio("Back in the safehouse. Breathe, reload, and get back out there.");
+    soundUpgrade();
+    return;
+  }
+
+  if (zone.type === "candyForge") {
+    if (!state.upgrades.stickyEggs) {
+      if (!canAfford(150)) {
+        showToast("Need $150 for Sticky Eggs.");
+        return;
+      }
+      spend(150);
+      state.upgrades.stickyEggs = true;
+      state.eggs += 6;
+      showToast("Sticky Eggs unlocked.");
+      setRadio("Candy Forge special: harder hits, bigger splat.");
+      soundUpgrade();
+    } else {
+      state.eggs = Math.max(state.eggs, 14);
+      showToast("Egg pack refilled.");
+      soundPickup();
+    }
+    return;
+  }
+
+  if (zone.type === "costume") {
+    if (state.upgrades.costume) {
+      showToast("Ghoul Suit already equipped.");
+      return;
+    }
+    if (!canAfford(200)) {
+      showToast("Need $200 for the Ghoul Suit.");
+      return;
+    }
+    spend(200);
+    state.upgrades.costume = true;
+    state.fear = Math.max(0, state.fear - 12);
+    showToast("Ghoul Suit equipped.");
+    setRadio("Looking sharp. Fear gain reduced.");
+    soundUpgrade();
+    return;
+  }
+
+  if (zone.type === "garage") {
+    if (state.upgrades.sprintBoost) {
+      showToast("Sprint Boost already installed.");
+      return;
+    }
+    if (!canAfford(250)) {
+      showToast("Need $250 for Sprint Boost.");
+      return;
+    }
+    spend(250);
+    state.upgrades.sprintBoost = true;
+    state.stamina = 100;
+    showToast("Sprint Boost installed.");
+    setRadio("Hearse Garage tune complete. Chase moves quicker now.");
+    soundUpgrade();
+    return;
+  }
+
+  if (zone.type === "ward") {
+    if (state.upgrades.ward) {
+      showToast("Ward Sigil already active.");
+      return;
+    }
+    if (!canAfford(300)) {
+      showToast("Need $300 for the Ward Sigil.");
+      return;
+    }
+    spend(300);
+    state.upgrades.ward = true;
+    showToast("Ward Sigil bound.");
+    setRadio("Hex Market says the next stun should hit a lot meaner.");
+    soundUpgrade();
+    return;
+  }
+
+  if (zone.type === "beacon") {
+    if (state.mission !== "beacon") {
+      showToast("Collect six candy stashes first.");
+      return;
+    }
+    state.mission = "escape";
+    beaconZone.beam.material.opacity = 0.3;
+    beaconZone.ring.material.color.set(0x7cf4da);
+    showToast("Beacon lit. Run home.");
+    setRadio("The beacon is hot. Safehouse now. Do not get greedy.");
+    soundUpgrade();
+    updateObjectiveText();
+  }
+}
 
 function shootEgg() {
-  if (!pointerLocked) return;
-  // spawn at camera / head height, shoot forward from camera angle
-  const dir = new THREE.Vector3();
-  camera.getWorldDirection(dir);
-  const spawnPos = camera.position.clone();
-  const vel = dir.clone().multiplyScalar(16);  // muzzle velocity
-  vel.y += 1.8;  // slight upward arc
-  const mesh = new THREE.Mesh(eggGeo, eggMat.clone());
-  mesh.position.copy(spawnPos);
-  mesh.castShadow = true;
-  scene.add(mesh);
-  eggs.push({ mesh, vel: vel, age: 0 });
+  if (!state.started || state.ended || state.win) {
+    return;
+  }
+  if (state.eggCooldown > 0) {
+    return;
+  }
+  if (state.eggs <= 0) {
+    showToast("Out of eggs. Hit the safehouse or Candy Forge.");
+    return;
+  }
+
+  const direction = new THREE.Vector3();
+  camera.getWorldDirection(direction);
+  direction.y = Math.max(direction.y, -0.12);
+  direction.normalize();
+
+  const projectile = new THREE.Mesh(
+    new THREE.SphereGeometry(state.upgrades.stickyEggs ? 0.22 : 0.17, 14, 12),
+    new THREE.MeshStandardMaterial({
+      color: 0xf7ecd2,
+      emissive: state.upgrades.stickyEggs ? 0xff8f3d : 0x5a4832,
+      emissiveIntensity: state.upgrades.stickyEggs ? 0.75 : 0.15,
+      roughness: 0.5
+    })
+  );
+
+  projectile.position.copy(chase.position);
+  projectile.position.y = 1.7;
+  projectile.position.add(new THREE.Vector3(Math.sin(input.yaw) * 0.52, 0, Math.cos(input.yaw) * 0.52));
+
+  const speed = state.upgrades.stickyEggs ? 20 : 16.5;
+  const velocity = direction.multiplyScalar(speed);
+  velocity.y += 1.4;
+
+  scene.add(projectile);
+  world.projectiles.push({ projectile, velocity, age: 0 });
+
+  state.eggs -= 1;
+  state.eggCooldown = 0.28;
+  soundThrow();
 }
 
-renderer.domElement.addEventListener('mousedown', e => {
-  if (e.button === 0) {  // left click
-    if (!pointerLocked) { renderer.domElement.requestPointerLock(); return; }
-    shootEgg();
+function startGame() {
+  state.started = true;
+  ui.centerCard.classList.add("hidden");
+  ensureAudio();
+  updateObjectiveText();
+  setRadio("Pumpkin FM live from Los Pumpkintos. Candy routes are open. No-Face is already roaming.");
+}
+
+function restartGame() {
+  window.location.reload();
+}
+
+ui.startButton.addEventListener("click", startGame);
+ui.howButton.addEventListener("click", () => {
+  ui.centerCard.querySelector("p").textContent = "Collect six candy stashes, light the ritual beacon, and make it back to the safehouse. Lamp light lowers fear. Shops take cash from candy and stun bonuses. No-Face can be slowed with eggs.";
+});
+
+window.addEventListener("keydown", (event) => {
+  ensureAudio();
+  if (!state.started && (event.code === "Enter" || event.code === "Space")) {
+    event.preventDefault();
+    startGame();
+    return;
+  }
+  if (event.code === "KeyW" || event.code === "ArrowUp") input.forward = 1;
+  if (event.code === "KeyS" || event.code === "ArrowDown") input.forward = -1;
+  if (event.code === "KeyA" || event.code === "ArrowLeft") input.strafe = -1;
+  if (event.code === "KeyD" || event.code === "ArrowRight") input.strafe = 1;
+  if (event.code === "ShiftLeft" || event.code === "ShiftRight") input.sprint = true;
+  if (event.code === "Space") {
+    event.preventDefault();
+    input.fireQueued = true;
+  }
+  if (event.code === "KeyE") input.interactQueued = true;
+  if (event.code === "KeyR" && (state.ended || state.win)) restartGame();
+});
+
+window.addEventListener("keyup", (event) => {
+  if ((event.code === "KeyW" || event.code === "ArrowUp") && input.forward > 0) input.forward = 0;
+  if ((event.code === "KeyS" || event.code === "ArrowDown") && input.forward < 0) input.forward = 0;
+  if ((event.code === "KeyA" || event.code === "ArrowLeft") && input.strafe < 0) input.strafe = 0;
+  if ((event.code === "KeyD" || event.code === "ArrowRight") && input.strafe > 0) input.strafe = 0;
+  if (event.code === "ShiftLeft" || event.code === "ShiftRight") input.sprint = false;
+});
+
+canvas.addEventListener("contextmenu", (event) => event.preventDefault());
+
+canvas.addEventListener("mousedown", (event) => {
+  ensureAudio();
+  if (!state.started) {
+    startGame();
+  }
+  if (event.button === 2) {
+    input.dragging = true;
+    input.lastPointerX = event.clientX;
+    input.lastPointerY = event.clientY;
+  }
+  if (event.button === 0) {
+    input.fireQueued = true;
   }
 });
 
-// ===== INPUT =====
-const keys = {};
-addEventListener('keydown', e => { keys[e.code] = true;
-  if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','KeyW','KeyA','KeyS','KeyD','Space'].includes(e.code)) e.preventDefault();
-});
-addEventListener('keyup', e => { keys[e.code] = false; });
-
-let pointerLocked = false;
-renderer.domElement.addEventListener('click', () => {
-  if (!pointerLocked) renderer.domElement.requestPointerLock();
-});
-document.addEventListener('pointerlockchange', () => {
-  pointerLocked = document.pointerLockElement === renderer.domElement;
-  // pause HUD when mouse is freed
-  document.getElementById('pause').classList.toggle('on', !pointerLocked);
-});
-document.addEventListener('mousemove', e => {
-  if (!pointerLocked) return;
-  camYaw -= e.movementX * 0.0024;
-  camPitch = THREE.MathUtils.clamp(camPitch - e.movementY * 0.002, 0.06, 1.15);
+window.addEventListener("mouseup", (event) => {
+  if (event.button === 2) {
+    input.dragging = false;
+  }
 });
 
-addEventListener('resize', () => {
-  camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix();
-  renderer.setSize(innerWidth, innerHeight);
+window.addEventListener("mousemove", (event) => {
+  if (!input.dragging) {
+    return;
+  }
+  const dx = event.clientX - input.lastPointerX;
+  const dy = event.clientY - input.lastPointerY;
+  input.lastPointerX = event.clientX;
+  input.lastPointerY = event.clientY;
+  input.yaw -= dx * 0.008;
+  input.pitch = clamp(input.pitch + dy * 0.005, 0.2, 1.0);
 });
 
-// ===== GAME LOOP =====
-const clock = new THREE.Clock();
-let fpsT = 0, fpsCount = 0, fpsOut = 0;
+window.addEventListener("resize", () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+function applyMovement(dt) {
+  const moveVector = new THREE.Vector2(input.strafe, input.forward);
+  const moveLength = moveVector.length();
+  const sprinting = input.sprint && state.stamina > 5 && moveLength > 0.1;
+  const baseSpeed = state.upgrades.sprintBoost ? 5.4 : 4.5;
+  const sprintBonus = state.upgrades.sprintBoost ? 2.7 : 1.8;
+  const speed = sprinting ? baseSpeed + sprintBonus : baseSpeed;
+
+  if (moveLength > 0) {
+    moveVector.normalize();
+    const forward = new THREE.Vector3(-Math.sin(input.yaw), 0, -Math.cos(input.yaw));
+    const right = new THREE.Vector3(Math.cos(input.yaw), 0, -Math.sin(input.yaw));
+    const worldMove = forward.multiplyScalar(moveVector.y).add(right.multiplyScalar(moveVector.x)).normalize();
+    chase.position.addScaledVector(worldMove, speed * dt);
+    chase.rotation.y = Math.atan2(worldMove.x, worldMove.z);
+
+    const swing = clock.elapsedTime * (sprinting ? 12 : 8);
+    chaseModel.leftLeg.rotation.x = Math.sin(swing) * 0.55;
+    chaseModel.rightLeg.rotation.x = Math.sin(swing + Math.PI) * 0.55;
+    chaseModel.leftArm.rotation.x = Math.sin(swing + Math.PI) * 0.4;
+    chaseModel.rightArm.rotation.x = Math.sin(swing) * 0.4;
+    chase.position.y = Math.sin(swing * 2) * 0.03;
+  } else {
+    chase.position.y *= Math.exp(-8 * dt);
+    chaseModel.leftLeg.rotation.x *= Math.exp(-8 * dt);
+    chaseModel.rightLeg.rotation.x *= Math.exp(-8 * dt);
+    chaseModel.leftArm.rotation.x *= Math.exp(-8 * dt);
+    chaseModel.rightArm.rotation.x *= Math.exp(-8 * dt);
+  }
+
+  chase.position.x = clamp(chase.position.x, -worldBounds, worldBounds);
+  chase.position.z = clamp(chase.position.z, -worldBounds, worldBounds);
+
+  if (sprinting) {
+    state.stamina = Math.max(0, state.stamina - 22 * dt);
+  } else {
+    state.stamina = Math.min(100, state.stamina + (state.upgrades.sprintBoost ? 16 : 14) * dt);
+  }
+}
+
+function updateCandies(dt) {
+  for (const candy of world.candies) {
+    if (candy.collected) {
+      continue;
+    }
+    candy.group.position.y = 0.12 + Math.sin(clock.elapsedTime * 2.3 + candy.phase) * 0.12;
+    candy.group.rotation.y += dt * 1.3;
+    const distance = getFlatDistance(chase.position, candy.group.position);
+    if (distance < 1.65) {
+      collectCandy(candy);
+    }
+  }
+}
+
+const enemyVelocity = new THREE.Vector3();
+let stunTimer = 0;
+
+function updateEnemy(dt) {
+  const target = chase.position.clone();
+  const toPlayer = target.sub(noFace.position);
+  const distance = Math.hypot(toPlayer.x, toPlayer.z);
+
+  let lampInfluence = 0;
+  for (const lamp of world.lamps) {
+    const d = Math.hypot(chase.position.x - lamp.group.position.x, chase.position.z - lamp.group.position.z);
+    lampInfluence = Math.max(lampInfluence, 1 - clamp(d / (state.upgrades.ward ? 9.2 : 7.4), 0, 1));
+  }
+
+  if (lampInfluence > 0) {
+    state.fear = Math.max(0, state.fear - lampInfluence * 10 * dt);
+    if (distance > 8) {
+      state.health = Math.min(100, state.health + lampInfluence * 2.5 * dt);
+    }
+  }
+
+  if (stunTimer > 0) {
+    stunTimer -= dt;
+    noFaceModel.torso.material.emissiveIntensity = 0.5 + Math.sin(clock.elapsedTime * 30) * 0.2;
+    noFace.position.addScaledVector(enemyVelocity, dt);
+    enemyVelocity.multiplyScalar(Math.exp(-5 * dt));
+  } else {
+    noFaceModel.torso.material.emissiveIntensity = 0.12;
+    const chaseSpeed = 2.5 + smoothstep(10, 80, state.fear) * 1.4 + (state.mission === "escape" ? 0.55 : 0);
+    const slow = 1 - lampInfluence * 0.18;
+    if (distance > 1.1) {
+      const move = new THREE.Vector3(toPlayer.x, 0, toPlayer.z).normalize();
+      noFace.position.addScaledVector(move, chaseSpeed * slow * dt);
+      noFace.rotation.y = Math.atan2(move.x, move.z);
+    }
+  }
+
+  if (distance < 1.65 && clock.elapsedTime - state.lastDamageTime > 0.9 && !state.ended && !state.win) {
+    state.lastDamageTime = clock.elapsedTime;
+    state.health = Math.max(0, state.health - 13);
+    const fearGain = state.upgrades.costume ? 8 : 14;
+    state.fear = Math.min(100, state.fear + fearGain);
+    showToast("No-Face got a swipe in.");
+    soundFail();
+  }
+
+  if (state.health <= 0 || state.fear >= 100) {
+    state.ended = true;
+    ui.centerCard.classList.remove("hidden");
+    ui.centerCard.innerHTML = `
+      <span class="eyebrow">Run failed</span>
+      <h2>Night Over</h2>
+      <p>No-Face shut the route down. Use shops earlier, stay in lamp light, and keep eggs ready for the stun window.</p>
+      <div class="button-row">
+        <button id="restartLose">Restart</button>
+      </div>
+    `;
+    document.getElementById("restartLose").addEventListener("click", restartGame);
+    updateObjectiveText();
+  }
+}
+
+function updateProjectiles(dt) {
+  for (let i = world.projectiles.length - 1; i >= 0; i--) {
+    const shot = world.projectiles[i];
+    shot.age += dt;
+    shot.velocity.y -= 12 * dt;
+    shot.projectile.position.addScaledVector(shot.velocity, dt);
+    shot.projectile.rotation.x += dt * 6;
+    shot.projectile.rotation.z += dt * 8;
+
+    const hitRadius = state.upgrades.stickyEggs ? 1.25 : 0.95;
+    const hitDistance = getFlatDistance(shot.projectile.position, noFace.position);
+
+    if (hitDistance < hitRadius && Math.abs(shot.projectile.position.y - 1.2) < 1.4) {
+      state.hits += 1;
+      state.cash += state.hits % 3 === 0 ? 90 : 20;
+      stunTimer = state.upgrades.ward ? 2.6 : 1.8;
+      enemyVelocity.copy(new THREE.Vector3(noFace.position.x - chase.position.x, 0, noFace.position.z - chase.position.z).normalize().multiplyScalar(6.5));
+      soundHit();
+      showToast(state.hits % 3 === 0 ? "Direct hit. Bonus payout." : "Egg stun landed.");
+      setRadio("Good hit. No-Face is staggered.");
+      scene.remove(shot.projectile);
+      world.projectiles.splice(i, 1);
+      continue;
+    }
+
+    if (shot.projectile.position.y < 0 || shot.age > 3.2) {
+      scene.remove(shot.projectile);
+      world.projectiles.splice(i, 1);
+    }
+  }
+}
+
+function updateAtmosphere(dt) {
+  for (const lamp of world.lamps) {
+    lamp.light.intensity = 1.2 + Math.sin(clock.elapsedTime * 6 + lamp.phase) * 0.18 + Math.random() * 0.05;
+  }
+
+  for (const ghost of world.ghosts) {
+    ghost.group.position.x = ghost.baseX + Math.sin(clock.elapsedTime * 0.7 + ghost.phase) * 1.6;
+    ghost.group.position.y = 2.5 + Math.sin(clock.elapsedTime * 1.3 + ghost.phase) * 0.55;
+    ghost.group.position.z = ghost.baseZ + Math.cos(clock.elapsedTime * 0.5 + ghost.phase) * 1.2;
+    ghost.group.rotation.y += dt * 0.5;
+  }
+
+  for (const kid of world.kids) {
+    kid.group.position.x = kid.baseX + Math.sin(clock.elapsedTime * 0.9 + kid.phase) * 1.2;
+    kid.group.position.z = kid.baseZ + Math.cos(clock.elapsedTime * 0.7 + kid.phase) * 1.2;
+    kid.group.rotation.y = Math.sin(clock.elapsedTime * 1.1 + kid.phase) * 0.6;
+    kid.group.position.y = Math.abs(Math.sin(clock.elapsedTime * 2.1 + kid.phase)) * 0.08;
+  }
+
+  for (const zone of world.zones) {
+    zone.ring.rotation.z += dt * 0.2;
+    zone.beam.material.opacity = 0.13 + Math.sin(clock.elapsedTime * 2 + zone.radius) * 0.05;
+    zone.sign.lookAt(camera.position);
+  }
+
+  for (const sign of world.signs) {
+    sign.lookAt(camera.position);
+  }
+
+  const rainPositionsAttr = rain.geometry.attributes.position;
+  for (let i = 0; i < rainCount; i++) {
+    const index = i * 3;
+    rainPositions[index + 1] -= rainVelocity[i] * dt;
+    rainPositions[index] += dt * 1.6;
+    if (rainPositions[index + 1] < 0) {
+      rainPositions[index + 1] = 22 + Math.random() * 8;
+      rainPositions[index] = chase.position.x + (Math.random() - 0.5) * 60;
+      rainPositions[index + 2] = chase.position.z + (Math.random() - 0.5) * 60;
+    }
+  }
+  rainPositionsAttr.needsUpdate = true;
+
+  rain.position.set(chase.position.x, 0, chase.position.z);
+}
+
+function updateTargetArrow() {
+  const target = currentObjectiveTarget();
+  if (!target) {
+    targetArrow.visible = false;
+    return;
+  }
+  targetArrow.visible = true;
+  targetArrow.position.set(chase.position.x, 0, chase.position.z);
+  const dx = target.x - chase.position.x;
+  const dz = target.z - chase.position.z;
+  targetArrow.rotation.y = Math.atan2(dx, dz);
+  arrowRing.rotation.z += 0.03;
+  targetArrow.position.y = Math.sin(clock.elapsedTime * 3) * 0.08;
+  state.objectiveDistance = Math.hypot(dx, dz);
+}
+
+function updateCamera(dt) {
+  const offset = new THREE.Vector3(
+    Math.sin(input.yaw) * 7.4,
+    4.4 + Math.sin(input.pitch) * 0.8,
+    Math.cos(input.yaw) * 7.4
+  );
+  const ideal = chase.position.clone().add(offset);
+  camera.position.lerp(ideal, 1 - Math.exp(-6 * dt));
+  camera.lookAt(chase.position.x, 1.7, chase.position.z);
+}
+
+function updateMissionProximity() {
+  if (state.mission === "beacon" && getFlatDistance(chase.position, beaconZone.ring.position) < beaconZone.radius + 0.4) {
+    ui.promptCard.classList.add("on");
+  }
+}
+
+function runQueuedActions() {
+  if (input.fireQueued) {
+    shootEgg();
+    input.fireQueued = false;
+  }
+
+  if (input.interactQueued) {
+    const { zone, distance } = nearestZone();
+    if (zone && distance <= zone.radius + 1.1) {
+      interactWithZone(zone);
+    }
+    input.interactQueued = false;
+  }
+}
 
 function tick() {
   requestAnimationFrame(tick);
   const dt = Math.min(clock.getDelta(), 0.033);
-  const t = clock.elapsedTime;
 
-  // player movement
-  const input = new THREE.Vector2(
-    (keys.KeyD || keys.ArrowRight ? 1 : 0) - (keys.KeyA || keys.ArrowLeft ? 1 : 0),
-    (keys.KeyW || keys.ArrowUp ? 1 : 0) - (keys.KeyS || keys.ArrowDown ? 1 : 0)
-  );
-  if (input.lengthSq() > 0 && pointerLocked) {
-    input.normalize();
-    const playerSpeed = 4.6;
-    const forward = new THREE.Vector3(-Math.sin(camYaw), 0, -Math.cos(camYaw));
-    const right   = new THREE.Vector3(Math.cos(camYaw), 0, -Math.sin(camYaw));
-    const move = forward.multiplyScalar(input.y).add(right.multiplyScalar(input.x)).normalize();
-    player.position.addScaledVector(move, playerSpeed * dt);
-    player.rotation.y = Math.atan2(move.x, move.z);
-  }
-  const B = 88;
-  player.position.x = THREE.MathUtils.clamp(player.position.x, -B, B);
-  player.position.z = THREE.MathUtils.clamp(player.position.z, -B, B);
-
-  // slasher AI — slowed/stunned during knockback
-  slasher.lookAt(player.position.x, slasher.position.y, player.position.z);
-  const toPlayer = new THREE.Vector3().subVectors(player.position, slasher.position);
-  const dist = toPlayer.length();
-  let slasherSpeed = 2.15;
-  // apply knockback decay
-  if (slasherKnockback.lengthSq() > 0.0001) {
-    slasher.position.addScaledVector(slasherKnockback, dt);
-    slasherKnockback.multiplyScalar(Math.exp(-7 * dt));
-    slasherSpeed = 0.4; // stunned / slowed while knocked back
-  }
-  if (dist > 1.0) {
-    toPlayer.y = 0; toPlayer.normalize();
-    slasher.position.addScaledVector(toPlayer, slasherSpeed * dt);
-  }
-
-  // egg projectiles — gravity + collision
-  for (let i = eggs.length - 1; i >= 0; i--) {
-    const e = eggs[i];
-    e.age += dt;
-    // gravity
-    e.vel.y -= 9.8 * dt;
-    e.mesh.position.addScaledVector(e.vel, dt);
-    e.mesh.rotation.x += dt * 8; e.mesh.rotation.z += dt * 5;
-
-    const hitFloor = e.mesh.position.y < 0.14;
-    const toSlasher = slasher.position.clone().sub(e.mesh.position);
-    const hitSlasher = toSlasher.length() < 0.65;
-    const expired = e.age > 4.0;
-
-    if (hitSlasher) {
-      // knockback — XZ only, no Y launch
-      const kbDir = new THREE.Vector3(toSlasher.x, 0, toSlasher.z).normalize().multiplyScalar(-1);
-      slasherKnockback.addScaledVector(kbDir, 4.5);
-      // flash white
-      slasherMat.emissive.setHex(0xffffff);
-      slasherMat.emissiveIntensity = 0.9;
-      slasherHitFlash = 0.18;
-      hits++;
-      document.getElementById('score').textContent = `Eggs hit: ${hits}`;
+  if (state.started && !state.ended && !state.win) {
+    state.eggCooldown = Math.max(0, state.eggCooldown - dt);
+    state.interactCooldown = Math.max(0, state.interactCooldown - dt);
+    state.lightningTimer -= dt;
+    if (state.lightningTimer <= 0) {
+      triggerLightning();
+      state.lightningTimer = 6 + Math.random() * 10;
     }
 
-    if (hitFloor || hitSlasher || expired) {
-      scene.remove(e.mesh);
-      eggs.splice(i, 1);
-      continue;
+    applyMovement(dt);
+    updateCandies(dt);
+    updateEnemy(dt);
+    updateProjectiles(dt);
+    updateAtmosphere(dt);
+    updateTargetArrow();
+    updateCamera(dt);
+    updateMissionProximity();
+    updatePrompt();
+    runQueuedActions();
+  } else {
+    updateAtmosphere(dt);
+    updateTargetArrow();
+    updateCamera(dt);
+  }
+
+  if (state.toastTimer > 0) {
+    state.toastTimer -= dt;
+    if (state.toastTimer <= 0) {
+      hideToast();
     }
   }
 
-  // slasher hit flash decay
-  if (slasherHitFlash > 0) {
-    slasherHitFlash -= dt;
-    if (slasherHitFlash <= 0) {
-      slasherMat.emissive.setHex(0x200000);
-      slasherMat.emissiveIntensity = 0.12;
+  if (state.radioTimer > 0) {
+    state.radioTimer -= dt;
+    if (state.radioTimer <= 0 && state.started && !state.ended && !state.win) {
+      setRadio("Keep your eyes on the glow beams. That is where the real route is.");
     }
   }
 
-  // HUD
-  document.getElementById('warn').classList.toggle('on', dist < 5.5);
-  document.getElementById('dist').textContent =
-    `Distance to slasher: ${dist.toFixed(1)} m  ${dist < 3 ? '🔪 RUN!' : dist < 7 ? '👀 he sees you' : '🌫️ lost in fog'}`;
-
-  // camera
-  const camDist = 4.2, camHeight = 2.15;
-  const idealCamPos = new THREE.Vector3(
-    player.position.x + Math.sin(camYaw) * camDist,
-    player.position.y + camHeight + Math.sin(camPitch) * 1.1,
-    player.position.z + Math.cos(camYaw) * camDist
-  );
-  camera.position.lerp(idealCamPos, 1 - Math.exp(-9 * dt));
-  camera.lookAt(player.position.x, player.position.y + 0.7, player.position.z);
-
-  // lamp flicker
-  lamps.forEach((l, i) => { l.intensity = 2.2 + Math.sin(t * 7 + i * 1.7) * 0.12 + Math.random() * 0.04; });
-
-  // fps
-  fpsT += dt; fpsCount++;
-  if (fpsT > 0.25) { fpsOut = Math.round(fpsCount / fpsT); fpsT = 0; fpsCount = 0;
-    document.getElementById('fps').textContent = fpsOut + ' fps'; }
-
+  refreshMissionProgress();
+  updateStatusUI();
   renderer.render(scene, camera);
 }
+
+updateObjectiveText();
+updateStatusUI();
+updateCamera(0.016);
 tick();
-
-// start overlay
-const startMsg = document.createElement('div');
-startMsg.style.cssText = 'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,.82);border:1px solid rgba(255,60,100,.4);border-radius:12px;padding:18px 26px;font-size:15px;text-align:center;pointer-events:none;transition:opacity .4s';
-startMsg.innerHTML = '<b style="color:#ff4b7a">🎃 CHASE\'S HALLOWEEN HEAT</b><br><span style="color:#9a7aaa;font-size:13px">Click to lock mouse · WASD to move · Click to 🥚 egg him!<br>Don\'t let Michael catch you…</span>';
-document.body.appendChild(startMsg);
-addEventListener('mousedown', () => { startMsg.style.opacity = '0'; setTimeout(() => startMsg.remove(), 500); }, { once: true });
-
 </script>
 </body>
 </html>
