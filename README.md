@@ -11,7 +11,7 @@ Single-file Three.js parody game: part haunted open world, part family roast, pa
 
 ## Current game loop
 
-1. Collect 6 candy stashes around the neighborhood.
+1. Collect 6 loot stashes around the neighborhood.
 2. Reach the ritual beacon.
 3. Return to the safehouse before No-Face finishes the chase.
 
@@ -19,8 +19,10 @@ Optional strategy systems:
 
 - Streetlamps lower fear and can slowly heal you.
 - Eggs stun No-Face.
-- Candy gives cash.
-- Shops sell upgrades for eggs, fear resistance, sprinting, and stun duration.
+- Loot stashes now read as cash bags and snack bundles instead of glowing orange pickups.
+- Costume Crypt is walk-in and lets Chase swap Halloween costumes.
+- A procedural spooky background music loop starts when the run begins.
+- Shops still handle egg, sprint, and stun upgrades.
 
 ## Controls
 

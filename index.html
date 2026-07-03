@@ -457,13 +457,13 @@
   <section class="panel hud-card brand">
     <span class="eyebrow">Pumpkin FM 104.6</span>
     <h1>Halloween Heat</h1>
-    <p>Chase has one bad idea: loot the candy-rich blocks, dodge No-Face, hit the beacon, and get back to the safehouse before the whole street goes feral.</p>
+    <p>Chase has one bad idea: loot the stash-rich blocks, dodge No-Face, hit the beacon, and get back to the safehouse before the whole street goes feral.</p>
   </section>
 
   <section class="panel hud-card" id="objectiveCard">
     <p id="objectiveTitle">Current Objective</p>
-    <p id="objectiveText">Collect six candy stashes.</p>
-    <p id="objectiveHint">Stay near streetlamps to cool fear, throw eggs to stun No-Face, and use shops to upgrade between runs.</p>
+    <p id="objectiveText">Collect six loot stashes.</p>
+    <p id="objectiveHint">Stay near streetlamps to cool fear, throw eggs to stun No-Face, and use shops to gear up between runs.</p>
   </section>
 
   <section class="panel hud-card" id="statusCard">
@@ -488,7 +488,7 @@
         <strong id="cashValue">$0</strong>
       </div>
       <div class="stat">
-        <span class="utility">Candy</span>
+        <span class="utility">Haul</span>
         <strong id="candyValue">0 / 6</strong>
       </div>
       <div class="stat">
@@ -579,6 +579,7 @@ const world = {
   roads: [],
   lamps: [],
   houses: [],
+  solids: [],
   trees: [],
   pumpkins: [],
   cars: [],
@@ -625,6 +626,7 @@ const state = {
   radioTimer: 0,
   lightningTimer: 5,
   unlockedAudio: false,
+  costumeIndex: 0,
   upgrades: {
     stickyEggs: false,
     costume: false,
@@ -634,7 +636,7 @@ const state = {
 };
 
 const clock = new THREE.Clock();
-const listener = { ctx: null, gain: null };
+const listener = { ctx: null, gain: null, musicGain: null, musicTimer: null, musicStep: 0 };
 const worldBounds = 48;
 
 function clamp(value, min, max) {
@@ -827,12 +829,81 @@ function createLamp(x, z) {
 
 function createHouse(config) {
   const group = new THREE.Group();
-  const body = new THREE.Mesh(
-    new THREE.BoxGeometry(config.w, config.h, config.d),
-    new THREE.MeshStandardMaterial({ color: config.color, roughness: 0.94 })
-  );
-  body.position.y = config.h / 2;
-  group.add(body);
+  const wallMaterial = new THREE.MeshStandardMaterial({ color: config.color, roughness: 0.94 });
+  const wallDepth = 0.32;
+
+  if (config.enterable) {
+    const backWall = new THREE.Mesh(
+      new THREE.BoxGeometry(config.w, config.h, wallDepth),
+      wallMaterial
+    );
+    backWall.position.set(0, config.h / 2, -config.d / 2 + wallDepth / 2);
+    group.add(backWall);
+
+    const leftWall = new THREE.Mesh(
+      new THREE.BoxGeometry(wallDepth, config.h, config.d),
+      wallMaterial
+    );
+    leftWall.position.set(-config.w / 2 + wallDepth / 2, config.h / 2, 0);
+    group.add(leftWall);
+
+    const rightWall = leftWall.clone();
+    rightWall.position.x = config.w / 2 - wallDepth / 2;
+    group.add(rightWall);
+
+    const fascia = new THREE.Mesh(
+      new THREE.BoxGeometry(config.w, config.h * 0.26, wallDepth),
+      wallMaterial
+    );
+    fascia.position.set(0, config.h * 0.88, config.d / 2 - wallDepth / 2);
+    group.add(fascia);
+
+    const interiorFloor = new THREE.Mesh(
+      new THREE.BoxGeometry(config.w * 0.88, 0.14, config.d * 0.78),
+      new THREE.MeshStandardMaterial({ color: 0x1f1825, roughness: 0.98 })
+    );
+    interiorFloor.position.set(0, 0.07, -0.1);
+    group.add(interiorFloor);
+
+    const rackBase = new THREE.Mesh(
+      new THREE.BoxGeometry(config.w * 0.42, 0.24, 0.9),
+      new THREE.MeshStandardMaterial({ color: 0x352432, roughness: 0.9 })
+    );
+    rackBase.position.set(0, 0.12, -config.d * 0.1);
+    group.add(rackBase);
+
+    for (const side of [-1, 1]) {
+      const hanger = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.05, 0.05, 1.3, 8),
+        new THREE.MeshStandardMaterial({ color: 0xd9cad8, metalness: 0.4, roughness: 0.35 })
+      );
+      hanger.position.set(side * 0.8, 1.08, -config.d * 0.1);
+      group.add(hanger);
+
+      const costume = new THREE.Mesh(
+        new THREE.CapsuleGeometry(0.24, 0.58, 5, 10),
+        new THREE.MeshStandardMaterial({
+          color: side < 0 ? 0xff6b54 : 0x8b6cff,
+          emissive: side < 0 ? 0x5a1e14 : 0x281254,
+          emissiveIntensity: 0.2,
+          roughness: 0.7
+        })
+      );
+      costume.position.set(side * 0.8, 1.18, -config.d * 0.1);
+      group.add(costume);
+    }
+
+    const fittingGlow = new THREE.PointLight(0xff74c7, 1.1, 10, 2);
+    fittingGlow.position.set(0, 2.6, -0.5);
+    group.add(fittingGlow);
+  } else {
+    const body = new THREE.Mesh(
+      new THREE.BoxGeometry(config.w, config.h, config.d),
+      wallMaterial
+    );
+    body.position.y = config.h / 2;
+    group.add(body);
+  }
 
   const roof = new THREE.Mesh(
     new THREE.ConeGeometry(Math.max(config.w, config.d) * 0.64, config.h * 0.82, 4),
@@ -849,12 +920,22 @@ function createHouse(config) {
   porch.position.set(0, 0.09, config.d * 0.36);
   group.add(porch);
 
-  const door = new THREE.Mesh(
-    new THREE.PlaneGeometry(config.w * 0.16, config.h * 0.46),
-    new THREE.MeshBasicMaterial({ color: 0x261818 })
-  );
-  door.position.set(0, config.h * 0.26, config.d / 2 + 0.01);
-  group.add(door);
+  if (!config.enterable) {
+    const door = new THREE.Mesh(
+      new THREE.PlaneGeometry(config.w * 0.16, config.h * 0.46),
+      new THREE.MeshBasicMaterial({ color: 0x261818 })
+    );
+    door.position.set(0, config.h * 0.26, config.d / 2 + 0.01);
+    group.add(door);
+  } else {
+    const welcomeMat = new THREE.Mesh(
+      new THREE.PlaneGeometry(config.w * 0.3, 0.7),
+      new THREE.MeshBasicMaterial({ color: 0x1a1017 })
+    );
+    welcomeMat.rotation.x = -Math.PI / 2;
+    welcomeMat.position.set(0, 0.02, config.d * 0.38);
+    group.add(welcomeMat);
+  }
 
   for (const side of [-1, 1]) {
     const windowMesh = new THREE.Mesh(
@@ -878,7 +959,7 @@ function createHouse(config) {
         transparent: true
       })
     );
-    sign.position.set(0, config.h + 1.8, 0);
+    sign.position.set(0, config.h + 1.8, config.enterable ? config.d * 0.18 : 0);
     group.add(sign);
     world.signs.push(sign);
   }
@@ -886,12 +967,36 @@ function createHouse(config) {
   group.position.set(config.x, 0, config.z);
   group.rotation.y = config.rotation || 0;
   scene.add(group);
-  world.houses.push(group);
+  world.houses.push({
+    group,
+    x: config.x,
+    z: config.z,
+    w: config.w,
+    d: config.d,
+    enterable: !!config.enterable
+  });
+
+  if (config.enterable) {
+    const halfW = config.w / 2;
+    const halfD = config.d / 2;
+    world.solids.push(
+      { minX: config.x - halfW, maxX: config.x - halfW + wallDepth, minZ: config.z - halfD, maxZ: config.z + halfD },
+      { minX: config.x + halfW - wallDepth, maxX: config.x + halfW, minZ: config.z - halfD, maxZ: config.z + halfD },
+      { minX: config.x - halfW, maxX: config.x + halfW, minZ: config.z - halfD, maxZ: config.z - halfD + wallDepth }
+    );
+  } else {
+    world.solids.push({
+      minX: config.x - config.w / 2,
+      maxX: config.x + config.w / 2,
+      minZ: config.z - config.d / 2,
+      maxZ: config.z + config.d / 2
+    });
+  }
 }
 
 createHouse({ x: -18, z: 33, w: 8, h: 4.2, d: 7, color: 0x3b4359, roof: 0x2a0f12, window: 0xffcf7b, sign: "Safehouse", signAccent: "#7cf4da" });
 createHouse({ x: 22, z: 31, w: 8, h: 4.4, d: 7, color: 0x5b2f35, roof: 0x250d13, window: 0xffd69d, sign: "Candy Forge", signAccent: "#ff8f3d" });
-createHouse({ x: -33, z: -17, w: 7.4, h: 4.1, d: 6.4, color: 0x3d274c, roof: 0x160713, window: 0xff8bc3, sign: "Costume Crypt", signAccent: "#ff4f8a" });
+createHouse({ x: -33, z: -17, w: 7.4, h: 4.1, d: 6.4, color: 0x3d274c, roof: 0x160713, window: 0xff8bc3, sign: "Costume Crypt", signAccent: "#ff4f8a", enterable: true });
 createHouse({ x: 33, z: -18, w: 8.4, h: 4.2, d: 6.4, color: 0x26344f, roof: 0x11161f, window: 0x8be8ff, sign: "Hearse Garage", signAccent: "#8be8ff" });
 createHouse({ x: -2, z: -34, w: 7.6, h: 4.3, d: 6.8, color: 0x40352b, roof: 0x1e1010, window: 0xb8ffcf, sign: "Hex Market", signAccent: "#87ffb4" });
 createHouse({ x: 11, z: -32, w: 7.2, h: 4, d: 6.1, color: 0x403240, roof: 0x16090b, window: 0xffcf7b });
@@ -1119,26 +1224,69 @@ function storefrontZ(houseZ, depth, padding = 1.3) {
 
 const safehouseZone = createZone({ type: "safehouse", label: "Safehouse", x: -18, z: storefrontZ(33, 7, 1.8), radius: 2.4, color: 0x7cf4da, cssColor: "#7cf4da" });
 const candyForgeZone = createZone({ type: "candyForge", label: "Candy Forge", x: 22, z: storefrontZ(31, 7), radius: 2.2, color: 0xff8f3d, cssColor: "#ff8f3d" });
-const costumeZone = createZone({ type: "costume", label: "Costume Crypt", x: -33, z: storefrontZ(-17, 6.4), radius: 2.2, color: 0xff4f8a, cssColor: "#ff4f8a" });
+const costumeZone = createZone({ type: "costume", label: "Costume Crypt", x: -33, z: -16.5, radius: 1.75, color: 0xff4f8a, cssColor: "#ff4f8a" });
 const garageZone = createZone({ type: "garage", label: "Hearse Garage", x: 33, z: storefrontZ(-18, 6.4), radius: 2.2, color: 0x8be8ff, cssColor: "#8be8ff" });
 const wardZone = createZone({ type: "ward", label: "Hex Market", x: -2, z: storefrontZ(-34, 6.8), radius: 2.2, color: 0x87ffb4, cssColor: "#87ffb4" });
 const beaconZone = createZone({ type: "beacon", label: "Ritual Beacon", x: 26, z: 0, radius: 2.6, color: 0xffc25f, cssColor: "#ffbf5f" });
 
 function createCandy(x, z) {
   const group = new THREE.Group();
-  const bag = new THREE.Mesh(
-    new THREE.BoxGeometry(0.55, 0.6, 0.26),
-    new THREE.MeshStandardMaterial({ color: 0x261624, roughness: 0.95 })
+  const cashSack = new THREE.Mesh(
+    new THREE.SphereGeometry(0.34, 14, 14),
+    new THREE.MeshStandardMaterial({ color: 0x9c7744, roughness: 0.9 })
   );
-  bag.position.y = 0.4;
-  group.add(bag);
+  cashSack.scale.set(1, 1.15, 0.95);
+  cashSack.position.set(-0.16, 0.36, 0);
+  group.add(cashSack);
 
-  const wrap = new THREE.Mesh(
-    new THREE.SphereGeometry(0.18, 12, 12),
-    new THREE.MeshStandardMaterial({ color: 0xff8f3d, emissive: 0xb23812, emissiveIntensity: 0.9, roughness: 0.5 })
+  const sackTie = new THREE.Mesh(
+    new THREE.TorusGeometry(0.09, 0.03, 8, 14),
+    new THREE.MeshStandardMaterial({ color: 0x3e2313, roughness: 0.8 })
   );
-  wrap.position.y = 0.8;
-  group.add(wrap);
+  sackTie.rotation.x = Math.PI / 2;
+  sackTie.position.set(-0.16, 0.68, 0);
+  group.add(sackTie);
+
+  const dollarTag = new THREE.Mesh(
+    new THREE.PlaneGeometry(0.2, 0.2),
+    new THREE.MeshBasicMaterial({
+      map: createLabelTexture("$", {
+        background: "#a78a52",
+        accent: "#8fffb4",
+        foreground: "#102313",
+        secondary: "#102313",
+        size: 52,
+        height: 96
+      }),
+      transparent: true
+    })
+  );
+  dollarTag.position.set(-0.16, 0.38, 0.32);
+  group.add(dollarTag);
+
+  const snackBox = new THREE.Mesh(
+    new THREE.BoxGeometry(0.44, 0.24, 0.3),
+    new THREE.MeshStandardMaterial({ color: 0xff5d6f, emissive: 0x4f1520, emissiveIntensity: 0.22, roughness: 0.58 })
+  );
+  snackBox.position.set(0.25, 0.26, 0);
+  snackBox.rotation.z = -0.18;
+  group.add(snackBox);
+
+  const snackStripe = new THREE.Mesh(
+    new THREE.PlaneGeometry(0.34, 0.1),
+    new THREE.MeshBasicMaterial({ color: 0xffd86f })
+  );
+  snackStripe.position.set(0.27, 0.28, 0.16);
+  snackStripe.rotation.z = -0.18;
+  group.add(snackStripe);
+
+  const can = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.09, 0.09, 0.34, 12),
+    new THREE.MeshStandardMaterial({ color: 0x5ed4ff, emissive: 0x13324a, emissiveIntensity: 0.28, roughness: 0.38, metalness: 0.35 })
+  );
+  can.position.set(0.04, 0.2, -0.16);
+  can.rotation.z = 0.28;
+  group.add(can);
 
   group.position.set(x, 0, z);
   scene.add(group);
@@ -1206,13 +1354,77 @@ function createCharacter(primary, accent) {
   shadow.position.y = 0.02;
   group.add(shadow);
 
-  return { group, leftLeg, rightLeg, leftArm, rightArm, shadow, torso };
+  return { group, leftLeg, rightLeg, leftArm, rightArm, shadow, torso, jacket, head, hair, armMat, legMat };
 }
 
 const chaseModel = createCharacter(0x2d67c8, 0xff8f3d);
 const chase = chaseModel.group;
 chase.position.set(-18, 0, 18);
 scene.add(chase);
+
+const chaseCostumeRig = new THREE.Group();
+chase.add(chaseCostumeRig);
+
+const witchHat = new THREE.Group();
+const witchBrim = new THREE.Mesh(
+  new THREE.CylinderGeometry(0.44, 0.44, 0.05, 18),
+  new THREE.MeshStandardMaterial({ color: 0x27152f, roughness: 0.86 })
+);
+const witchCone = new THREE.Mesh(
+  new THREE.ConeGeometry(0.3, 0.72, 18),
+  new THREE.MeshStandardMaterial({ color: 0x3d2052, roughness: 0.82 })
+);
+witchCone.position.y = 0.34;
+witchCone.rotation.z = -0.08;
+witchHat.add(witchBrim, witchCone);
+witchHat.position.set(0, 2.8, 0);
+witchHat.visible = false;
+chaseCostumeRig.add(witchHat);
+
+const devilHorns = new THREE.Group();
+for (const side of [-1, 1]) {
+  const horn = new THREE.Mesh(
+    new THREE.ConeGeometry(0.09, 0.3, 10),
+    new THREE.MeshStandardMaterial({ color: 0xd5444d, emissive: 0x4a1117, emissiveIntensity: 0.28, roughness: 0.62 })
+  );
+  horn.position.set(side * 0.16, 2.7, 0.04);
+  horn.rotation.z = side * -0.35;
+  devilHorns.add(horn);
+}
+devilHorns.visible = false;
+chaseCostumeRig.add(devilHorns);
+
+const pumpkinMask = new THREE.Mesh(
+  new THREE.SphereGeometry(0.28, 16, 14),
+  new THREE.MeshStandardMaterial({ color: 0xff8b36, emissive: 0x6a2205, emissiveIntensity: 0.3, roughness: 0.56 })
+);
+pumpkinMask.scale.set(1, 0.92, 0.86);
+pumpkinMask.position.set(0, 2.34, 0.2);
+pumpkinMask.visible = false;
+chaseCostumeRig.add(pumpkinMask);
+
+const costumeStyles = [
+  { name: "Block Runner", torso: 0x2d67c8, arms: 0x2d67c8, jacket: 0xff8f3d, legs: 0x1c2029, hair: 0x1b120d, head: 0xf2cdb1, hat: false, horns: false, pumpkin: false },
+  { name: "Pumpkin Phantom", torso: 0x22252d, arms: 0x22252d, jacket: 0xff8a32, legs: 0x14161b, hair: 0x1b120d, head: 0xf2cdb1, hat: false, horns: false, pumpkin: true },
+  { name: "Witch Knight", torso: 0x59328c, arms: 0x59328c, jacket: 0x6dffd0, legs: 0x1b1b2b, hair: 0x141018, head: 0xf2cdb1, hat: true, horns: false, pumpkin: false },
+  { name: "Devil Dash", torso: 0x8f2736, arms: 0x8f2736, jacket: 0xffba57, legs: 0x281419, hair: 0x1d0e0e, head: 0xf2cdb1, hat: false, horns: true, pumpkin: false }
+];
+
+function applyChaseCostume(index) {
+  const style = costumeStyles[index];
+  chaseModel.torso.material.color.set(style.torso);
+  chaseModel.armMat.color.set(style.arms);
+  chaseModel.jacket.material.color.set(style.jacket);
+  chaseModel.jacket.material.emissive.set(style.jacket);
+  chaseModel.legMat.color.set(style.legs);
+  chaseModel.hair.material.color.set(style.hair);
+  chaseModel.head.material.color.set(style.head);
+  witchHat.visible = style.hat;
+  devilHorns.visible = style.horns;
+  pumpkinMask.visible = style.pumpkin;
+}
+
+applyChaseCostume(state.costumeIndex);
 
 const noFaceModel = createCharacter(0x441013, 0xff485d);
 const noFace = noFaceModel.group;
@@ -1283,6 +1495,9 @@ function ensureAudio() {
   listener.gain = listener.ctx.createGain();
   listener.gain.gain.value = 0.08;
   listener.gain.connect(listener.ctx.destination);
+  listener.musicGain = listener.ctx.createGain();
+  listener.musicGain.gain.value = 0.42;
+  listener.musicGain.connect(listener.gain);
 }
 
 function playTone({ frequency = 440, frequencyEnd = frequency, duration = 0.12, type = "sine", volume = 0.4 }) {
@@ -1302,6 +1517,50 @@ function playTone({ frequency = 440, frequencyEnd = frequency, duration = 0.12, 
   gain.connect(listener.gain);
   osc.start(now);
   osc.stop(now + duration + 0.02);
+}
+
+function playMusicVoice({ frequency = 220, frequencyEnd = frequency, duration = 0.9, type = "triangle", volume = 0.06, attack = 0.08 }) {
+  if (!listener.ctx || !listener.musicGain) {
+    return;
+  }
+  const osc = listener.ctx.createOscillator();
+  const gain = listener.ctx.createGain();
+  const now = listener.ctx.currentTime;
+  osc.type = type;
+  osc.frequency.setValueAtTime(frequency, now);
+  osc.frequency.exponentialRampToValueAtTime(Math.max(40, frequencyEnd), now + duration);
+  gain.gain.setValueAtTime(0.0001, now);
+  gain.gain.exponentialRampToValueAtTime(volume, now + attack);
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+  osc.connect(gain);
+  gain.connect(listener.musicGain);
+  osc.start(now);
+  osc.stop(now + duration + 0.03);
+}
+
+function startSpookyMusic() {
+  if (!listener.ctx || listener.musicTimer) {
+    return;
+  }
+  const bassline = [146.83, 174.61, 130.81, 164.81, 146.83, 196.0, 130.81, 174.61];
+  const melody = [293.66, 261.63, 246.94, 220.0, 261.63, 329.63, 246.94, 293.66];
+  const accent = [440.0, 392.0, 369.99, 329.63, 392.0, 493.88, 369.99, 440.0];
+
+  const pulse = () => {
+    const step = listener.musicStep % bassline.length;
+    playMusicVoice({ frequency: bassline[step], frequencyEnd: bassline[step] * 0.985, duration: 1.4, type: "sine", volume: 0.05, attack: 0.18 });
+    playMusicVoice({ frequency: melody[step], frequencyEnd: melody[step] * 1.01, duration: 0.7, type: "triangle", volume: 0.028, attack: 0.06 });
+    if (step % 2 === 0) {
+      playMusicVoice({ frequency: accent[step], frequencyEnd: accent[step] * 1.03, duration: 0.4, type: "square", volume: 0.014, attack: 0.03 });
+    }
+    if (step === 3 || step === 7) {
+      playMusicVoice({ frequency: accent[step] * 0.5, frequencyEnd: accent[step] * 0.48, duration: 1.8, type: "sawtooth", volume: 0.018, attack: 0.22 });
+    }
+    listener.musicStep += 1;
+  };
+
+  pulse();
+  listener.musicTimer = window.setInterval(pulse, 1100);
 }
 
 function soundThrow() {
@@ -1386,8 +1645,8 @@ function updateObjectiveText() {
   }
 
   if (state.mission === "collect") {
-    ui.objectiveText.textContent = `Collect candy stashes: ${state.candy} / 6`;
-    ui.objectiveHint.textContent = "There are extra stashes on the map. Grab any six, then hit the ritual beacon.";
+    ui.objectiveText.textContent = `Collect loot stashes: ${state.candy} / 6`;
+    ui.objectiveHint.textContent = "Money bags and snack stashes are scattered around the map. Grab any six, then hit the ritual beacon.";
   } else if (state.mission === "beacon") {
     ui.objectiveText.textContent = "Reach the ritual beacon in the center district.";
     ui.objectiveHint.textContent = "No-Face gets meaner when the beacon lights up. Keep some stamina in reserve.";
@@ -1443,13 +1702,13 @@ function updatePrompt() {
   } else if (zone.type === "candyForge") {
     text = state.upgrades.stickyEggs ? "Press E to refill eggs at the Candy Forge." : "Press E to buy Sticky Eggs for $150.";
   } else if (zone.type === "costume") {
-    text = state.upgrades.costume ? "Costume upgrade bought. Fear rises slower now." : "Press E to buy Ghoul Suit for $200.";
+    text = "Press E inside Costume Crypt to change Chase's Halloween costume.";
   } else if (zone.type === "garage") {
     text = state.upgrades.sprintBoost ? "Garage tune installed. Your sprint is juiced." : "Press E to buy Sprint Boost for $250.";
   } else if (zone.type === "ward") {
     text = state.upgrades.ward ? "Ward active. Stuns last longer." : "Press E to buy Ward Sigil for $300.";
   } else if (zone.type === "beacon") {
-    text = state.mission === "beacon" ? "Press E to light the beacon." : "The beacon unlocks after six candy stashes.";
+    text = state.mission === "beacon" ? "Press E to light the beacon." : "The beacon unlocks after six loot stashes.";
   }
   ui.promptText.textContent = text;
   ui.promptCard.classList.add("on");
@@ -1483,8 +1742,8 @@ function collectCandy(candy) {
   state.cash += 50;
   state.fear = Math.max(0, state.fear - 8);
   soundPickup();
-  showToast("+1 candy stash   +$50");
-  setRadio("Candy bag secured. No-Face is not going to like that.");
+  showToast("+1 loot stash   +$50");
+  setRadio("Stash scooped: cash, snacks, and one more reason for No-Face to stay mad.");
   refreshMissionProgress();
 }
 
@@ -1513,7 +1772,7 @@ function interactWithZone(zone) {
       ui.centerCard.innerHTML = `
         <span class="eyebrow">Mission complete</span>
         <h2>Safehouse Secured</h2>
-        <p>You escaped with ${state.candy} candy stashes, $${state.cash} cash, and ${state.hits} egg hits landed on No-Face.</p>
+        <p>You escaped with ${state.candy} loot stashes, $${state.cash} cash, and ${state.hits} egg hits landed on No-Face.</p>
         <div class="button-row">
           <button id="restartWin">Run It Again</button>
         </div>
@@ -1553,19 +1812,12 @@ function interactWithZone(zone) {
   }
 
   if (zone.type === "costume") {
-    if (state.upgrades.costume) {
-      showToast("Ghoul Suit already equipped.");
-      return;
-    }
-    if (!canAfford(200)) {
-      showToast("Need $200 for the Ghoul Suit.");
-      return;
-    }
-    spend(200);
-    state.upgrades.costume = true;
-    state.fear = Math.max(0, state.fear - 12);
-    showToast("Ghoul Suit equipped.");
-    setRadio("Looking sharp. Fear gain reduced.");
+    state.costumeIndex = (state.costumeIndex + 1) % costumeStyles.length;
+    applyChaseCostume(state.costumeIndex);
+    state.upgrades.costume = state.costumeIndex !== 0;
+    state.fear = Math.max(0, state.fear - (state.upgrades.costume ? 12 : 4));
+    showToast(`Chase changed into ${costumeStyles[state.costumeIndex].name}.`);
+    setRadio(state.upgrades.costume ? "Costume Crypt wardrobe swap complete. Chase looks Halloween-ready now." : "Back to Chase's default fit. Clean reset.");
     soundUpgrade();
     return;
   }
@@ -1607,7 +1859,7 @@ function interactWithZone(zone) {
 
   if (zone.type === "beacon") {
     if (state.mission !== "beacon") {
-      showToast("Collect six candy stashes first.");
+      showToast("Collect six loot stashes first.");
       return;
     }
     state.mission = "escape";
@@ -1667,8 +1919,9 @@ function startGame() {
   state.started = true;
   ui.centerCard.classList.add("hidden");
   ensureAudio();
+  startSpookyMusic();
   updateObjectiveText();
-  setRadio("Pumpkin FM live from Los Pumpkintos. Candy routes are open. No-Face is already roaming.");
+  setRadio("Pumpkin FM live from Los Pumpkintos. Loot routes are open. No-Face is already roaming.");
 }
 
 function restartGame() {
@@ -1677,7 +1930,7 @@ function restartGame() {
 
 ui.startButton.addEventListener("click", startGame);
 ui.howButton.addEventListener("click", () => {
-  ui.centerCard.querySelector("p").textContent = "Collect six candy stashes, light the ritual beacon, and make it back to the safehouse. Lamp light lowers fear. Shops take cash from candy and stun bonuses. No-Face can be slowed with eggs.";
+  ui.centerCard.querySelector("p").textContent = "Collect six loot stashes, light the ritual beacon, and make it back to the safehouse. Lamp light lowers fear. Costume Crypt lets Chase swap outfits. No-Face can still be slowed with eggs.";
 });
 
 window.addEventListener("keydown", (event) => {
@@ -1756,13 +2009,26 @@ function applyMovement(dt) {
   const baseSpeed = state.upgrades.sprintBoost ? 5.4 : 4.5;
   const sprintBonus = state.upgrades.sprintBoost ? 2.7 : 1.8;
   const speed = sprinting ? baseSpeed + sprintBonus : baseSpeed;
+  const playerRadius = 0.42;
+  const collides = (x, z) => world.solids.some((solid) => {
+    const nearestX = clamp(x, solid.minX, solid.maxX);
+    const nearestZ = clamp(z, solid.minZ, solid.maxZ);
+    return Math.hypot(x - nearestX, z - nearestZ) < playerRadius;
+  });
 
   if (moveLength > 0) {
     moveVector.normalize();
     const forward = new THREE.Vector3(-Math.sin(input.yaw), 0, -Math.cos(input.yaw));
     const right = new THREE.Vector3(Math.cos(input.yaw), 0, -Math.sin(input.yaw));
     const worldMove = forward.multiplyScalar(moveVector.y).add(right.multiplyScalar(moveVector.x)).normalize();
-    chase.position.addScaledVector(worldMove, speed * dt);
+    const nextX = clamp(chase.position.x + worldMove.x * speed * dt, -worldBounds, worldBounds);
+    const nextZ = clamp(chase.position.z + worldMove.z * speed * dt, -worldBounds, worldBounds);
+    if (!collides(nextX, chase.position.z)) {
+      chase.position.x = nextX;
+    }
+    if (!collides(chase.position.x, nextZ)) {
+      chase.position.z = nextZ;
+    }
     chase.rotation.y = Math.atan2(worldMove.x, worldMove.z);
 
     const swing = clock.elapsedTime * (sprinting ? 12 : 8);
@@ -1778,9 +2044,6 @@ function applyMovement(dt) {
     chaseModel.leftArm.rotation.x *= Math.exp(-8 * dt);
     chaseModel.rightArm.rotation.x *= Math.exp(-8 * dt);
   }
-
-  chase.position.x = clamp(chase.position.x, -worldBounds, worldBounds);
-  chase.position.z = clamp(chase.position.z, -worldBounds, worldBounds);
 
   if (sprinting) {
     state.stamina = Math.max(0, state.stamina - 22 * dt);
@@ -1843,7 +2106,7 @@ function updateEnemy(dt) {
   if (distance < 1.65 && clock.elapsedTime - state.lastDamageTime > 0.9 && !state.ended && !state.win) {
     state.lastDamageTime = clock.elapsedTime;
     state.health = Math.max(0, state.health - 13);
-    const fearGain = state.upgrades.costume ? 8 : 14;
+    const fearGain = state.costumeIndex !== 0 ? 8 : 14;
     state.fear = Math.min(100, state.fear + fearGain);
     showToast("No-Face got a swipe in.");
     soundFail();
