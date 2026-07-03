@@ -543,12 +543,12 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.24;
+renderer.toneMappingExposure = 1.42;
 renderer.shadowMap.enabled = false;
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x070b16);
-scene.fog = new THREE.FogExp2(0x100713, 0.015);
+scene.fog = new THREE.FogExp2(0x100713, 0.0115);
 
 const camera = new THREE.PerspectiveCamera(62, window.innerWidth / window.innerHeight, 0.1, 220);
 
@@ -738,16 +738,20 @@ const skyGlow = new THREE.Mesh(
 skyGlow.position.copy(moon.position);
 scene.add(skyGlow);
 
-scene.add(new THREE.AmbientLight(0x6c7daf, 1.02));
-scene.add(new THREE.HemisphereLight(0x5770ae, 0x0f1b0e, 0.52));
+scene.add(new THREE.AmbientLight(0x7c8cc0, 1.18));
+scene.add(new THREE.HemisphereLight(0x6884c4, 0x162212, 0.68));
 
-const moonLight = new THREE.DirectionalLight(0xc7d9ff, 1.58);
+const moonLight = new THREE.DirectionalLight(0xc7d9ff, 1.86);
 moonLight.position.set(-20, 34, -18);
 scene.add(moonLight);
 
-const warmFill = new THREE.PointLight(0xff9654, 1.05, 34, 2);
+const warmFill = new THREE.PointLight(0xff9654, 1.24, 42, 2);
 warmFill.position.set(-18, 8, 18);
 scene.add(warmFill);
+
+const coolStreetFill = new THREE.PointLight(0x90c8ff, 0.72, 54, 2);
+coolStreetFill.position.set(8, 9, -6);
+scene.add(coolStreetFill);
 
 const grass = new THREE.Mesh(
   new THREE.PlaneGeometry(180, 180),
@@ -860,7 +864,7 @@ function createHouse(config) {
 
     const interiorFloor = new THREE.Mesh(
       new THREE.BoxGeometry(config.w * 0.88, 0.14, config.d * 0.78),
-      new THREE.MeshStandardMaterial({ color: 0x1f1825, roughness: 0.98 })
+      new THREE.MeshStandardMaterial({ color: 0x2c2334, emissive: 0x130d18, emissiveIntensity: 0.45, roughness: 0.95 })
     );
     interiorFloor.position.set(0, 0.07, -0.1);
     group.add(interiorFloor);
@@ -893,9 +897,24 @@ function createHouse(config) {
       group.add(costume);
     }
 
-    const fittingGlow = new THREE.PointLight(0xff74c7, 1.1, 10, 2);
-    fittingGlow.position.set(0, 2.6, -0.5);
+    const ceilingGlow = new THREE.PointLight(0xffddb0, 1.85, 16, 2);
+    ceilingGlow.position.set(0, 3.15, -0.25);
+    group.add(ceilingGlow);
+
+    const fittingGlow = new THREE.PointLight(0xff74c7, 1.8, 14, 2);
+    fittingGlow.position.set(0, 2.55, -0.55);
     group.add(fittingGlow);
+
+    const doorwayGlow = new THREE.PointLight(0xffb45d, 1.35, 12, 2);
+    doorwayGlow.position.set(0, 2.1, config.d * 0.34);
+    group.add(doorwayGlow);
+
+    const ceilingOrb = new THREE.Mesh(
+      new THREE.SphereGeometry(0.12, 12, 12),
+      new THREE.MeshBasicMaterial({ color: 0xffe0b8 })
+    );
+    ceilingOrb.position.set(0, 3.05, -0.2);
+    group.add(ceilingOrb);
   } else {
     const body = new THREE.Mesh(
       new THREE.BoxGeometry(config.w, config.h, config.d),
