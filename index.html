@@ -463,7 +463,7 @@
   <section class="panel hud-card" id="objectiveCard">
     <p id="objectiveTitle">Current Objective</p>
     <p id="objectiveText">Collect six loot stashes.</p>
-    <p id="objectiveHint">Stay near streetlamps to cool fear, throw eggs to stun No-Face, and use shops to gear up between runs.</p>
+    <p id="objectiveHint">Stay near streetlamps to cool fear, throw candy bombs to stun No-Face, and use shops to gear up between runs.</p>
   </section>
 
   <section class="panel hud-card" id="statusCard">
@@ -492,7 +492,7 @@
         <strong id="candyValue">0 / 6</strong>
       </div>
       <div class="stat">
-        <span class="utility">Eggs</span>
+        <span class="utility">Bombs</span>
         <strong id="eggValue">12</strong>
       </div>
     </div>
@@ -513,7 +513,7 @@
     <ul class="controls-list">
       <li><code>WASD</code> move</li>
       <li><code>Shift</code> sprint</li>
-      <li><code>Left click</code> or <code>Space</code> throw egg</li>
+      <li><code>Left click</code> or <code>Space</code> throw candy bomb</li>
       <li><code>Right drag</code> orbit camera</li>
       <li><code>E</code> use shop or safehouse</li>
       <li><code>R</code> restart after win or loss</li>
@@ -1297,51 +1297,108 @@ function createCandy(x, z) {
   [-7, 3], [-12, 8], [8, 8], [16, 17], [24, -6], [-26, -10], [-17, -26], [3, -18], [18, -24], [-29, 22]
 ].forEach(([x, z]) => createCandy(x, z));
 
-function createCharacter(primary, accent) {
+function createCharacter(primary, accent, profile = {}) {
   const group = new THREE.Group();
+  const isChase = profile.kind === "chase";
+  const torsoRadius = isChase ? 0.43 : 0.5;
+  const torsoLength = isChase ? 1.28 : 1.2;
+  const shoulderWidth = isChase ? 0.48 : 0.55;
+  const legRadius = isChase ? 0.14 : 0.16;
+  const legLength = isChase ? 0.92 : 0.82;
+  const armRadius = isChase ? 0.11 : 0.12;
+  const armLength = isChase ? 0.82 : 0.75;
 
   const torso = new THREE.Mesh(
-    new THREE.CapsuleGeometry(0.5, 1.2, 8, 16),
+    new THREE.CapsuleGeometry(torsoRadius, torsoLength, 8, 16),
     new THREE.MeshStandardMaterial({ color: primary, roughness: 0.78, metalness: 0.06 })
   );
   torso.position.y = 1.4;
   group.add(torso);
 
   const jacket = new THREE.Mesh(
-    new THREE.TorusGeometry(0.42, 0.12, 10, 24),
-    new THREE.MeshStandardMaterial({ color: accent, emissive: accent, emissiveIntensity: 0.16, roughness: 0.45 })
+    new THREE.BoxGeometry(isChase ? 0.9 : 0.78, isChase ? 1.36 : 1.18, isChase ? 0.58 : 0.52),
+    new THREE.MeshStandardMaterial({ color: accent, emissive: accent, emissiveIntensity: 0.1, roughness: 0.62 })
   );
-  jacket.rotation.x = Math.PI / 2;
-  jacket.position.set(0, 1.44, 0.18);
+  jacket.position.set(0, 1.43, isChase ? 0.03 : 0.04);
+  jacket.scale.set(1, 1, isChase ? 1.02 : 0.92);
   group.add(jacket);
+
+  const shirtPanel = new THREE.Mesh(
+    new THREE.PlaneGeometry(isChase ? 0.24 : 0.18, isChase ? 1.02 : 0.82),
+    new THREE.MeshBasicMaterial({ color: isChase ? 0xa6a6ac : 0x2c1717 })
+  );
+  shirtPanel.position.set(0, 1.4, (isChase ? 0.32 : 0.27));
+  group.add(shirtPanel);
+
+  const hood = new THREE.Mesh(
+    new THREE.SphereGeometry(isChase ? 0.34 : 0.26, 14, 14),
+    new THREE.MeshStandardMaterial({ color: accent, emissive: accent, emissiveIntensity: 0.05, roughness: 0.72 })
+  );
+  hood.scale.set(1.1, isChase ? 0.92 : 0.82, 0.78);
+  hood.position.set(0, 2.04, -0.14);
+  group.add(hood);
+
+  const leftString = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.018, 0.018, isChase ? 0.62 : 0.38, 8),
+    new THREE.MeshStandardMaterial({ color: 0xe5ded7, roughness: 0.62 })
+  );
+  leftString.position.set(-0.08, isChase ? 1.5 : 1.43, 0.31);
+  leftString.rotation.z = 0.08;
+  const rightString = leftString.clone();
+  rightString.position.x = 0.08;
+  rightString.rotation.z = -0.08;
+  group.add(leftString, rightString);
 
   const head = new THREE.Mesh(
     new THREE.SphereGeometry(0.34, 16, 16),
     new THREE.MeshStandardMaterial({ color: 0xf2cdb1, roughness: 0.8 })
   );
-  head.position.y = 2.35;
+  head.scale.set(isChase ? 0.95 : 1, isChase ? 1.06 : 1, isChase ? 0.94 : 1);
+  head.position.y = isChase ? 2.32 : 2.35;
   group.add(head);
 
-  const hair = new THREE.Mesh(
-    new THREE.SphereGeometry(0.36, 12, 12),
-    new THREE.MeshStandardMaterial({ color: 0x1b120d, roughness: 0.92 })
-  );
-  hair.scale.set(1, 0.7, 1);
-  hair.position.set(0, 2.5, -0.02);
+  const hair = new THREE.Group();
+  const hairMaterial = new THREE.MeshStandardMaterial({ color: 0x1b120d, roughness: 0.92 });
+  if (isChase) {
+    const hairOffsets = [
+      [0, 2.72, 0.02, 0.28],
+      [-0.24, 2.7, 0.04, 0.22],
+      [0.24, 2.7, 0.04, 0.22],
+      [-0.34, 2.52, 0.02, 0.19],
+      [0.34, 2.52, 0.02, 0.19],
+      [-0.14, 2.9, -0.02, 0.2],
+      [0.14, 2.9, -0.02, 0.2],
+      [0, 2.98, -0.04, 0.18],
+      [-0.28, 2.86, -0.06, 0.17],
+      [0.28, 2.86, -0.06, 0.17],
+      [-0.18, 2.46, 0.08, 0.17],
+      [0.18, 2.46, 0.08, 0.17]
+    ];
+    for (const [x, y, z, r] of hairOffsets) {
+      const curl = new THREE.Mesh(new THREE.SphereGeometry(r, 12, 12), hairMaterial);
+      curl.position.set(x, y, z);
+      hair.add(curl);
+    }
+  } else {
+    const cap = new THREE.Mesh(new THREE.SphereGeometry(0.36, 12, 12), hairMaterial);
+    cap.scale.set(1, 0.7, 1);
+    cap.position.set(0, 2.5, -0.02);
+    hair.add(cap);
+  }
   group.add(hair);
 
   const legMat = new THREE.MeshStandardMaterial({ color: 0x1c2029, roughness: 0.9 });
-  const leftLeg = new THREE.Mesh(new THREE.CapsuleGeometry(0.16, 0.82, 4, 8), legMat);
+  const leftLeg = new THREE.Mesh(new THREE.CapsuleGeometry(legRadius, legLength, 4, 8), legMat);
   const rightLeg = leftLeg.clone();
-  leftLeg.position.set(-0.18, 0.5, 0);
-  rightLeg.position.set(0.18, 0.5, 0);
+  leftLeg.position.set(isChase ? -0.16 : -0.18, 0.5, 0);
+  rightLeg.position.set(isChase ? 0.16 : 0.18, 0.5, 0);
   group.add(leftLeg, rightLeg);
 
   const armMat = new THREE.MeshStandardMaterial({ color: primary, roughness: 0.8 });
-  const leftArm = new THREE.Mesh(new THREE.CapsuleGeometry(0.12, 0.75, 4, 8), armMat);
+  const leftArm = new THREE.Mesh(new THREE.CapsuleGeometry(armRadius, armLength, 4, 8), armMat);
   const rightArm = leftArm.clone();
-  leftArm.position.set(-0.55, 1.45, 0);
-  rightArm.position.set(0.55, 1.45, 0);
+  leftArm.position.set(-shoulderWidth, isChase ? 1.47 : 1.45, 0);
+  rightArm.position.set(shoulderWidth, isChase ? 1.47 : 1.45, 0);
   leftArm.rotation.z = 0.18;
   rightArm.rotation.z = -0.18;
   group.add(leftArm, rightArm);
@@ -1354,10 +1411,10 @@ function createCharacter(primary, accent) {
   shadow.position.y = 0.02;
   group.add(shadow);
 
-  return { group, leftLeg, rightLeg, leftArm, rightArm, shadow, torso, jacket, head, hair, armMat, legMat };
+  return { group, leftLeg, rightLeg, leftArm, rightArm, shadow, torso, jacket, hood, shirtPanel, leftString, rightString, head, hair, hairMaterial, armMat, legMat };
 }
 
-const chaseModel = createCharacter(0x2d67c8, 0xff8f3d);
+const chaseModel = createCharacter(0x6e2130, 0x7d1627, { kind: "chase" });
 const chase = chaseModel.group;
 chase.position.set(-18, 0, 18);
 scene.add(chase);
@@ -1404,10 +1461,10 @@ pumpkinMask.visible = false;
 chaseCostumeRig.add(pumpkinMask);
 
 const costumeStyles = [
-  { name: "Block Runner", torso: 0x2d67c8, arms: 0x2d67c8, jacket: 0xff8f3d, legs: 0x1c2029, hair: 0x1b120d, head: 0xf2cdb1, hat: false, horns: false, pumpkin: false },
+  { name: "Block Runner", torso: 0x6e2130, arms: 0x6e2130, jacket: 0x7d1627, shirt: 0xa4a4aa, legs: 0x1c2029, hair: 0x1b120d, head: 0xf2cdb1, hat: false, horns: false, pumpkin: false },
   { name: "Pumpkin Phantom", torso: 0x22252d, arms: 0x22252d, jacket: 0xff8a32, legs: 0x14161b, hair: 0x1b120d, head: 0xf2cdb1, hat: false, horns: false, pumpkin: true },
-  { name: "Witch Knight", torso: 0x59328c, arms: 0x59328c, jacket: 0x6dffd0, legs: 0x1b1b2b, hair: 0x141018, head: 0xf2cdb1, hat: true, horns: false, pumpkin: false },
-  { name: "Devil Dash", torso: 0x8f2736, arms: 0x8f2736, jacket: 0xffba57, legs: 0x281419, hair: 0x1d0e0e, head: 0xf2cdb1, hat: false, horns: true, pumpkin: false }
+  { name: "Witch Knight", torso: 0x59328c, arms: 0x59328c, jacket: 0x3b215e, shirt: 0xded7f0, legs: 0x1b1b2b, hair: 0x141018, head: 0xf2cdb1, hat: true, horns: false, pumpkin: false },
+  { name: "Devil Dash", torso: 0x8f2736, arms: 0x8f2736, jacket: 0x61131c, shirt: 0xf0d2d2, legs: 0x281419, hair: 0x1d0e0e, head: 0xf2cdb1, hat: false, horns: true, pumpkin: false }
 ];
 
 function applyChaseCostume(index) {
@@ -1416,8 +1473,11 @@ function applyChaseCostume(index) {
   chaseModel.armMat.color.set(style.arms);
   chaseModel.jacket.material.color.set(style.jacket);
   chaseModel.jacket.material.emissive.set(style.jacket);
+  chaseModel.hood.material.color.set(style.jacket);
+  chaseModel.hood.material.emissive.set(style.jacket);
+  chaseModel.shirtPanel.material.color.set(style.shirt || 0xa6a6ac);
   chaseModel.legMat.color.set(style.legs);
-  chaseModel.hair.material.color.set(style.hair);
+  chaseModel.hairMaterial.color.set(style.hair);
   chaseModel.head.material.color.set(style.head);
   witchHat.visible = style.hat;
   devilHorns.visible = style.horns;
@@ -1426,7 +1486,7 @@ function applyChaseCostume(index) {
 
 applyChaseCostume(state.costumeIndex);
 
-const noFaceModel = createCharacter(0x441013, 0xff485d);
+const noFaceModel = createCharacter(0x441013, 0x22070b, { kind: "noface" });
 const noFace = noFaceModel.group;
 noFace.position.set(10, 0, -10);
 scene.add(noFace);
@@ -1698,9 +1758,9 @@ function updatePrompt() {
 
   let text = "Press E to interact.";
   if (zone.type === "safehouse") {
-    text = "Press E to heal, calm down, and refill eggs at the safehouse.";
+    text = "Press E to heal, calm down, and refill candy bombs at the safehouse.";
   } else if (zone.type === "candyForge") {
-    text = state.upgrades.stickyEggs ? "Press E to refill eggs at the Candy Forge." : "Press E to buy Sticky Eggs for $150.";
+    text = state.upgrades.stickyEggs ? "Press E to refill candy bombs at the Candy Forge." : "Press E to buy Sticky Candy Bombs for $150.";
   } else if (zone.type === "costume") {
     text = "Press E inside Costume Crypt to change Chase's Halloween costume.";
   } else if (zone.type === "garage") {
@@ -1772,7 +1832,7 @@ function interactWithZone(zone) {
       ui.centerCard.innerHTML = `
         <span class="eyebrow">Mission complete</span>
         <h2>Safehouse Secured</h2>
-        <p>You escaped with ${state.candy} loot stashes, $${state.cash} cash, and ${state.hits} egg hits landed on No-Face.</p>
+        <p>You escaped with ${state.candy} loot stashes, $${state.cash} cash, and ${state.hits} candy bomb hits landed on No-Face.</p>
         <div class="button-row">
           <button id="restartWin">Run It Again</button>
         </div>
@@ -1794,18 +1854,18 @@ function interactWithZone(zone) {
   if (zone.type === "candyForge") {
     if (!state.upgrades.stickyEggs) {
       if (!canAfford(150)) {
-        showToast("Need $150 for Sticky Eggs.");
+        showToast("Need $150 for Sticky Candy Bombs.");
         return;
       }
       spend(150);
       state.upgrades.stickyEggs = true;
       state.eggs += 6;
-      showToast("Sticky Eggs unlocked.");
+      showToast("Sticky Candy Bombs unlocked.");
       setRadio("Candy Forge special: harder hits, bigger splat.");
       soundUpgrade();
     } else {
       state.eggs = Math.max(state.eggs, 14);
-      showToast("Egg pack refilled.");
+      showToast("Candy bomb stash refilled.");
       soundPickup();
     }
     return;
@@ -1880,7 +1940,7 @@ function shootEgg() {
     return;
   }
   if (state.eggs <= 0) {
-    showToast("Out of eggs. Hit the safehouse or Candy Forge.");
+    showToast("Out of candy bombs. Hit the safehouse or Candy Forge.");
     return;
   }
 
@@ -1890,12 +1950,13 @@ function shootEgg() {
   direction.normalize();
 
   const projectile = new THREE.Mesh(
-    new THREE.SphereGeometry(state.upgrades.stickyEggs ? 0.22 : 0.17, 14, 12),
+    new THREE.IcosahedronGeometry(state.upgrades.stickyEggs ? 0.22 : 0.18, 0),
     new THREE.MeshStandardMaterial({
-      color: 0xf7ecd2,
-      emissive: state.upgrades.stickyEggs ? 0xff8f3d : 0x5a4832,
-      emissiveIntensity: state.upgrades.stickyEggs ? 0.75 : 0.15,
-      roughness: 0.5
+      color: state.upgrades.stickyEggs ? 0xff8f3d : 0xb86bff,
+      emissive: state.upgrades.stickyEggs ? 0xff5b1f : 0x501577,
+      emissiveIntensity: state.upgrades.stickyEggs ? 0.85 : 0.4,
+      roughness: 0.4,
+      metalness: 0.08
     })
   );
 
@@ -1930,7 +1991,7 @@ function restartGame() {
 
 ui.startButton.addEventListener("click", startGame);
 ui.howButton.addEventListener("click", () => {
-  ui.centerCard.querySelector("p").textContent = "Collect six loot stashes, light the ritual beacon, and make it back to the safehouse. Lamp light lowers fear. Costume Crypt lets Chase swap outfits. No-Face can still be slowed with eggs.";
+  ui.centerCard.querySelector("p").textContent = "Collect six loot stashes, light the ritual beacon, and make it back to the safehouse. Lamp light lowers fear. Costume Crypt lets Chase swap outfits. No-Face can still be slowed with candy bombs.";
 });
 
 window.addEventListener("keydown", (event) => {
@@ -2118,7 +2179,7 @@ function updateEnemy(dt) {
     ui.centerCard.innerHTML = `
       <span class="eyebrow">Run failed</span>
       <h2>Night Over</h2>
-      <p>No-Face shut the route down. Use shops earlier, stay in lamp light, and keep eggs ready for the stun window.</p>
+      <p>No-Face shut the route down. Use shops earlier, stay in lamp light, and keep candy bombs ready for the stun window.</p>
       <div class="button-row">
         <button id="restartLose">Restart</button>
       </div>

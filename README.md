@@ -18,17 +18,17 @@ Single-file Three.js parody game: part haunted open world, part family roast, pa
 Optional strategy systems:
 
 - Streetlamps lower fear and can slowly heal you.
-- Eggs stun No-Face.
+- Candy bombs stun No-Face.
 - Loot stashes now read as cash bags and snack bundles instead of glowing orange pickups.
 - Costume Crypt is walk-in and lets Chase swap Halloween costumes.
 - A procedural spooky background music loop starts when the run begins.
-- Shops still handle egg, sprint, and stun upgrades.
+- Shops still handle candy bomb, sprint, and stun upgrades.
 
 ## Controls
 
 - `WASD` move
 - `Shift` sprint
-- `Left click` or `Space` throw egg
+- `Left click` or `Space` throw candy bomb
 - `Right drag` orbit camera
 - `E` interact with stores, beacon, and safehouse
 - `R` restart after win or loss
