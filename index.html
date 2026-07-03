@@ -543,12 +543,12 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.08;
+renderer.toneMappingExposure = 1.24;
 renderer.shadowMap.enabled = false;
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x070b16);
-scene.fog = new THREE.FogExp2(0x100713, 0.02);
+scene.fog = new THREE.FogExp2(0x100713, 0.015);
 
 const camera = new THREE.PerspectiveCamera(62, window.innerWidth / window.innerHeight, 0.1, 220);
 
@@ -736,13 +736,14 @@ const skyGlow = new THREE.Mesh(
 skyGlow.position.copy(moon.position);
 scene.add(skyGlow);
 
-scene.add(new THREE.AmbientLight(0x51608e, 0.7));
+scene.add(new THREE.AmbientLight(0x6c7daf, 1.02));
+scene.add(new THREE.HemisphereLight(0x5770ae, 0x0f1b0e, 0.52));
 
-const moonLight = new THREE.DirectionalLight(0xc7d9ff, 1.35);
+const moonLight = new THREE.DirectionalLight(0xc7d9ff, 1.58);
 moonLight.position.set(-20, 34, -18);
 scene.add(moonLight);
 
-const warmFill = new THREE.PointLight(0xff9654, 0.8, 26, 2);
+const warmFill = new THREE.PointLight(0xff9654, 1.05, 34, 2);
 warmFill.position.set(-18, 8, 18);
 scene.add(warmFill);
 
@@ -1112,11 +1113,15 @@ function createZone(config) {
   return zone;
 }
 
-const safehouseZone = createZone({ type: "safehouse", label: "Safehouse", x: -18, z: 25, radius: 2.4, color: 0x7cf4da, cssColor: "#7cf4da" });
-const candyForgeZone = createZone({ type: "candyForge", label: "Candy Forge", x: 22, z: 23, radius: 2.2, color: 0xff8f3d, cssColor: "#ff8f3d" });
-const costumeZone = createZone({ type: "costume", label: "Costume Crypt", x: -33, z: -24, radius: 2.2, color: 0xff4f8a, cssColor: "#ff4f8a" });
-const garageZone = createZone({ type: "garage", label: "Hearse Garage", x: 33, z: -25, radius: 2.2, color: 0x8be8ff, cssColor: "#8be8ff" });
-const wardZone = createZone({ type: "ward", label: "Hex Market", x: -2, z: -26, radius: 2.2, color: 0x87ffb4, cssColor: "#87ffb4" });
+function storefrontZ(houseZ, depth, padding = 1.3) {
+  return houseZ + depth / 2 + padding;
+}
+
+const safehouseZone = createZone({ type: "safehouse", label: "Safehouse", x: -18, z: storefrontZ(33, 7, 1.8), radius: 2.4, color: 0x7cf4da, cssColor: "#7cf4da" });
+const candyForgeZone = createZone({ type: "candyForge", label: "Candy Forge", x: 22, z: storefrontZ(31, 7), radius: 2.2, color: 0xff8f3d, cssColor: "#ff8f3d" });
+const costumeZone = createZone({ type: "costume", label: "Costume Crypt", x: -33, z: storefrontZ(-17, 6.4), radius: 2.2, color: 0xff4f8a, cssColor: "#ff4f8a" });
+const garageZone = createZone({ type: "garage", label: "Hearse Garage", x: 33, z: storefrontZ(-18, 6.4), radius: 2.2, color: 0x8be8ff, cssColor: "#8be8ff" });
+const wardZone = createZone({ type: "ward", label: "Hex Market", x: -2, z: storefrontZ(-34, 6.8), radius: 2.2, color: 0x87ffb4, cssColor: "#87ffb4" });
 const beaconZone = createZone({ type: "beacon", label: "Ritual Beacon", x: 26, z: 0, radius: 2.6, color: 0xffc25f, cssColor: "#ffbf5f" });
 
 function createCandy(x, z) {
