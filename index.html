@@ -1379,14 +1379,14 @@ function createCharacter(primary, accent, profile = {}) {
   const isChase = profile.kind === "chase";
   const torsoRadius = isChase ? 0.26 : 0.5;
   const torsoLength = isChase ? 1.2 : 1.2;
-  const shoulderWidth = isChase ? 0.39 : 0.55;
-  const legRadius = isChase ? 0.11 : 0.16;
+  const shoulderWidth = isChase ? 0.34 : 0.55;
+  const legRadius = isChase ? 0.1 : 0.16;
   const legLength = isChase ? 1.3 : 0.82;
-  const armRadius = isChase ? 0.085 : 0.12;
+  const armRadius = isChase ? 0.08 : 0.12;
   const armLength = isChase ? 1.08 : 0.75;
 
   const torso = new THREE.Mesh(
-    isChase ? new THREE.BoxGeometry(0.56, 1.62, 0.36) : new THREE.CapsuleGeometry(torsoRadius, torsoLength, 8, 16),
+    isChase ? new THREE.BoxGeometry(0.5, 1.66, 0.34) : new THREE.CapsuleGeometry(torsoRadius, torsoLength, 8, 16),
     new THREE.MeshStandardMaterial({ color: primary, roughness: 0.78, metalness: 0.06 })
   );
   torso.position.y = isChase ? 1.6 : 1.4;
@@ -1394,34 +1394,37 @@ function createCharacter(primary, accent, profile = {}) {
 
   const jacketMaterial = new THREE.MeshStandardMaterial({ color: accent, emissive: accent, emissiveIntensity: isChase ? 0.16 : 0.1, roughness: 0.62 });
   const jacket = new THREE.Mesh(
-    new THREE.BoxGeometry(isChase ? 0.72 : 0.78, isChase ? 1.02 : 1.18, isChase ? 0.46 : 0.52),
+    new THREE.BoxGeometry(isChase ? 0.64 : 0.78, isChase ? 1.02 : 1.18, isChase ? 0.42 : 0.52),
     jacketMaterial
   );
   jacket.position.set(0, isChase ? 1.98 : 1.43, isChase ? 0.02 : 0.04);
-  jacket.scale.set(isChase ? 1.02 : 1, 1, isChase ? 0.94 : 0.92);
+  jacket.scale.set(isChase ? 1 : 1, 1, isChase ? 0.92 : 0.92);
   group.add(jacket);
 
   let shoulderShell = null;
   let waistShell = null;
   let hemShell = null;
   let zipperLine = null;
+  let leftBrow = null;
+  let rightBrow = null;
+  let noseBridge = null;
   if (isChase) {
     shoulderShell = new THREE.Mesh(
-      new THREE.BoxGeometry(0.84, 0.24, 0.42),
+      new THREE.BoxGeometry(0.72, 0.22, 0.38),
       jacketMaterial
     );
-    shoulderShell.position.set(0, 2.38, 0.01);
+    shoulderShell.position.set(0, 2.36, 0.01);
     group.add(shoulderShell);
 
     waistShell = new THREE.Mesh(
-      new THREE.BoxGeometry(0.58, 0.72, 0.36),
+      new THREE.BoxGeometry(0.5, 0.74, 0.34),
       jacketMaterial
     );
-    waistShell.position.set(0, 1.28, 0.01);
+    waistShell.position.set(0, 1.3, 0.01);
     group.add(waistShell);
 
     hemShell = new THREE.Mesh(
-      new THREE.BoxGeometry(0.52, 0.14, 0.32),
+      new THREE.BoxGeometry(0.48, 0.14, 0.3),
       jacketMaterial
     );
     hemShell.position.set(0, 0.88, 0.01);
@@ -1450,38 +1453,38 @@ function createCharacter(primary, accent, profile = {}) {
     new THREE.SphereGeometry(isChase ? 0.3 : 0.26, 14, 14),
     new THREE.MeshStandardMaterial({ color: accent, emissive: accent, emissiveIntensity: isChase ? 0.12 : 0.05, roughness: 0.72 })
   );
-  hood.scale.set(isChase ? 1.18 : 1.02, isChase ? 0.86 : 0.82, isChase ? 0.9 : 0.72);
-  hood.position.set(0, isChase ? 2.16 : 2.04, isChase ? -0.2 : -0.14);
+  hood.scale.set(isChase ? 1.05 : 1.02, isChase ? 0.8 : 0.82, isChase ? 0.82 : 0.72);
+  hood.position.set(0, isChase ? 2.12 : 2.04, isChase ? -0.2 : -0.14);
   group.add(hood);
 
   let hoodTail = null;
   if (isChase) {
     hoodTail = new THREE.Mesh(
-      new THREE.BoxGeometry(0.46, 0.4, 0.18),
+      new THREE.BoxGeometry(0.34, 0.3, 0.14),
       hood.material
     );
-    hoodTail.position.set(0, 1.96, -0.24);
-    hoodTail.rotation.x = 0.38;
+    hoodTail.position.set(0, 1.98, -0.22);
+    hoodTail.rotation.x = 0.32;
     group.add(hoodTail);
   }
 
   const leftString = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.016, 0.016, isChase ? 0.72 : 0.38, 8),
+    new THREE.CylinderGeometry(0.016, 0.016, isChase ? 0.6 : 0.38, 8),
     new THREE.MeshStandardMaterial({ color: 0xe5ded7, roughness: 0.62 })
   );
-  leftString.position.set(-0.08, isChase ? 1.73 : 1.43, 0.27);
-  leftString.rotation.z = 0.08;
+  leftString.position.set(-0.065, isChase ? 1.78 : 1.43, 0.26);
+  leftString.rotation.z = 0.05;
   const rightString = leftString.clone();
-  rightString.position.x = 0.08;
-  rightString.rotation.z = -0.08;
+  rightString.position.x = 0.065;
+  rightString.rotation.z = -0.05;
   group.add(leftString, rightString);
 
   let neck = null;
   let jaw = null;
   if (isChase) {
     neck = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.085, 0.1, 0.16, 10),
-      new THREE.MeshStandardMaterial({ color: 0xf0c5a6, roughness: 0.82 })
+      new THREE.CylinderGeometry(0.075, 0.09, 0.18, 10),
+      new THREE.MeshStandardMaterial({ color: 0xefc3a6, roughness: 0.82 })
     );
     neck.position.set(0, 2.31, 0.01);
     group.add(neck);
@@ -1489,52 +1492,89 @@ function createCharacter(primary, accent, profile = {}) {
 
   const head = new THREE.Mesh(
     new THREE.SphereGeometry(isChase ? 0.3 : 0.34, 16, 16),
-    new THREE.MeshStandardMaterial({ color: isChase ? 0xf0c5a6 : 0xf2cdb1, roughness: 0.8 })
+    new THREE.MeshStandardMaterial({ color: isChase ? 0xefc3a6 : 0xf2cdb1, roughness: 0.8 })
   );
-  head.scale.set(isChase ? 0.88 : 1, isChase ? 1.08 : 1, isChase ? 0.82 : 1);
-  head.position.y = isChase ? 2.6 : 2.35;
+  head.scale.set(isChase ? 0.82 : 1, isChase ? 1.1 : 1, isChase ? 0.8 : 1);
+  head.position.y = isChase ? 2.62 : 2.35;
   group.add(head);
 
   if (isChase) {
     jaw = new THREE.Mesh(
-      new THREE.BoxGeometry(0.28, 0.16, 0.18),
+      new THREE.BoxGeometry(0.22, 0.14, 0.16),
       head.material
     );
-    jaw.position.set(0, 2.42, 0.08);
-    jaw.rotation.x = -0.08;
+    jaw.position.set(0, 2.4, 0.08);
+    jaw.rotation.x = -0.1;
     group.add(jaw);
+
+    leftBrow = new THREE.Mesh(
+      new THREE.BoxGeometry(0.08, 0.018, 0.03),
+      new THREE.MeshStandardMaterial({ color: 0x2b1b14, roughness: 0.85 })
+    );
+    leftBrow.position.set(-0.08, 2.67, 0.2);
+    leftBrow.rotation.z = -0.18;
+    group.add(leftBrow);
+
+    rightBrow = leftBrow.clone();
+    rightBrow.position.x = 0.08;
+    rightBrow.rotation.z = 0.18;
+    group.add(rightBrow);
+
+    noseBridge = new THREE.Mesh(
+      new THREE.BoxGeometry(0.032, 0.11, 0.05),
+      head.material
+    );
+    noseBridge.position.set(0, 2.55, 0.22);
+    group.add(noseBridge);
   }
 
   const hair = new THREE.Group();
-  const hairMaterial = new THREE.MeshStandardMaterial({ color: 0x1b120d, roughness: 0.92 });
+  const hairMaterial = new THREE.MeshStandardMaterial({ color: 0x2a1b15, roughness: 0.92 });
   if (isChase) {
-    const crown = new THREE.Mesh(new THREE.SphereGeometry(0.2, 12, 12), hairMaterial);
-    crown.scale.set(1.55, 1.1, 1.15);
-    crown.position.set(0, 3.12, -0.02);
-    hair.add(crown);
+    const topMass = new THREE.Mesh(new THREE.SphereGeometry(0.24, 14, 14), hairMaterial);
+    topMass.scale.set(1.15, 1.35, 1.05);
+    topMass.position.set(0, 3.06, -0.03);
+    hair.add(topMass);
 
-    const backLift = new THREE.Mesh(new THREE.SphereGeometry(0.2, 12, 12), hairMaterial);
-    backLift.scale.set(1.45, 1.02, 1.2);
-    backLift.position.set(0, 2.96, -0.1);
+    const leftTop = new THREE.Mesh(new THREE.SphereGeometry(0.17, 12, 12), hairMaterial);
+    leftTop.scale.set(1.1, 1.15, 1);
+    leftTop.position.set(-0.18, 3.06, -0.02);
+    hair.add(leftTop);
+
+    const rightTop = new THREE.Mesh(new THREE.SphereGeometry(0.17, 12, 12), hairMaterial);
+    rightTop.scale.set(1.1, 1.15, 1);
+    rightTop.position.set(0.18, 3.04, -0.02);
+    hair.add(rightTop);
+
+    const backLift = new THREE.Mesh(new THREE.SphereGeometry(0.19, 12, 12), hairMaterial);
+    backLift.scale.set(1.08, 1.08, 1.02);
+    backLift.position.set(0, 2.9, -0.14);
     hair.add(backLift);
 
+    const sideFadeLeft = new THREE.Mesh(new THREE.SphereGeometry(0.12, 12, 12), hairMaterial);
+    sideFadeLeft.scale.set(0.68, 0.9, 0.7);
+    sideFadeLeft.position.set(-0.27, 2.7, -0.03);
+    hair.add(sideFadeLeft);
+
+    const sideFadeRight = sideFadeLeft.clone();
+    sideFadeRight.position.x = 0.27;
+    hair.add(sideFadeRight);
+
     const curls = [
-      [0, 3.28, -0.01, 0.12],
-      [-0.24, 3.16, -0.01, 0.12],
-      [0.24, 3.14, -0.01, 0.12],
-      [-0.38, 2.96, 0.01, 0.13],
-      [0.38, 2.94, 0.01, 0.13],
-      [-0.42, 2.74, 0.04, 0.13],
-      [0.42, 2.72, 0.04, 0.13],
-      [-0.28, 2.62, 0.1, 0.13],
-      [0.28, 2.62, 0.1, 0.13],
-      [-0.12, 2.76, 0.12, 0.11],
-      [0.12, 2.78, 0.12, 0.11],
-      [0, 2.9, 0.08, 0.1]
+      [0, 3.32, 0.01, 0.11],
+      [-0.14, 3.24, 0.03, 0.1],
+      [0.14, 3.22, 0.03, 0.1],
+      [-0.26, 3.08, 0.02, 0.1],
+      [0.26, 3.06, 0.02, 0.1],
+      [-0.18, 2.94, 0.11, 0.09],
+      [0.18, 2.92, 0.11, 0.09],
+      [0, 3.06, 0.12, 0.1],
+      [-0.08, 2.84, 0.14, 0.08],
+      [0.08, 2.84, 0.14, 0.08]
     ];
     for (const [x, y, z, r] of curls) {
       const curl = new THREE.Mesh(new THREE.SphereGeometry(r, 12, 12), hairMaterial);
-      curl.scale.set(1.05, 0.98, 0.96);
+      curl.scale.set(1.02, 1.02, 0.96);
       curl.position.set(x, y, z);
       hair.add(curl);
     }
@@ -1571,7 +1611,7 @@ function createCharacter(primary, accent, profile = {}) {
   shadow.scale.set(isChase ? 0.88 : 1, 1, isChase ? 0.88 : 1);
   group.add(shadow);
 
-  return { group, leftLeg, rightLeg, leftArm, rightArm, shadow, torso, jacket, hood, hoodTail, shoulderShell, waistShell, hemShell, shirtPanel, zipperLine, leftString, rightString, head, hair, hairMaterial, armMat, legMat, neck, jaw };
+  return { group, leftLeg, rightLeg, leftArm, rightArm, shadow, torso, jacket, hood, hoodTail, shoulderShell, waistShell, hemShell, shirtPanel, zipperLine, leftString, rightString, head, hair, hairMaterial, armMat, legMat, neck, jaw, leftBrow, rightBrow, noseBridge };
 }
 
 const chaseModel = createCharacter(0x6e2130, 0x7d1627, { kind: "chase" });
