@@ -688,6 +688,30 @@ function createLabelTexture(text, options = {}) {
   });
 }
 
+function createBadgeTexture(text, options = {}) {
+  const {
+    width = 160,
+    height = 160,
+    background = "#1a1f2e",
+    accent = "#ffcf5a",
+    foreground = "#f7f2e8"
+  } = options;
+  return createCanvasTexture(width, height, (ctx, w, h) => {
+    ctx.fillStyle = background;
+    ctx.beginPath();
+    ctx.roundRect(10, 10, w - 20, h - 20, 24);
+    ctx.fill();
+    ctx.strokeStyle = accent;
+    ctx.lineWidth = 10;
+    ctx.stroke();
+    ctx.fillStyle = foreground;
+    ctx.font = `700 ${Math.floor(h * 0.48)}px Bungee`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(text, w / 2, h / 2 + 4);
+  });
+}
+
 const asphaltTexture = createCanvasTexture(512, 512, (ctx, w, h) => {
   ctx.fillStyle = "#11151f";
   ctx.fillRect(0, 0, w, h);
@@ -1250,62 +1274,66 @@ const beaconZone = createZone({ type: "beacon", label: "Ritual Beacon", x: 26, z
 
 function createCandy(x, z) {
   const group = new THREE.Group();
-  const cashSack = new THREE.Mesh(
-    new THREE.SphereGeometry(0.34, 14, 14),
-    new THREE.MeshStandardMaterial({ color: 0x9c7744, roughness: 0.9 })
+  const glowRing = new THREE.Mesh(
+    new THREE.TorusGeometry(0.56, 0.06, 10, 24),
+    new THREE.MeshBasicMaterial({ color: 0xffd86f, transparent: true, opacity: 0.72 })
   );
-  cashSack.scale.set(1, 1.15, 0.95);
-  cashSack.position.set(-0.16, 0.36, 0);
+  glowRing.rotation.x = Math.PI / 2;
+  glowRing.position.y = 0.06;
+  group.add(glowRing);
+
+  const cashSack = new THREE.Mesh(
+    new THREE.BoxGeometry(0.48, 0.52, 0.34),
+    new THREE.MeshStandardMaterial({ color: 0xb58a4a, emissive: 0x3f2a12, emissiveIntensity: 0.22, roughness: 0.86 })
+  );
+  cashSack.position.set(-0.22, 0.34, 0);
   group.add(cashSack);
 
-  const sackTie = new THREE.Mesh(
-    new THREE.TorusGeometry(0.09, 0.03, 8, 14),
-    new THREE.MeshStandardMaterial({ color: 0x3e2313, roughness: 0.8 })
+  const sackTop = new THREE.Mesh(
+    new THREE.ConeGeometry(0.13, 0.26, 10),
+    new THREE.MeshStandardMaterial({ color: 0x8b6435, roughness: 0.82 })
   );
-  sackTie.rotation.x = Math.PI / 2;
-  sackTie.position.set(-0.16, 0.68, 0);
-  group.add(sackTie);
+  sackTop.position.set(-0.22, 0.7, 0);
+  group.add(sackTop);
 
   const dollarTag = new THREE.Mesh(
-    new THREE.PlaneGeometry(0.2, 0.2),
+    new THREE.PlaneGeometry(0.28, 0.28),
     new THREE.MeshBasicMaterial({
-      map: createLabelTexture("$", {
-        background: "#a78a52",
-        accent: "#8fffb4",
-        foreground: "#102313",
-        secondary: "#102313",
-        size: 52,
-        height: 96
+      map: createBadgeTexture("$", {
+        background: "#294326",
+        accent: "#9cff97",
+        foreground: "#f5ffe9"
       }),
       transparent: true
     })
   );
-  dollarTag.position.set(-0.16, 0.38, 0.32);
+  dollarTag.position.set(-0.22, 0.35, 0.19);
   group.add(dollarTag);
 
-  const snackBox = new THREE.Mesh(
-    new THREE.BoxGeometry(0.44, 0.24, 0.3),
-    new THREE.MeshStandardMaterial({ color: 0xff5d6f, emissive: 0x4f1520, emissiveIntensity: 0.22, roughness: 0.58 })
+  const snackBag = new THREE.Mesh(
+    new THREE.BoxGeometry(0.32, 0.54, 0.18),
+    new THREE.MeshStandardMaterial({ color: 0xff4f8a, emissive: 0x5a112f, emissiveIntensity: 0.28, roughness: 0.46 })
   );
-  snackBox.position.set(0.25, 0.26, 0);
-  snackBox.rotation.z = -0.18;
-  group.add(snackBox);
+  snackBag.position.set(0.28, 0.34, 0);
+  snackBag.rotation.z = -0.08;
+  group.add(snackBag);
 
-  const snackStripe = new THREE.Mesh(
-    new THREE.PlaneGeometry(0.34, 0.1),
-    new THREE.MeshBasicMaterial({ color: 0xffd86f })
+  const snackLabel = new THREE.Mesh(
+    new THREE.PlaneGeometry(0.24, 0.18),
+    new THREE.MeshBasicMaterial({
+      map: createBadgeTexture("XP", {
+        width: 160,
+        height: 120,
+        background: "#3d1237",
+        accent: "#ffd86f",
+        foreground: "#fff4da"
+      }),
+      transparent: true
+    })
   );
-  snackStripe.position.set(0.27, 0.28, 0.16);
-  snackStripe.rotation.z = -0.18;
-  group.add(snackStripe);
-
-  const can = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.09, 0.09, 0.34, 12),
-    new THREE.MeshStandardMaterial({ color: 0x5ed4ff, emissive: 0x13324a, emissiveIntensity: 0.28, roughness: 0.38, metalness: 0.35 })
-  );
-  can.position.set(0.04, 0.2, -0.16);
-  can.rotation.z = 0.28;
-  group.add(can);
+  snackLabel.position.set(0.28, 0.34, 0.11);
+  snackLabel.rotation.z = -0.08;
+  group.add(snackLabel);
 
   group.position.set(x, 0, z);
   scene.add(group);
@@ -1573,10 +1601,10 @@ function ensureAudio() {
   }
   listener.ctx = new AudioContextCtor();
   listener.gain = listener.ctx.createGain();
-  listener.gain.gain.value = 0.08;
+  listener.gain.gain.value = 0.2;
   listener.gain.connect(listener.ctx.destination);
   listener.musicGain = listener.ctx.createGain();
-  listener.musicGain.gain.value = 0.42;
+  listener.musicGain.gain.value = 0.9;
   listener.musicGain.connect(listener.gain);
 }
 
@@ -1622,25 +1650,28 @@ function startSpookyMusic() {
   if (!listener.ctx || listener.musicTimer) {
     return;
   }
+  if (listener.ctx.state === "suspended") {
+    listener.ctx.resume();
+  }
   const bassline = [146.83, 174.61, 130.81, 164.81, 146.83, 196.0, 130.81, 174.61];
   const melody = [293.66, 261.63, 246.94, 220.0, 261.63, 329.63, 246.94, 293.66];
   const accent = [440.0, 392.0, 369.99, 329.63, 392.0, 493.88, 369.99, 440.0];
 
   const pulse = () => {
     const step = listener.musicStep % bassline.length;
-    playMusicVoice({ frequency: bassline[step], frequencyEnd: bassline[step] * 0.985, duration: 1.4, type: "sine", volume: 0.05, attack: 0.18 });
-    playMusicVoice({ frequency: melody[step], frequencyEnd: melody[step] * 1.01, duration: 0.7, type: "triangle", volume: 0.028, attack: 0.06 });
+    playMusicVoice({ frequency: bassline[step], frequencyEnd: bassline[step] * 0.985, duration: 1.5, type: "sawtooth", volume: 0.14, attack: 0.12 });
+    playMusicVoice({ frequency: melody[step], frequencyEnd: melody[step] * 1.01, duration: 0.82, type: "triangle", volume: 0.08, attack: 0.04 });
     if (step % 2 === 0) {
-      playMusicVoice({ frequency: accent[step], frequencyEnd: accent[step] * 1.03, duration: 0.4, type: "square", volume: 0.014, attack: 0.03 });
+      playMusicVoice({ frequency: accent[step], frequencyEnd: accent[step] * 1.03, duration: 0.48, type: "square", volume: 0.045, attack: 0.02 });
     }
     if (step === 3 || step === 7) {
-      playMusicVoice({ frequency: accent[step] * 0.5, frequencyEnd: accent[step] * 0.48, duration: 1.8, type: "sawtooth", volume: 0.018, attack: 0.22 });
+      playMusicVoice({ frequency: accent[step] * 0.5, frequencyEnd: accent[step] * 0.48, duration: 1.9, type: "sine", volume: 0.05, attack: 0.16 });
     }
     listener.musicStep += 1;
   };
 
   pulse();
-  listener.musicTimer = window.setInterval(pulse, 1100);
+  listener.musicTimer = window.setInterval(pulse, 900);
 }
 
 function soundThrow() {
