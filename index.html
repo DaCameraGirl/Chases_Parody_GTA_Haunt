@@ -527,7 +527,7 @@
 <section class="panel" id="centerCard">
   <span class="eyebrow">Single-file browser game</span>
   <h2>Storm the Block</h2>
-  <p>This version is built to actually play: smoother controls, a visible Chase model, shops, candy routes, weather, audio, and a real mission loop.</p>
+  <p>Slip Chase into a disguise, raid the block for gear, light the ritual beacon, and outrun No-Face back to the safehouse.</p>
   <div class="button-row">
     <button id="startButton">Start the Night</button>
     <button class="secondary" id="howButton">Show Mission</button>
@@ -617,7 +617,7 @@ const state = {
   candy: 0,
   eggs: 12,
   hits: 0,
-  mission: "collect",
+  mission: "costume",
   objectiveDistance: 0,
   lastDamageTime: 0,
   eggCooldown: 0,
@@ -627,6 +627,12 @@ const state = {
   lightningTimer: 5,
   unlockedAudio: false,
   costumeIndex: 0,
+  story: {
+    disguise: false,
+    keys: false,
+    ward: false,
+    beacon: false
+  },
   upgrades: {
     stickyEggs: false,
     costume: false,
@@ -1092,6 +1098,13 @@ function createPumpkin(x, z, scale = 1) {
   group.position.set(x, 0, z);
   scene.add(group);
   world.pumpkins.push(group);
+  const radius = 0.52 * scale;
+  world.solids.push({
+    minX: x - radius,
+    maxX: x + radius,
+    minZ: z - radius,
+    maxZ: z + radius
+  });
 }
 
 for (let i = 0; i < 28; i++) {
@@ -1739,26 +1752,18 @@ function getFlatDistance(a, b) {
   return Math.hypot(dx, dz);
 }
 
+function currentMissionZone() {
+  if (state.mission === "costume") return costumeZone;
+  if (state.mission === "garage") return garageZone;
+  if (state.mission === "ward") return wardZone;
+  if (state.mission === "beacon") return beaconZone;
+  if (state.mission === "escape") return safehouseZone;
+  return null;
+}
+
 function currentObjectiveTarget() {
-  if (state.mission === "collect") {
-    let nearest = null;
-    let nearestDist = Infinity;
-    for (const candy of world.candies) {
-      if (candy.collected) {
-        continue;
-      }
-      const distance = getFlatDistance(chase.position, candy.group.position);
-      if (distance < nearestDist) {
-        nearest = candy.group.position;
-        nearestDist = distance;
-      }
-    }
-    return nearest || beaconZone.ring.position;
-  }
-  if (state.mission === "beacon") {
-    return beaconZone.ring.position;
-  }
-  return safehouseZone.ring.position;
+  const zone = currentMissionZone();
+  return zone ? zone.ring.position : safehouseZone.ring.position;
 }
 
 function updateObjectiveText() {
@@ -1774,15 +1779,21 @@ function updateObjectiveText() {
     return;
   }
 
-  if (state.mission === "collect") {
-    ui.objectiveText.textContent = `Collect loot stashes: ${state.candy} / 6`;
-    ui.objectiveHint.textContent = "Money bags and snack stashes are scattered around the map. Grab any six, then hit the ritual beacon.";
+  if (state.mission === "costume") {
+    ui.objectiveText.textContent = "Reach Costume Crypt and disguise Chase.";
+    ui.objectiveHint.textContent = "Start the night like a slasher mission: get the look right, then move on the block.";
+  } else if (state.mission === "garage") {
+    ui.objectiveText.textContent = "Hit Hearse Garage and steal the hearse keys.";
+    ui.objectiveHint.textContent = "Open-world rules: get your route and ride setup before the neighborhood turns hostile.";
+  } else if (state.mission === "ward") {
+    ui.objectiveText.textContent = "Reach Hex Market and take the ward sigil.";
+    ui.objectiveHint.textContent = "Resident Evil rules: you need the right item before the final route opens.";
   } else if (state.mission === "beacon") {
-    ui.objectiveText.textContent = "Reach the ritual beacon in the center district.";
-    ui.objectiveHint.textContent = "No-Face gets meaner when the beacon lights up. Keep some stamina in reserve.";
+    ui.objectiveText.textContent = "Light the ritual beacon in the center district.";
+    ui.objectiveHint.textContent = "Friday the 13th rules: once the beacon is hot, No-Face goes full hunter.";
   } else {
     ui.objectiveText.textContent = "Return to the safehouse to finish the run.";
-    ui.objectiveHint.textContent = "If you are hurt, break line of sight, hug lamp light, then sprint the last block.";
+    ui.objectiveHint.textContent = "Break line of sight, hug lamp light, and drag Chase home alive with whatever haul you grabbed.";
   }
 }
 
@@ -1832,13 +1843,13 @@ function updatePrompt() {
   } else if (zone.type === "candyForge") {
     text = state.upgrades.stickyEggs ? "Press E to refill candy bombs at the Candy Forge." : "Press E to buy Sticky Candy Bombs for $150.";
   } else if (zone.type === "costume") {
-    text = "Press E inside Costume Crypt to change Chase's Halloween costume.";
+    text = state.mission === "costume" ? "Press E to disguise Chase and kick off the job." : "Press E inside Costume Crypt to change Chase's Halloween costume.";
   } else if (zone.type === "garage") {
-    text = state.upgrades.sprintBoost ? "Garage tune installed. Your sprint is juiced." : "Press E to buy Sprint Boost for $250.";
+    text = state.mission === "garage" ? "Press E to steal the hearse keys and garage tune." : (state.upgrades.sprintBoost ? "Garage tune installed. Your sprint is juiced." : "Press E to buy Sprint Boost for $250.");
   } else if (zone.type === "ward") {
-    text = state.upgrades.ward ? "Ward active. Stuns last longer." : "Press E to buy Ward Sigil for $300.";
+    text = state.mission === "ward" ? "Press E to take the ward sigil." : (state.upgrades.ward ? "Ward active. Stuns last longer." : "Press E to buy Ward Sigil for $300.");
   } else if (zone.type === "beacon") {
-    text = state.mission === "beacon" ? "Press E to light the beacon." : "The beacon unlocks after six loot stashes.";
+    text = state.mission === "beacon" ? "Press E to light the beacon." : "The beacon stays dark until the disguise, keys, and ward are secured.";
   }
   ui.promptText.textContent = text;
   ui.promptCard.classList.add("on");
@@ -1856,12 +1867,6 @@ function triggerLightning() {
 }
 
 function refreshMissionProgress() {
-  if (state.candy >= 6 && state.mission === "collect") {
-    state.mission = "beacon";
-    showToast("Beacon unlocked.");
-    setRadio("You got the haul. Light the beacon and run for home.");
-    soundUpgrade();
-  }
   updateObjectiveText();
 }
 
@@ -1946,13 +1951,32 @@ function interactWithZone(zone) {
     applyChaseCostume(state.costumeIndex);
     state.upgrades.costume = state.costumeIndex !== 0;
     state.fear = Math.max(0, state.fear - (state.upgrades.costume ? 12 : 4));
-    showToast(`Chase changed into ${costumeStyles[state.costumeIndex].name}.`);
-    setRadio(state.upgrades.costume ? "Costume Crypt wardrobe swap complete. Chase looks Halloween-ready now." : "Back to Chase's default fit. Clean reset.");
+    if (!state.story.disguise) {
+      state.story.disguise = true;
+      state.mission = "garage";
+      showToast(`Disguise on: ${costumeStyles[state.costumeIndex].name}.`);
+      setRadio("Costume Crypt is handled. Hearse Garage next. Get the keys before No-Face catches on.");
+    } else {
+      showToast(`Chase changed into ${costumeStyles[state.costumeIndex].name}.`);
+      setRadio(state.upgrades.costume ? "Costume Crypt wardrobe swap complete. Chase looks Halloween-ready now." : "Back to Chase's default fit. Clean reset.");
+    }
     soundUpgrade();
+    updateObjectiveText();
     return;
   }
 
   if (zone.type === "garage") {
+    if (state.mission === "garage" && !state.story.keys) {
+      state.story.keys = true;
+      state.upgrades.sprintBoost = true;
+      state.stamina = 100;
+      state.mission = "ward";
+      showToast("Hearse keys lifted.");
+      setRadio("Garage is cracked. Sprint tune is live. Hit Hex Market for the ward sigil.");
+      soundUpgrade();
+      updateObjectiveText();
+      return;
+    }
     if (state.upgrades.sprintBoost) {
       showToast("Sprint Boost already installed.");
       return;
@@ -1971,6 +1995,16 @@ function interactWithZone(zone) {
   }
 
   if (zone.type === "ward") {
+    if (state.mission === "ward" && !state.story.ward) {
+      state.story.ward = true;
+      state.upgrades.ward = true;
+      state.mission = "beacon";
+      showToast("Ward sigil secured.");
+      setRadio("Hex Market is done. Now light the beacon and pray Chase can outrun what wakes up.");
+      soundUpgrade();
+      updateObjectiveText();
+      return;
+    }
     if (state.upgrades.ward) {
       showToast("Ward Sigil already active.");
       return;
@@ -1989,9 +2023,10 @@ function interactWithZone(zone) {
 
   if (zone.type === "beacon") {
     if (state.mission !== "beacon") {
-      showToast("Collect six loot stashes first.");
+      showToast("Get the disguise, hearse keys, and ward sigil first.");
       return;
     }
+    state.story.beacon = true;
     state.mission = "escape";
     beaconZone.beam.material.opacity = 0.3;
     beaconZone.ring.material.color.set(0x7cf4da);
@@ -2061,7 +2096,7 @@ function restartGame() {
 
 ui.startButton.addEventListener("click", startGame);
 ui.howButton.addEventListener("click", () => {
-  ui.centerCard.querySelector("p").textContent = "Collect six loot stashes, light the ritual beacon, and make it back to the safehouse. Lamp light lowers fear. Costume Crypt lets Chase swap outfits. No-Face can still be slowed with candy bombs.";
+  ui.centerCard.querySelector("p").textContent = "Mission route: hit Costume Crypt for Chase's disguise, break into Hearse Garage for the keys, grab the ward sigil from Hex Market, light the beacon, then sprint Chase home. Loot stashes fund upgrades, lamp light lowers fear, and candy bombs still buy time against No-Face.";
 });
 
 window.addEventListener("keydown", (event) => {
