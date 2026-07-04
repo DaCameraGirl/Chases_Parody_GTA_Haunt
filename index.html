@@ -1408,6 +1408,7 @@ function createCharacter(primary, accent, profile = {}) {
   let leftBrow = null;
   let rightBrow = null;
   let noseBridge = null;
+  let noseTip = null;
   let leftEye = null;
   let rightEye = null;
   let mouthLine = null;
@@ -1497,7 +1498,7 @@ function createCharacter(primary, accent, profile = {}) {
     new THREE.SphereGeometry(isChase ? 0.3 : 0.34, 16, 16),
     new THREE.MeshStandardMaterial({ color: isChase ? 0xb79274 : 0xf2cdb1, roughness: 0.8 })
   );
-  head.scale.set(isChase ? 0.82 : 1, isChase ? 1.1 : 1, isChase ? 0.8 : 1);
+  head.scale.set(isChase ? 0.86 : 1, isChase ? 1.08 : 1, isChase ? 0.82 : 1);
   head.position.y = isChase ? 2.62 : 2.35;
   group.add(head);
 
@@ -1511,24 +1512,24 @@ function createCharacter(primary, accent, profile = {}) {
     group.add(jaw);
 
     leftBrow = new THREE.Mesh(
-      new THREE.BoxGeometry(0.095, 0.02, 0.03),
+      new THREE.BoxGeometry(0.085, 0.018, 0.03),
       new THREE.MeshStandardMaterial({ color: 0x2b1b14, roughness: 0.85 })
     );
-    leftBrow.position.set(-0.082, 2.675, 0.2);
-    leftBrow.rotation.z = -0.14;
+    leftBrow.position.set(-0.082, 2.67, 0.2);
+    leftBrow.rotation.z = -0.09;
     group.add(leftBrow);
 
     rightBrow = leftBrow.clone();
     rightBrow.position.x = 0.082;
-    rightBrow.rotation.z = 0.14;
+    rightBrow.rotation.z = 0.09;
     group.add(rightBrow);
 
     leftEye = new THREE.Mesh(
-      new THREE.SphereGeometry(0.026, 10, 10),
+      new THREE.SphereGeometry(0.028, 10, 10),
       new THREE.MeshBasicMaterial({ color: 0x191512 })
     );
-    leftEye.scale.set(1.15, 0.82, 0.7);
-    leftEye.position.set(-0.082, 2.6, 0.238);
+    leftEye.scale.set(1.08, 0.8, 0.68);
+    leftEye.position.set(-0.083, 2.605, 0.238);
     group.add(leftEye);
 
     rightEye = leftEye.clone();
@@ -1536,18 +1537,26 @@ function createCharacter(primary, accent, profile = {}) {
     group.add(rightEye);
 
     noseBridge = new THREE.Mesh(
-      new THREE.BoxGeometry(0.032, 0.11, 0.05),
+      new THREE.BoxGeometry(0.05, 0.105, 0.052),
       head.material
     );
-    noseBridge.position.set(0, 2.555, 0.225);
+    noseBridge.position.set(0, 2.555, 0.22);
     group.add(noseBridge);
 
+    noseTip = new THREE.Mesh(
+      new THREE.BoxGeometry(0.092, 0.05, 0.06),
+      head.material
+    );
+    noseTip.position.set(0, 2.495, 0.24);
+    noseTip.rotation.x = -0.06;
+    group.add(noseTip);
+
     mouthLine = new THREE.Mesh(
-      new THREE.BoxGeometry(0.085, 0.016, 0.028),
+      new THREE.BoxGeometry(0.11, 0.018, 0.028),
       new THREE.MeshBasicMaterial({ color: 0x6a3d34 })
     );
-    mouthLine.position.set(0, 2.435, 0.236);
-    mouthLine.rotation.z = -0.03;
+    mouthLine.position.set(0, 2.425, 0.232);
+    mouthLine.rotation.z = -0.015;
     group.add(mouthLine);
   }
 
@@ -1634,7 +1643,7 @@ function createCharacter(primary, accent, profile = {}) {
   shadow.scale.set(isChase ? 0.88 : 1, 1, isChase ? 0.88 : 1);
   group.add(shadow);
 
-  return { group, leftLeg, rightLeg, leftArm, rightArm, shadow, torso, jacket, hood, hoodTail, shoulderShell, waistShell, hemShell, shirtPanel, zipperLine, leftString, rightString, head, hair, hairMaterial, armMat, legMat, neck, jaw, leftBrow, rightBrow, leftEye, rightEye, noseBridge, mouthLine };
+  return { group, leftLeg, rightLeg, leftArm, rightArm, shadow, torso, jacket, hood, hoodTail, shoulderShell, waistShell, hemShell, shirtPanel, zipperLine, leftString, rightString, head, hair, hairMaterial, armMat, legMat, neck, jaw, leftBrow, rightBrow, leftEye, rightEye, noseBridge, noseTip, mouthLine };
 }
 
 const chaseModel = createCharacter(0x6e2130, 0x7d1627, { kind: "chase" });
