@@ -14,6 +14,14 @@
 </p>
 
 <p align="center">
+  <img src="./readme-parody-screenshot.png" alt="Chase's Halloween Heat gameplay screenshot" width="960" />
+</p>
+
+<p align="center">
+  <strong>Covington chaos.</strong> <strong>Cartoon Chase.</strong> <strong>No-Face on your neck.</strong>
+</p>
+
+<p align="center">
   <img src="https://capsule-render.vercel.app/api?type=rect&color=0:0c1120,100:0c1120&height=4&section=header" alt="" />
 </p>
 
