@@ -1,31 +1,57 @@
-# Chase's Halloween Heat
+<p align="center">
+  <img src="https://capsule-render.vercel.app/api?type=waving&height=220&color=0:120914,50:4d1025,100:b33b47&text=Chase's%20Halloween%20Heat&fontColor=f8efe7&fontAlignY=38&desc=Cartoon%20Parody%20Branch&descAlignY=58&descColor=8ff1e0" alt="Chase's Halloween Heat banner" />
+</p>
 
-Single-file Three.js parody game: part haunted open world, part family roast, part Halloween chase movie.
+<p align="center">
+  <img src="https://readme-typing-svg.demolab.com?font=Azeret+Mono&weight=700&size=18&pause=1200&color=8FF1E0&center=true&vCenter=true&width=900&lines=Loot+the+block.;Dodge+No-Face.;Light+the+beacon.;Get+Chase+home." alt="Animated tagline" />
+</p>
 
-## What is in this repo
+<p align="center">
+  <a href="https://dacameragirl.github.io/Chases_Parody_GTA_Haunt/"><img src="https://img.shields.io/badge/Play-Live%20Site-EA6A3C?style=for-the-badge&logo=githubpages&logoColor=fff" alt="Live site" /></a>
+  <a href="https://github.com/DaCameraGirl/Chases_Parody_GTA_Haunt"><img src="https://img.shields.io/badge/View-Repository-141A2A?style=for-the-badge&logo=github&logoColor=fff" alt="Repository" /></a>
+  <img src="https://img.shields.io/badge/Engine-Three.js-0B111E?style=for-the-badge&logo=threedotjs&logoColor=fff" alt="Three.js" />
+  <img src="https://img.shields.io/badge/Format-Single%20File%20Browser%20Game-3B1531?style=for-the-badge" alt="Single file browser game" />
+</p>
 
-- `index.html` is the entire playable game.
-- `.github/workflows/static.yml` deploys the repo to GitHub Pages.
-- `.nojekyll` tells GitHub Pages to serve the files directly instead of trying to run a Jekyll build.
-- `404.html` redirects missing project URLs back to the game.
+<p align="center">
+  <img src="https://capsule-render.vercel.app/api?type=rect&color=0:0c1120,100:0c1120&height=4&section=header" alt="" />
+</p>
 
-## Current game loop
+## The Vibe
 
-1. Reach `Costume Crypt` and disguise Chase.
-2. Break into `Hearse Garage` and lift the keys.
-3. Hit `Hex Market` for the ward sigil.
+This is the loud, stylized, Halloween-parody version of the game: low-poly, dramatic, funny, weird, and built to move fast in a browser.
+
+## Mission Route
+
+1. Hit `Costume Crypt` and disguise Chase.
+2. Break into `Hearse Garage` for the keys.
+3. Grab the ward sigil from `Hex Market`.
 4. Light the ritual beacon in the middle of the block.
-5. Escape back to the safehouse before No-Face finishes the chase.
+5. Escape back to the safehouse before No-Face shuts the run down.
 
-Optional strategy systems:
+## What This Branch Does Well
 
-- Streetlamps lower fear and can slowly heal you.
-- Candy bombs stun No-Face.
-- Loot stashes are now side pickups for cash and snacks instead of the main win condition.
-- Loot stashes now read as cash bags and snack bundles instead of glowing orange pickups.
-- Costume Crypt is walk-in and lets Chase swap Halloween costumes.
-- A procedural spooky background music loop starts when the run begins.
-- Shops still handle candy bomb, sprint, and stun upgrades.
+- Keeps the whole game lightweight and easy to tweak.
+- Uses one main `index.html` file for rapid changes.
+- Lets the parody tone stay front and center.
+- Works great for fast gameplay experiments, mission flow, HUD changes, and cartoon-style Chase updates.
+
+## Feature Stack
+
+- `Streetlamps` calm fear and give the route more shape.
+- `Candy bombs` stun No-Face.
+- `Loot stashes` pay out cash and snacks.
+- `Costume Crypt` rotates Chase through Halloween looks.
+- `Spooky background loop` starts when the run begins.
+- `Shops and pickups` support faster replay loops.
+
+## Language Bar
+
+```text
+HTML        [##############------]  58%
+JavaScript  [############--------]  31%
+CSS         [#####---------------]  11%
+```
 
 ## Controls
 
@@ -36,15 +62,13 @@ Optional strategy systems:
 - `E` interact with stores, beacon, and safehouse
 - `R` restart after win or loss
 
-## Local test
-
-From the repo folder:
+## Run Local
 
 ```powershell
 py -3.11 -m http.server 8000
 ```
 
-Then open:
+Open:
 
 ```text
 http://127.0.0.1:8000/
@@ -52,27 +76,27 @@ http://127.0.0.1:8000/
 
 ## GitHub Pages
 
-Primary game URL:
+Live branch URL:
 
 ```text
 https://dacameragirl.github.io/Chases_Parody_GTA_Haunt/
 ```
 
-If that still shows `404`, check this in GitHub:
+If Pages ever falls over:
 
 1. Open `Settings -> Pages`.
-2. Confirm the site source is either:
-   `Deploy from a branch` with branch `main` and folder `/root`, or
-   `GitHub Actions` using `.github/workflows/static.yml`.
-3. If it is still on legacy branch deploy and keeps failing, switch it to `GitHub Actions`.
-4. Wait for the latest deployment to finish, then reload the URL above.
+2. Confirm the source is `main` with `/root`, or the repo workflow if you switch to Actions later.
+3. Wait for the latest deployment to finish.
+4. Reload the live site.
 
-## Why the old version felt broken
+## Branch Purpose
 
-The earlier prototype had three main problems:
+This branch is the parody browser game on purpose. It is not the branch for true GTA-style realism. That realism push lives in the companion repo:
 
-- text encoding was corrupted
-- controls depended too much on pointer lock
-- visuals were being pushed before the game loop was stable
+```text
+Chases_Halloween_Heat_Realism
+```
 
-This pass fixes those first, then shifts the route toward a GTA / Resident Evil / Friday the 13th mission flow.
+<p align="center">
+  <img src="https://capsule-render.vercel.app/api?type=waving&height=120&section=footer&color=0:120914,50:4d1025,100:b33b47" alt="Footer" />
+</p>
