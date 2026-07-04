@@ -1408,6 +1408,9 @@ function createCharacter(primary, accent, profile = {}) {
   let leftBrow = null;
   let rightBrow = null;
   let noseBridge = null;
+  let leftEye = null;
+  let rightEye = null;
+  let mouthLine = null;
   if (isChase) {
     shoulderShell = new THREE.Mesh(
       new THREE.BoxGeometry(0.72, 0.22, 0.38),
@@ -1484,7 +1487,7 @@ function createCharacter(primary, accent, profile = {}) {
   if (isChase) {
     neck = new THREE.Mesh(
       new THREE.CylinderGeometry(0.075, 0.09, 0.18, 10),
-      new THREE.MeshStandardMaterial({ color: 0xefc3a6, roughness: 0.82 })
+      new THREE.MeshStandardMaterial({ color: 0xb79274, roughness: 0.82 })
     );
     neck.position.set(0, 2.31, 0.01);
     group.add(neck);
@@ -1492,7 +1495,7 @@ function createCharacter(primary, accent, profile = {}) {
 
   const head = new THREE.Mesh(
     new THREE.SphereGeometry(isChase ? 0.3 : 0.34, 16, 16),
-    new THREE.MeshStandardMaterial({ color: isChase ? 0xefc3a6 : 0xf2cdb1, roughness: 0.8 })
+    new THREE.MeshStandardMaterial({ color: isChase ? 0xb79274 : 0xf2cdb1, roughness: 0.8 })
   );
   head.scale.set(isChase ? 0.82 : 1, isChase ? 1.1 : 1, isChase ? 0.8 : 1);
   head.position.y = isChase ? 2.62 : 2.35;
@@ -1508,24 +1511,44 @@ function createCharacter(primary, accent, profile = {}) {
     group.add(jaw);
 
     leftBrow = new THREE.Mesh(
-      new THREE.BoxGeometry(0.08, 0.018, 0.03),
+      new THREE.BoxGeometry(0.095, 0.02, 0.03),
       new THREE.MeshStandardMaterial({ color: 0x2b1b14, roughness: 0.85 })
     );
-    leftBrow.position.set(-0.08, 2.67, 0.2);
-    leftBrow.rotation.z = -0.18;
+    leftBrow.position.set(-0.082, 2.675, 0.2);
+    leftBrow.rotation.z = -0.14;
     group.add(leftBrow);
 
     rightBrow = leftBrow.clone();
-    rightBrow.position.x = 0.08;
-    rightBrow.rotation.z = 0.18;
+    rightBrow.position.x = 0.082;
+    rightBrow.rotation.z = 0.14;
     group.add(rightBrow);
+
+    leftEye = new THREE.Mesh(
+      new THREE.SphereGeometry(0.026, 10, 10),
+      new THREE.MeshBasicMaterial({ color: 0x191512 })
+    );
+    leftEye.scale.set(1.15, 0.82, 0.7);
+    leftEye.position.set(-0.082, 2.6, 0.238);
+    group.add(leftEye);
+
+    rightEye = leftEye.clone();
+    rightEye.position.x = 0.082;
+    group.add(rightEye);
 
     noseBridge = new THREE.Mesh(
       new THREE.BoxGeometry(0.032, 0.11, 0.05),
       head.material
     );
-    noseBridge.position.set(0, 2.55, 0.22);
+    noseBridge.position.set(0, 2.555, 0.225);
     group.add(noseBridge);
+
+    mouthLine = new THREE.Mesh(
+      new THREE.BoxGeometry(0.085, 0.016, 0.028),
+      new THREE.MeshBasicMaterial({ color: 0x6a3d34 })
+    );
+    mouthLine.position.set(0, 2.435, 0.236);
+    mouthLine.rotation.z = -0.03;
+    group.add(mouthLine);
   }
 
   const hair = new THREE.Group();
@@ -1611,7 +1634,7 @@ function createCharacter(primary, accent, profile = {}) {
   shadow.scale.set(isChase ? 0.88 : 1, 1, isChase ? 0.88 : 1);
   group.add(shadow);
 
-  return { group, leftLeg, rightLeg, leftArm, rightArm, shadow, torso, jacket, hood, hoodTail, shoulderShell, waistShell, hemShell, shirtPanel, zipperLine, leftString, rightString, head, hair, hairMaterial, armMat, legMat, neck, jaw, leftBrow, rightBrow, noseBridge };
+  return { group, leftLeg, rightLeg, leftArm, rightArm, shadow, torso, jacket, hood, hoodTail, shoulderShell, waistShell, hemShell, shirtPanel, zipperLine, leftString, rightString, head, hair, hairMaterial, armMat, legMat, neck, jaw, leftBrow, rightBrow, leftEye, rightEye, noseBridge, mouthLine };
 }
 
 const chaseModel = createCharacter(0x6e2130, 0x7d1627, { kind: "chase" });
@@ -1665,10 +1688,10 @@ pumpkinMask.visible = false;
 chaseCostumeRig.add(pumpkinMask);
 
 const costumeStyles = [
-  { name: "Block Runner", torso: 0x6e2130, arms: 0x6e2130, jacket: 0x7d1627, shirt: 0xa4a4aa, legs: 0x1c2029, hair: 0x1b120d, head: 0xf0c5a6, hat: false, horns: false, pumpkin: false },
-  { name: "Pumpkin Phantom", torso: 0x22252d, arms: 0x22252d, jacket: 0xff8a32, legs: 0x14161b, hair: 0x1b120d, head: 0xf0c5a6, hat: false, horns: false, pumpkin: true },
-  { name: "Witch Knight", torso: 0x59328c, arms: 0x59328c, jacket: 0x3b215e, shirt: 0xded7f0, legs: 0x1b1b2b, hair: 0x141018, head: 0xf0c5a6, hat: true, horns: false, pumpkin: false },
-  { name: "Devil Dash", torso: 0x8f2736, arms: 0x8f2736, jacket: 0x61131c, shirt: 0xf0d2d2, legs: 0x281419, hair: 0x1d0e0e, head: 0xf0c5a6, hat: false, horns: true, pumpkin: false }
+  { name: "Block Runner", torso: 0x6e2130, arms: 0x6e2130, jacket: 0x7d1627, shirt: 0xa4a4aa, legs: 0x1c2029, hair: 0x2a1b15, head: 0xb79274, hat: false, horns: false, pumpkin: false },
+  { name: "Pumpkin Phantom", torso: 0x22252d, arms: 0x22252d, jacket: 0xff8a32, legs: 0x14161b, hair: 0x2a1b15, head: 0xb79274, hat: false, horns: false, pumpkin: true },
+  { name: "Witch Knight", torso: 0x59328c, arms: 0x59328c, jacket: 0x3b215e, shirt: 0xded7f0, legs: 0x1b1b2b, hair: 0x241813, head: 0xb79274, hat: true, horns: false, pumpkin: false },
+  { name: "Devil Dash", torso: 0x8f2736, arms: 0x8f2736, jacket: 0x61131c, shirt: 0xf0d2d2, legs: 0x281419, hair: 0x26140f, head: 0xb79274, hat: false, horns: true, pumpkin: false }
 ];
 
 function applyChaseCostume(index) {
