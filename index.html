@@ -886,6 +886,7 @@ const state = {
   lightningTimer: 5,
   unlockedAudio: false,
   costumeIndex: 0,
+  driving: false,
   story: {
     disguise: false,
     keys: false,
@@ -1403,7 +1404,7 @@ function createCar(x, z, rotation, color) {
   group.position.set(x, 0, z);
   group.rotation.y = rotation;
   scene.add(group);
-  world.cars.push(group);
+  world.cars.push({ group, speed: 0 });
 }
 
 createCar(-8, 11, 0, 0x7c1e31);
@@ -2309,15 +2310,45 @@ function nearestZone() {
   return { zone: best, distance: bestDistance };
 }
 
+const carEnterRadius = 2.6;
+
+function nearestCar() {
+  let best = null;
+  let bestDistance = Infinity;
+  for (const car of world.cars) {
+    const distance = getFlatDistance(chase.position, car.group.position);
+    if (distance < bestDistance) {
+      bestDistance = distance;
+      best = car;
+    }
+  }
+  return { car: best, distance: bestDistance };
+}
+
 function updatePrompt() {
   if (!state.started || state.ended || state.win) {
     ui.promptCard.classList.remove("on");
     return;
   }
 
+  if (state.driving) {
+    ui.promptText.textContent = "Press E to get out of the car.";
+    ui.promptCard.classList.add("on");
+    return;
+  }
+
+  const { car, distance: carDistance } = nearestCar();
   const { zone, distance } = nearestZone();
-  const threshold = zone ? zone.radius + 1.1 : Infinity;
-  if (!zone || distance > threshold) {
+  const carClose = car && carDistance <= carEnterRadius;
+  const zoneClose = zone && distance <= zone.radius + 1.1;
+
+  if (carClose && (!zoneClose || carDistance <= distance)) {
+    ui.promptText.textContent = "Press E to get in the car.";
+    ui.promptCard.classList.add("on");
+    return;
+  }
+
+  if (!zoneClose) {
     ui.promptCard.classList.remove("on");
     return;
   }
@@ -2446,6 +2477,11 @@ function interactWithZone(zone) {
       setRadio("Costume Crypt is handled. Hearse Garage next. Get the keys before No-Face catches on.");
       soundUpgrade();
       updateObjectiveText();
+      window.setTimeout(() => {
+        if (missionState.status === "available") {
+          showToast("Morrow: \"Hey — swing back by here before the night's out.\"");
+        }
+      }, 4500);
       return;
     }
 
@@ -2572,7 +2608,7 @@ function interactWithZone(zone) {
 }
 
 function shootEgg() {
-  if (!state.started || state.ended || state.win || input.locked) {
+  if (!state.started || state.ended || state.win || input.locked || state.driving) {
     return;
   }
   if (state.eggCooldown > 0) {
@@ -3744,6 +3780,8 @@ function applyMovement(dt) {
     chaseModel.rightLeg.rotation.x *= Math.exp(-8 * dt);
     chaseModel.leftArm.rotation.x *= Math.exp(-8 * dt);
     chaseModel.rightArm.rotation.x *= Math.exp(-8 * dt);
+    chase.rotation.z *= Math.exp(-8 * dt);
+    chaseModel.torso.rotation.x *= Math.exp(-8 * dt);
     return;
   }
   const moveVector = new THREE.Vector2(input.strafe, input.forward);
@@ -3775,17 +3813,25 @@ function applyMovement(dt) {
     chase.rotation.y = Math.atan2(worldMove.x, worldMove.z);
 
     const swing = clock.elapsedTime * (sprinting ? 12 : 8);
-    chaseModel.leftLeg.rotation.x = Math.sin(swing) * 0.55;
-    chaseModel.rightLeg.rotation.x = Math.sin(swing + Math.PI) * 0.55;
-    chaseModel.leftArm.rotation.x = Math.sin(swing + Math.PI) * 0.4;
-    chaseModel.rightArm.rotation.x = Math.sin(swing) * 0.4;
-    chase.position.y = Math.sin(swing * 2) * 0.03;
+    const legAmp = sprinting ? 0.64 : 0.55;
+    const armAmp = sprinting ? 0.48 : 0.4;
+    chaseModel.leftLeg.rotation.x = Math.sin(swing) * legAmp;
+    chaseModel.rightLeg.rotation.x = Math.sin(swing + Math.PI) * legAmp;
+    chaseModel.leftArm.rotation.x = Math.sin(swing + Math.PI) * armAmp;
+    chaseModel.rightArm.rotation.x = Math.sin(swing) * armAmp;
+    chase.position.y = Math.sin(swing * 2) * (sprinting ? 0.045 : 0.03);
+
+    const leanTarget = -moveVector.x * (sprinting ? 0.16 : 0.09);
+    chase.rotation.z = THREE.MathUtils.lerp(chase.rotation.z, leanTarget, 1 - Math.exp(-10 * dt));
+    chaseModel.torso.rotation.x = THREE.MathUtils.lerp(chaseModel.torso.rotation.x, sprinting ? 0.14 : 0.03, 1 - Math.exp(-8 * dt));
   } else {
     chase.position.y *= Math.exp(-8 * dt);
     chaseModel.leftLeg.rotation.x *= Math.exp(-8 * dt);
     chaseModel.rightLeg.rotation.x *= Math.exp(-8 * dt);
     chaseModel.leftArm.rotation.x *= Math.exp(-8 * dt);
     chaseModel.rightArm.rotation.x *= Math.exp(-8 * dt);
+    chase.rotation.z *= Math.exp(-8 * dt);
+    chaseModel.torso.rotation.x *= Math.exp(-8 * dt);
   }
 
   if (sprinting) {
@@ -3793,6 +3839,106 @@ function applyMovement(dt) {
   } else {
     state.stamina = Math.min(100, state.stamina + (state.upgrades.sprintBoost ? 16 : 14) * dt);
   }
+}
+
+/* ---- drivable cars ---- */
+
+let activeCar = null;
+
+function enterCar(car) {
+  state.driving = true;
+  activeCar = car;
+  car.speed = 0;
+  chase.visible = false;
+  chase.rotation.z = 0;
+  chaseModel.torso.rotation.x = 0;
+  showToast("Chase hops in the car.");
+  setRadio("Pumpkin FM: careful with the neighbor's mailbox, Chase.");
+  soundUpgrade();
+}
+
+function exitCar() {
+  if (!activeCar) {
+    return;
+  }
+  const car = activeCar;
+  const heading = car.group.rotation.y;
+  const rightVec = new THREE.Vector3(-Math.sin(heading), 0, -Math.cos(heading));
+  const exitX = clamp(car.group.position.x + rightVec.x * 1.9, -worldBounds, worldBounds);
+  const exitZ = clamp(car.group.position.z + rightVec.z * 1.9, -worldBounds, worldBounds);
+  chase.position.set(exitX, 0, exitZ);
+  chase.visible = true;
+  state.driving = false;
+  activeCar = null;
+  car.speed = 0;
+  showToast("Chase hops out.");
+}
+
+function driveCar(dt) {
+  const car = activeCar;
+  if (!car) {
+    state.driving = false;
+    return;
+  }
+  const throttleInput = input.locked ? 0 : input.forward;
+  const steerInput = input.locked ? 0 : input.strafe;
+
+  const maxSpeed = 15.5;
+  const maxReverse = -6.5;
+  const accel = 11;
+  const brakeAccel = 16;
+  const drag = 5.5;
+
+  if (throttleInput > 0) {
+    car.speed = Math.min(maxSpeed, car.speed + (car.speed < 0 ? brakeAccel : accel) * dt);
+  } else if (throttleInput < 0) {
+    car.speed = Math.max(maxReverse, car.speed - (car.speed > 0 ? brakeAccel : accel) * dt);
+  } else {
+    car.speed -= Math.sign(car.speed) * Math.min(Math.abs(car.speed), drag * dt);
+  }
+
+  const steerAuthority = clamp(Math.abs(car.speed) / 3, 0.15, 1);
+  if (steerInput !== 0 && Math.abs(car.speed) > 0.05) {
+    const turnRate = 1.9 * steerAuthority * Math.sign(car.speed || 1);
+    car.group.rotation.y += -steerInput * turnRate * dt;
+  }
+
+  const heading = car.group.rotation.y;
+  const forwardVec = new THREE.Vector3(Math.cos(heading), 0, -Math.sin(heading));
+  const carRadius = 1.55;
+  const collides = (x, z) => world.solids.some((solid) => {
+    const nearestX = clamp(x, solid.minX, solid.maxX);
+    const nearestZ = clamp(z, solid.minZ, solid.maxZ);
+    return Math.hypot(x - nearestX, z - nearestZ) < carRadius;
+  });
+
+  const nextX = clamp(car.group.position.x + forwardVec.x * car.speed * dt, -worldBounds, worldBounds);
+  const nextZ = clamp(car.group.position.z + forwardVec.z * car.speed * dt, -worldBounds, worldBounds);
+  if (!collides(nextX, car.group.position.z)) {
+    car.group.position.x = nextX;
+  } else {
+    car.speed *= 0.35;
+  }
+  if (!collides(car.group.position.x, nextZ)) {
+    car.group.position.z = nextZ;
+  } else {
+    car.speed *= 0.35;
+  }
+
+  chase.position.set(car.group.position.x, 0, car.group.position.z);
+}
+
+function updateDrivingCamera(dt) {
+  const car = activeCar;
+  if (!car) {
+    return;
+  }
+  const heading = car.group.rotation.y;
+  const backVec = new THREE.Vector3(-Math.cos(heading), 0, Math.sin(heading));
+  const offset = backVec.multiplyScalar(7.6).add(new THREE.Vector3(0, 4.6, 0));
+  const ideal = car.group.position.clone().add(offset);
+  camera.position.lerp(ideal, 1 - Math.exp(-5 * dt));
+  camera.lookAt(car.group.position.x, 1.2, car.group.position.z);
 }
 
 function updateCandies(dt) {
@@ -4029,9 +4175,18 @@ function runQueuedActions() {
   }
 
   if (input.interactQueued) {
-    const { zone, distance } = nearestZone();
-    if (zone && distance <= zone.radius + 1.1) {
-      interactWithZone(zone);
+    if (state.driving) {
+      exitCar();
+    } else {
+      const { car, distance: carDistance } = nearestCar();
+      const { zone, distance } = nearestZone();
+      const carClose = car && carDistance <= carEnterRadius;
+      const zoneClose = zone && distance <= zone.radius + 1.1;
+      if (carClose && (!zoneClose || carDistance <= distance)) {
+        enterCar(car);
+      } else if (zoneClose) {
+        interactWithZone(zone);
+      }
     }
     input.interactQueued = false;
   }
@@ -4050,7 +4205,11 @@ function tick() {
       state.lightningTimer = 6 + Math.random() * 10;
     }
 
-    applyMovement(dt);
+    if (state.driving) {
+      driveCar(dt);
+    } else {
+      applyMovement(dt);
+    }
     updateCandies(dt);
     updateEnemy(dt);
     updateProjectiles(dt);
@@ -4063,7 +4222,11 @@ function tick() {
     updateBlackout(dt);
     updateTargetArrow();
     updateMissionArrow();
-    updateCamera(dt);
+    if (state.driving) {
+      updateDrivingCamera(dt);
+    } else {
+      updateCamera(dt);
+    }
     updateMissionProximity();
     updatePrompt();
     runQueuedActions();
