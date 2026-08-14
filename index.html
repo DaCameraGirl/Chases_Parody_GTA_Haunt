@@ -46,8 +46,6 @@
     width: 100vw;
     height: 100vh;
     cursor: crosshair;
-    position: relative;
-    z-index: 0;
   }
 
   .overlay {
@@ -89,7 +87,6 @@
     gap: 16px;
     padding: 18px;
     pointer-events: none;
-    z-index: 10;
   }
 
   .panel {
@@ -316,7 +313,6 @@
     padding: 24px;
     pointer-events: auto;
     text-align: center;
-    z-index: 1000;
   }
 
   #centerCard h2 {
@@ -662,11 +658,11 @@
 </style>
 </head>
 <body>
+<canvas id="scene"></canvas>
+
 <div class="overlay vignette"></div>
 <div class="overlay scanlines"></div>
 <div class="overlay" id="flash"></div>
-
-<canvas id="scene"></canvas>
 
 <div id="hud">
   <section class="panel hud-card brand">
@@ -731,7 +727,6 @@
       <li><code>Left click</code> or <code>Space</code> throw candy bomb</li>
       <li><code>Right drag</code> orbit camera</li>
       <li><code>E</code> use shop or safehouse</li>
-      <li><code>V</code> toggle Spirit Vision (when unlocked)</li>
       <li><code>R</code> restart after win or loss</li>
     </ul>
   </section>
@@ -1089,59 +1084,6 @@ addRoad(0, 0, 90, 16, 0);
 addRoad(-26, 14, 38, 12, Math.PI * 0.14);
 addRoad(26, -14, 42, 12, -Math.PI * 0.12);
 
-function createDrain(x, z, rotation = 0) {
-  const group = new THREE.Group();
-  
-  // Orange drain grate base
-  const drainBase = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.5, 0.5, 0.15, 16),
-    new THREE.MeshStandardMaterial({ color: 0xff6600, emissive: 0xcc4400, emissiveIntensity: 0.3, roughness: 0.9, metalness: 0.4 })
-  );
-  drainBase.position.y = 0.08;
-  group.add(drainBase);
-  
-  // Grate bars
-  const barMaterial = new THREE.MeshStandardMaterial({ color: 0x2a2a2a, roughness: 0.8, metalness: 0.6 });
-  for (let i = 0; i < 6; i++) {
-    const bar = new THREE.Mesh(
-      new THREE.BoxGeometry(0.08, 0.02, 0.9),
-      barMaterial
-    );
-    bar.position.set(-0.35 + i * 0.14, 0.16, 0);
-    bar.rotation.y = rotation;
-    group.add(bar);
-  }
-  
-  // Dark hole underneath
-  const hole = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.45, 0.45, 0.1, 16),
-    new THREE.MeshBasicMaterial({ color: 0x000000 })
-  );
-  hole.position.y = 0.05;
-  group.add(hole);
-  
-  // Eerie glow from drain
-  const drainLight = new THREE.PointLight(0xff3300, 0.8, 4, 2);
-  drainLight.position.y = 0.1;
-  group.add(drainLight);
-  
-  group.position.set(x, 0, z);
-  group.rotation.y = rotation;
-  scene.add(group);
-  world.drains = world.drains || [];
-  world.drains.push({ group, light: drainLight, x, z });
-}
-
-// Place drains on streets
-createDrain(-4, 8, 0);
-createDrain(4, -8, 0);
-createDrain(-8, -15, Math.PI / 4);
-createDrain(12, 12, -Math.PI / 6);
-createDrain(-15, 5, Math.PI / 3);
-createDrain(8, -22, 0);
-createDrain(-2, 18, Math.PI / 2);
-createDrain(18, -5, -Math.PI / 4);
-
 function createLamp(x, z) {
   const group = new THREE.Group();
 
@@ -1467,6 +1409,232 @@ function createCar(x, z, rotation, color) {
 
 createCar(-8, 11, 0, 0x7c1e31);
 createCar(14, -5, Math.PI, 0x2a5c7c);
+
+// Orange storm drains with scary clowns
+const DRAIN_SPOTS = [
+  { x: -15, z: 8 }, { x: 12, z: -6 }, { x: -8, z: -15 },
+  { x: 22, z: 10 }, { x: -25, z: -8 }, { x: 5, z: 18 },
+  { x: 18, z: -20 }, { x: -18, z: 20 }
+];
+
+world.drainCovers = [];
+world.drainClowns = [];
+
+function createDrainClown(x, z) {
+  const clown = createCharacter(0x2a2a2a, 0xff0000, { kind: "drainclown" });
+  const g = clown.group;
+  
+  const headY = 2.35;
+  const faceZ = 0.30;
+
+  // HUGE WHITE FACE MASK
+  const faceMask = new THREE.Mesh(
+    new THREE.SphereGeometry(0.38, 16, 16),
+    new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 0.6, roughness: 0.2 })
+  );
+  faceMask.position.set(0, headY, faceZ - 0.05);
+  g.add(faceMask);
+
+  // MASSIVE Glowing RED EYES
+  const leftEye = new THREE.Mesh(
+    new THREE.SphereGeometry(0.12, 12, 12),
+    new THREE.MeshStandardMaterial({ color: 0xff0000, emissive: 0xff0000, emissiveIntensity: 2.5, roughness: 0.1 })
+  );
+  leftEye.position.set(-0.14, headY + 0.08, faceZ + 0.25);
+  g.add(leftEye);
+  clown.leftEye = leftEye;
+
+  const rightEye = leftEye.clone();
+  rightEye.position.x = 0.14;
+  rightEye.material = leftEye.material.clone();
+  g.add(rightEye);
+  clown.rightEye = rightEye;
+
+  // GIANT red clown nose
+  const nose = new THREE.Mesh(
+    new THREE.SphereGeometry(0.18, 12, 12),
+    new THREE.MeshStandardMaterial({ color: 0xff0000, emissive: 0xff0000, emissiveIntensity: 1.5, roughness: 0.2 })
+  );
+  nose.position.set(0, headY - 0.08, faceZ + 0.32);
+  g.add(nose);
+  clown.nose = nose;
+
+  // HUGE creepy red grin
+  const grin = new THREE.Mesh(
+    new THREE.TorusGeometry(0.24, 0.06, 8, 16, Math.PI),
+    new THREE.MeshBasicMaterial({ color: 0xff0000 })
+  );
+  grin.rotation.x = Math.PI;
+  grin.position.set(0, headY - 0.24, faceZ + 0.28);
+  g.add(grin);
+  clown.grin = grin;
+
+  // MASSIVE wild orange clown hair
+  const hairMat = new THREE.MeshStandardMaterial({ color: 0xff6600, emissive: 0xff6600, emissiveIntensity: 1.0, roughness: 0.9 });
+  for (let i = 0; i < 10; i++) {
+    const tuft = new THREE.Mesh(
+      new THREE.SphereGeometry(0.22, 10, 10),
+      hairMat
+    );
+    const angle = (i / 10) * Math.PI * 2;
+    tuft.scale.set(0.8 + Math.random() * 0.3, 1.2 + Math.random() * 0.5, 0.8);
+    tuft.position.set(Math.cos(angle) * 0.32, headY + 0.28 + Math.random() * 0.1, Math.sin(angle) * 0.25);
+    g.add(tuft);
+  }
+
+  // Bright yellow pom-poms
+  for (let i = 0; i < 3; i++) {
+    const pom = new THREE.Mesh(
+      new THREE.SphereGeometry(0.12, 10, 10),
+      new THREE.MeshStandardMaterial({ color: 0xffff00, emissive: 0xffff00, emissiveIntensity: 1.2, roughness: 0.3 })
+    );
+    pom.position.set(0, 1.55 - i * 0.38, 0.35);
+    g.add(pom);
+  }
+
+  g.position.set(x, -1.4, z);
+  g.visible = false;
+  scene.add(g);
+
+  return {
+    model: clown,
+    group: g,
+    drainX: x,
+    drainZ: z,
+    state: "hidden",
+    stateTimer: Math.random() * 3,
+    peekHeight: 0,
+    emergeSpeed: 0,
+    chaseSpeed: 3.8,
+    triggerRadius: 11,
+    emergeRadius: 6.5,
+    loseRadius: 22,
+    lastSeen: 0,
+    bobPhase: Math.random() * Math.PI * 2,
+  };
+}
+
+for (const spot of DRAIN_SPOTS) {
+  const coverGroup = new THREE.Group();
+  const cover = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.72, 0.72, 0.08, 24),
+    new THREE.MeshStandardMaterial({ color: 0xff8f3d, emissive: 0xff5a00, emissiveIntensity: 0.6, roughness: 0.5, metalness: 0.2 })
+  );
+  cover.position.y = 0.14;
+  coverGroup.add(cover);
+  
+  for (let i = 0; i < 5; i++) {
+    const bar = new THREE.Mesh(
+      new THREE.BoxGeometry(1.15, 0.025, 0.06),
+      new THREE.MeshStandardMaterial({ color: 0xffd264, emissive: 0xff8f3d, emissiveIntensity: 0.45 })
+    );
+    bar.position.set(0, 0.185, -0.28 + i * 0.14);
+    coverGroup.add(bar);
+  }
+  
+  const rim = new THREE.Mesh(
+    new THREE.TorusGeometry(0.74, 0.06, 8, 28),
+    new THREE.MeshStandardMaterial({ color: 0xff5d3d, emissive: 0xff2f00, emissiveIntensity: 0.75, roughness: 0.4 })
+  );
+  rim.rotation.x = Math.PI / 2;
+  rim.position.y = 0.16;
+  coverGroup.add(rim);
+  
+  coverGroup.position.set(spot.x, 0, spot.z);
+  scene.add(coverGroup);
+  world.drainCovers.push({ group: coverGroup, x: spot.x, z: spot.z });
+
+  const clown = createDrainClown(spot.x, spot.z);
+  world.drainClowns.push(clown);
+}
+
+function updateDrainClowns(dt) {
+  const px = chase.position.x;
+  const pz = chase.position.z;
+  const t = clock.elapsedTime;
+
+  for (const dc of world.drainClowns) {
+    const dx = px - dc.drainX;
+    const dz = pz - dc.drainZ;
+    const dist = Math.hypot(dx, dz);
+    dc.stateTimer -= dt;
+    dc.bobPhase += dt * 4.5;
+
+    if (dc.state === "hidden") {
+      dc.group.visible = false;
+      dc.group.position.y = -1.4;
+      if (dist < 16 && Math.random() < dt * 0.35) {
+        dc.state = "peeking";
+        dc.stateTimer = 1.2 + Math.random() * 1.8;
+        dc.peekHeight = 0;
+      }
+    } else if (dc.state === "peeking") {
+      dc.group.visible = true;
+      dc.peekHeight = Math.min(1.0, dc.peekHeight + dt * 2.5);
+      const peekY = -0.95 + dc.peekHeight * 0.95 + Math.sin(dc.bobPhase) * 0.035;
+      dc.group.position.set(dc.drainX, peekY, dc.drainZ);
+      dc.group.rotation.y = Math.atan2(dx, dz) + Math.PI;
+      if (dc.model.leftEye) {
+        dc.model.leftEye.material.emissiveIntensity = 0.9 + Math.sin(t * 8) * 0.3;
+      }
+      if (dist < dc.emergeRadius) {
+        dc.state = "emerging";
+        dc.stateTimer = 0.55;
+        dc.emergeSpeed = 0;
+        if (typeof soundFail === "function") soundFail();
+        showToast("Something crawled out of the drain…");
+      } else if (dc.stateTimer <= 0 || dist > 20) {
+        dc.state = "hidden";
+      }
+    } else if (dc.state === "emerging") {
+      dc.group.visible = true;
+      dc.stateTimer -= dt;
+      dc.emergeSpeed += dt * 9;
+      const y = THREE.MathUtils.lerp(-0.15, 0, 1 - Math.max(0, dc.stateTimer) / 0.55);
+      dc.group.position.set(dc.drainX, y, dc.drainZ);
+      dc.group.rotation.y = Math.atan2(dx, dz) + Math.PI;
+      if (dc.stateTimer <= 0) {
+        dc.state = "chasing";
+        dc.lastSeen = t;
+      }
+    } else if (dc.state === "chasing") {
+      dc.group.visible = true;
+      if (dist > 0.9) {
+        const moveX = dx / dist;
+        const moveZ = dz / dist;
+        dc.group.position.x += moveX * dc.chaseSpeed * dt;
+        dc.group.position.z += moveZ * dc.chaseSpeed * dt;
+        dc.group.rotation.y = Math.atan2(moveX, moveZ);
+      }
+      dc.group.position.y = Math.sin(t * 9 + dc.bobPhase) * 0.06;
+      if (dist < 1.5 && clock.elapsedTime - state.lastDamageTime > 0.85 && !state.ended && !state.win) {
+        state.lastDamageTime = clock.elapsedTime;
+        state.health = Math.max(0, state.health - 11);
+        state.fear = Math.min(100, state.fear + 12);
+        showToast("Drain clown got you!");
+        if (typeof soundFail === "function") soundFail();
+      }
+      if (dist > dc.loseRadius) {
+        dc.state = "retreating";
+      }
+      dc.lastSeen = t;
+    } else if (dc.state === "retreating") {
+      const rdx = dc.drainX - dc.group.position.x;
+      const rdz = dc.drainZ - dc.group.position.z;
+      const rdist = Math.hypot(rdx, rdz);
+      if (rdist > 0.35) {
+        dc.group.position.x += (rdx / rdist) * 4.2 * dt;
+        dc.group.position.z += (rdz / rdist) * 4.2 * dt;
+        dc.group.rotation.y = Math.atan2(rdx, rdz);
+      } else {
+        dc.state = "hidden";
+        dc.group.visible = false;
+      }
+    }
+  }
+}
+
+
 createCar(21, 5, Math.PI / 2, 0x5d5d5d);
 createCar(-24, -2, -Math.PI / 2, 0x463f7b);
 
@@ -1603,55 +1771,6 @@ const garageZone = createZone({ type: "garage", label: "Hearse Garage", x: 33, z
 const wardZone = createZone({ type: "ward", label: "Hex Market", x: -2, z: storefrontZ(-34, 6.8), radius: 2.2, color: 0x87ffb4, cssColor: "#87ffb4" });
 const beaconZone = createZone({ type: "beacon", label: "Ritual Beacon", x: 26, z: 0, radius: 2.6, color: 0xffc25f, cssColor: "#ffbf5f" });
 
-/* ---- Phone Booths for Main Story ---- */
-function createPhoneBooth(x, z) {
-  const group = new THREE.Group();
-  
-  const booth = new THREE.Mesh(
-    new THREE.BoxGeometry(1.2, 2.8, 1.2),
-    new THREE.MeshStandardMaterial({ color: 0x8b1a1a, roughness: 0.7, metalness: 0.3, transparent: true, opacity: 0.85 })
-  );
-  booth.position.y = 1.4;
-  group.add(booth);
-  
-  const roof = new THREE.Mesh(
-    new THREE.BoxGeometry(1.4, 0.2, 1.4),
-    new THREE.MeshStandardMaterial({ color: 0x2a0a0a, roughness: 0.9 })
-  );
-  roof.position.y = 2.9;
-  group.add(roof);
-  
-  const phone = new THREE.Mesh(
-    new THREE.BoxGeometry(0.15, 0.4, 0.1),
-    new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.8 })
-  );
-  phone.position.set(0, 1.6, 0.55);
-  group.add(phone);
-  
-  const glowRing = new THREE.Mesh(
-    new THREE.TorusGeometry(0.7, 0.08, 10, 24),
-    new THREE.MeshBasicMaterial({ color: 0x7cf4da, transparent: true, opacity: 0 })
-  );
-  glowRing.rotation.x = Math.PI / 2;
-  glowRing.position.y = 0.1;
-  group.add(glowRing);
-  
-  const light = new THREE.PointLight(0x7cf4da, 0, 8, 2);
-  light.position.set(0, 2.2, 0);
-  group.add(light);
-  
-  group.position.set(x, 0, z);
-  scene.add(group);
-  
-  const phoneBooth = { group, glowRing, light, x, z, active: false };
-  world.phoneBooths.push(phoneBooth);
-  return phoneBooth;
-}
-
-createPhoneBooth(-18, 22);
-createPhoneBooth(-2, -28);
-createPhoneBooth(28, -12);
-
 function createCandy(x, z) {
   const group = new THREE.Group();
   const glowRing = new THREE.Mesh(
@@ -1747,8 +1866,8 @@ function createCharacter(primary, accent, profile = {}) {
   const torsoRadius = isChase ? 0.26 : 0.5;
   const torsoLength = isChase ? 1.2 : 1.2;
   const shoulderWidth = isChase ? 0.34 : 0.55;
-  const legRadius = isChase ? 0.15 : 0.16;
-  const legLength = isChase ? 0.95 : 0.82;
+  const legRadius = isChase ? 0.1 : 0.16;
+  const legLength = isChase ? 1.3 : 0.82;
   const armRadius = isChase ? 0.08 : 0.12;
   const armLength = isChase ? 1.08 : 0.75;
 
@@ -2179,7 +2298,7 @@ const clownNose = new THREE.Mesh(
 clownNose.position.set(0, 2.28, 0.42);
 noFace.add(clownNose);
 
-// Wide creepy smile - MUCH BIGGER
+// Wide creepy smile
 const smileMouth = new THREE.Mesh(
   new THREE.TorusGeometry(0.22, 0.04, 8, 16, Math.PI),
   new THREE.MeshBasicMaterial({ color: 0xff0000 })
@@ -2202,7 +2321,7 @@ const rightClownEye = leftClownEye.clone();
 rightClownEye.position.x = 0.12;
 noFace.add(rightClownEye);
 
-// MASSIVE orange clown hair - wild and crazy
+// MASSIVE orange clown hair
 const hairMaterial = new THREE.MeshStandardMaterial({ color: 0xff6600, emissive: 0xff6600, emissiveIntensity: 0.8, roughness: 0.9 });
 for (let i = 0; i < 12; i++) {
   const hairTuft = new THREE.Mesh(
@@ -2237,246 +2356,6 @@ arrowRing.rotation.x = Math.PI / 2;
 arrowRing.position.y = 3.34;
 targetArrow.add(arrowRing);
 scene.add(targetArrow);
-
-// === DRAIN CLOWN – Sewer ambush enemy ===
-world.drainClowns = [];
-world.drainCovers = [];
-
-const DRAIN_SPOTS = [
-  { x: -18, z:  14 },   // RIGHT AT SPAWN – turn around!
-  { x:   6, z:  14 },   // South market
-  { x:  18, z:  -8 },   // Main drag east
-  { x: -12, z: -22 },   // North cross
-  { x: -28, z:   4 },   // West alley
-];
-
-function createDrainClown(x, z) {
-  // SCARY DRAIN CLOWN - bright colors, huge features
-  const clown = createCharacter(0x2a2a2a, 0xff0000, { kind: "drainclown" });
-  const g = clown.group;
-  
-  const headY = 2.35;
-  const faceZ = 0.30;
-
-  // HUGE WHITE FACE MASK
-  const faceMask = new THREE.Mesh(
-    new THREE.SphereGeometry(0.38, 16, 16),
-    new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 0.6, roughness: 0.2 })
-  );
-  faceMask.position.set(0, headY, faceZ - 0.05);
-  g.add(faceMask);
-
-  // MASSIVE Glowing RED EYES
-  const leftEye = new THREE.Mesh(
-    new THREE.SphereGeometry(0.12, 12, 12),
-    new THREE.MeshStandardMaterial({ color: 0xff0000, emissive: 0xff0000, emissiveIntensity: 2.5, roughness: 0.1 })
-  );
-  leftEye.position.set(-0.14, headY + 0.08, faceZ + 0.25);
-  g.add(leftEye);
-  clown.leftEye = leftEye;
-
-  const rightEye = leftEye.clone();
-  rightEye.position.x = 0.14;
-  rightEye.material = leftEye.material.clone();
-  g.add(rightEye);
-  clown.rightEye = rightEye;
-
-  // GIANT red clown nose
-  const nose = new THREE.Mesh(
-    new THREE.SphereGeometry(0.18, 12, 12),
-    new THREE.MeshStandardMaterial({ color: 0xff0000, emissive: 0xff0000, emissiveIntensity: 1.5, roughness: 0.2 })
-  );
-  nose.position.set(0, headY - 0.08, faceZ + 0.32);
-  g.add(nose);
-  clown.nose = nose;
-
-  // HUGE creepy red grin
-  const grin = new THREE.Mesh(
-    new THREE.TorusGeometry(0.24, 0.06, 8, 16, Math.PI),
-    new THREE.MeshBasicMaterial({ color: 0xff0000 })
-  );
-  grin.rotation.x = Math.PI;
-  grin.position.set(0, headY - 0.24, faceZ + 0.28);
-  g.add(grin);
-  clown.grin = grin;
-
-  // MASSIVE wild orange clown hair
-  const hairMat = new THREE.MeshStandardMaterial({ color: 0xff6600, emissive: 0xff6600, emissiveIntensity: 1.0, roughness: 0.9 });
-  for (let i = 0; i < 10; i++) {
-    const tuft = new THREE.Mesh(
-      new THREE.SphereGeometry(0.22, 10, 10),
-      hairMat
-    );
-    const angle = (i / 10) * Math.PI * 2;
-    tuft.scale.set(0.8 + Math.random() * 0.3, 1.2 + Math.random() * 0.5, 0.8);
-    tuft.position.set(Math.cos(angle) * 0.32, headY + 0.28 + Math.random() * 0.1, Math.sin(angle) * 0.25);
-    g.add(tuft);
-  }
-
-  // Bright yellow pom-poms down the front
-  for (let i = 0; i < 3; i++) {
-    const pom = new THREE.Mesh(
-      new THREE.SphereGeometry(0.12, 10, 10),
-      new THREE.MeshStandardMaterial({ color: 0xffff00, emissive: 0xffff00, emissiveIntensity: 1.2, roughness: 0.3 })
-    );
-    pom.position.set(0, 1.55 - i * 0.38, 0.35);
-    g.add(pom);
-  }
-
-  g.position.set(x, -1.4, z); // start hidden below ground
-  g.visible = false;
-  scene.add(g);
-
-  return {
-    model: clown,
-    group: g,
-    drainX: x,
-    drainZ: z,
-    state: "hidden", // hidden | peeking | emerging | chasing | retreating
-    stateTimer: Math.random() * 3,
-    peekHeight: 0,
-    emergeSpeed: 0,
-    chaseSpeed: 3.8,
-    triggerRadius: 11,
-    emergeRadius: 6.5,
-    loseRadius: 22,
-    lastSeen: 0,
-    bobPhase: Math.random() * Math.PI * 2,
-  };
-}
-
-// Build drain covers + clowns
-for (const spot of DRAIN_SPOTS) {
-  // Manhole cover
-  const coverGroup = new THREE.Group();
-  const cover = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.72, 0.72, 0.08, 24),
-    new THREE.MeshStandardMaterial({ color: 0xff8f3d, emissive: 0xff5a00, emissiveIntensity: 0.6, roughness: 0.5, metalness: 0.2 })
-  );
-  cover.position.y = 0.14;
-  coverGroup.add(cover);
-  // drain grate lines
-  for (let i = 0; i < 5; i++) {
-    const bar = new THREE.Mesh(
-      new THREE.BoxGeometry(1.15, 0.025, 0.06),
-      new THREE.MeshStandardMaterial({ color: 0xffd264, emissive: 0xff8f3d, emissiveIntensity: 0.45 })
-  );
-    bar.position.set(0, 0.185, -0.28 + i * 0.14);
-    coverGroup.add(bar);
-  }
-  // rim
-  const rim = new THREE.Mesh(
-    new THREE.TorusGeometry(0.74, 0.06, 8, 28),
-    new THREE.MeshStandardMaterial({ color: 0xff5d3d, emissive: 0xff2f00, emissiveIntensity: 0.75, roughness: 0.4 })
-  );
-  rim.rotation.x = Math.PI / 2;
-  rim.position.y = 0.16;
-  coverGroup.add(rim);
-  
-  coverGroup.position.set(spot.x, 0, spot.z);
-  scene.add(coverGroup);
-  world.drainCovers.push({ group: coverGroup, x: spot.x, z: spot.z });
-
-  // Clown lurking below
-  const clown = createDrainClown(spot.x, spot.z);
-  world.drainClowns.push(clown);
-}
-
-function updateDrainClowns(dt) {
-  const px = chase.position.x;
-  const pz = chase.position.z;
-  const t = clock.elapsedTime;
-
-  for (const dc of world.drainClowns) {
-    const dx = px - dc.drainX;
-    const dz = pz - dc.drainZ;
-    const dist = Math.hypot(dx, dz);
-    dc.stateTimer -= dt;
-    dc.bobPhase += dt * 4.5;
-
-    if (dc.state === "hidden") {
-      dc.group.visible = false;
-      dc.group.position.y = -1.4;
-      // Random peek chance when Chase is kinda close
-      if (dist < 16 && Math.random() < dt * 0.35) {
-        dc.state = "peeking";
-        dc.stateTimer = 1.2 + Math.random() * 1.8;
-        dc.peekHeight = 0;
-      }
-    } else if (dc.state === "peeking") {
-      dc.group.visible = true;
-      // Bob head/shoulders just above the grate
-      dc.peekHeight = Math.min(1.0, dc.peekHeight + dt * 2.5);
-      const peekY = -0.95 + dc.peekHeight * 0.95 + Math.sin(dc.bobPhase) * 0.035;
-      dc.group.position.set(dc.drainX, peekY, dc.drainZ);
-      // Look at Chase – creepy
-      dc.group.rotation.y = Math.atan2(dx, dz) + Math.PI;
-      // Eyes glow brighter when peeking
-      if (dc.model.leftEye) {
-        dc.model.leftEye.material.emissiveIntensity = 0.9 + Math.sin(t * 8) * 0.3;
-      }
-      // If Chase gets close – EMERGE!
-      if (dist < dc.emergeRadius) {
-        dc.state = "emerging";
-        dc.stateTimer = 0.55;
-        dc.emergeSpeed = 0;
-        if (typeof soundFail === "function") soundFail();
-        showToast("Something crawled out of the drain…");
-      } else if (dc.stateTimer <= 0 || dist > 20) {
-        // Duck back down
-        dc.state = "hidden";
-      }
-    } else if (dc.state === "emerging") {
-      dc.group.visible = true;
-      dc.stateTimer -= dt;
-      dc.emergeSpeed += dt * 9;
-      const y = THREE.MathUtils.lerp(-0.15, 0, 1 - Math.max(0, dc.stateTimer) / 0.55);
-      dc.group.position.set(dc.drainX, y, dc.drainZ);
-      dc.group.rotation.y = Math.atan2(dx, dz) + Math.PI;
-      if (dc.stateTimer <= 0) {
-        dc.state = "chasing";
-        dc.lastSeen = t;
-      }
-    } else if (dc.state === "chasing") {
-      dc.group.visible = true;
-      // Chase Chase!
-      if (dist > 0.9) {
-        const moveX = dx / dist;
-        const moveZ = dz / dist;
-        dc.group.position.x += moveX * dc.chaseSpeed * dt;
-        dc.group.position.z += moveZ * dc.chaseSpeed * dt;
-        dc.group.rotation.y = Math.atan2(moveX, moveZ);
-      }
-      dc.group.position.y = Math.sin(t * 9 + dc.bobPhase) * 0.06;
-      // Damage if close enough
-      if (dist < 1.5 && clock.elapsedTime - state.lastDamageTime > 0.85 && !state.ended && !state.win) {
-        state.lastDamageTime = clock.elapsedTime;
-        state.health = Math.max(0, state.health - 11);
-        state.fear = Math.min(100, state.fear + 12);
-        showToast("Drain clown got you!");
-        if (typeof soundFail === "function") soundFail();
-      }
-      // Lose interest if Chase gets far away
-      if (dist > dc.loseRadius) {
-        dc.state = "retreating";
-      }
-      dc.lastSeen = t;
-    } else if (dc.state === "retreating") {
-      // Run back to drain
-      const rdx = dc.drainX - dc.group.position.x;
-      const rdz = dc.drainZ - dc.group.position.z;
-      const rdist = Math.hypot(rdx, rdz);
-      if (rdist > 0.35) {
-        dc.group.position.x += (rdx / rdist) * 4.2 * dt;
-        dc.group.position.z += (rdz / rdist) * 4.2 * dt;
-        dc.group.rotation.y = Math.atan2(rdx, rdz);
-      } else {
-        dc.state = "hidden";
-        dc.group.visible = false;
-      }
-    }
-  }
-}
 
 const rainCount = 900;
 const rainGeometry = new THREE.BufferGeometry();
@@ -2792,16 +2671,6 @@ function collectCandy(candy) {
   showToast("+1 loot stash   +$50");
   setRadio("Stash scooped: cash, snacks, and one more reason for No-Face to stay mad.");
   refreshMissionProgress();
-  
-  // Trigger main story Phase 1 on first loot collection
-  if (!mainStoryState.firstLootCollected && !mainStoryState.active) {
-    mainStoryState.firstLootCollected = true;
-    window.setTimeout(() => {
-      if (!mainStoryState.active) {
-        triggerMainStoryPhase1();
-      }
-    }, 3000);
-  }
 }
 
 function canAfford(cost) {
@@ -3061,41 +2930,6 @@ function shootEgg() {
 
 world.missionEnemies = [];
 world.missionPickups = [];
-
-/* ===================== MAIN STORY: The Halloween Heist ===================== */
-
-const mainStoryState = {
-  id: "halloweenHeist",
-  phase: 0,
-  active: false,
-  anchorsCollected: 0,
-  anchorsDestroyed: 0,
-  watcherMet: false,
-  truthRevealed: false,
-  finalChoice: null,
-  huntersActive: false,
-  spiritVisionUnlocked: false,
-  spiritVisionActive: false,
-  ritualDisruptionBombs: 0,
-  phoneBoothsActive: false,
-  firstLootCollected: false,
-  soulAnchors: {
-    graveyard: { collected: false, destroyed: false },
-    rooftop: { collected: false, destroyed: false },
-    drain: { collected: false, destroyed: false }
-  },
-  npcInteractions: {
-    dreHeist: false,
-    brokerHeist: false,
-    morrowHeist: false
-  },
-  path: null // 'bind', 'free', 'destroy', 'reject'
-};
-
-world.phoneBooths = [];
-world.soulAnchors = [];
-world.shadowWraiths = [];
-world.hunters = [];
 
 const missionState = {
   id: "costumeDebt",
@@ -4092,624 +3926,6 @@ function finalOutcomeDestroy() {
 
 /* ===================== end Costume Debt side mission ===================== */
 
-
-/* ===================== MAIN STORY: The Halloween Heist ===================== */
-
-/* ---- Phase 1: The Warning ---- */
-
-function triggerMainStoryPhase1() {
-  mainStoryState.active = true;
-  mainStoryState.phase = 1;
-  mainStoryState.phoneBoothsActive = true;
-  
-  // Activate phone booths
-  for (const booth of world.phoneBooths) {
-    booth.active = true;
-    booth.glowRing.material.opacity = 0.75;
-    booth.light.intensity = 1.2;
-  }
-  
-  sendPhoneMessage("Unknown", "Pick up. Any phone booth. Now.");
-  showToast("Main Story: The Warning - Find a phone booth");
-  setRadio("Pumpkin FM: anyone else hearing weird static on the line tonight?");
-  soundPickup();
-}
-
-function interactWithPhoneBooth(booth) {
-  if (!booth.active || mainStoryState.watcherMet) {
-    showToast("The line is dead.");
-    return;
-  }
-  
-  mainStoryState.watcherMet = true;
-  booth.active = false;
-  booth.glowRing.material.opacity = 0;
-  booth.light.intensity = 0;
-  
-  openWatcherIntroDialogue();
-}
-
-function openWatcherIntroDialogue() {
-  openDialogue({
-    speaker: "The Watcher",
-    text: "Chase. Listen carefully. The beacon you're planning to light? It's not what Morrow told you. It's a binding ritual — and if you light it without the Soul Anchors, you'll unleash something far worse than No-Face.",
-    closable: true,
-    choices: [
-      { label: "Who are you?", action: () => openWatcherIdentity() },
-      { label: "What do you want from me?", action: () => openWatcherMission() },
-      { label: "I don't have time for conspiracy theories.", action: () => delayMainStory() }
-    ]
-  });
-}
-
-function openWatcherIdentity() {
-  openDialogue({
-    speaker: "The Watcher",
-    text: "I've been watching this neighborhood for longer than you've been alive. I know what the beacon does. I know what Morrow's hiding. And I know you're the only one who can stop this cycle.",
-    closable: true,
-    choices: [
-      { label: "What's the mission?", action: () => openWatcherMission() },
-      { label: "Why me?", action: () => openWatcherWhyChase() }
-    ]
-  });
-}
-
-function openWatcherWhyChase() {
-  openDialogue({
-    speaker: "The Watcher",
-    text: "Because you're not bound by the old agreements. You're an outsider. That makes you dangerous to them — and useful to me. Now, will you help, or will you let this neighborhood burn?",
-    closable: true,
-    choices: [
-      { label: "Tell me what to do.", action: () => openWatcherMission() },
-      { label: "I need to think about this.", action: () => delayMainStory() }
-    ]
-  });
-}
-
-function openWatcherMission() {
-  openDialogue({
-    speaker: "The Watcher",
-    text: "Three Soul Anchors are hidden around the neighborhood. Find them before you light the beacon. One behind the graveyard. One on the old rooftop. One in the storm drain. Get them, and you'll have a choice at the beacon. Ignore them, and you'll regret it.",
-    closable: false,
-    choices: [
-      { label: "I'll find them.", action: () => acceptMainStoryMission() },
-      { label: "What if I just light the beacon anyway?", action: () => openWatcherWarning() }
-    ]
-  });
-}
-
-function openWatcherWarning() {
-  openDialogue({
-    speaker: "The Watcher",
-    text: "Then No-Face becomes the least of your problems. The binding will break, but what's underneath will rise. Your choice, Chase. But don't say I didn't warn you.",
-    closable: false,
-    choices: [
-      { label: "Fine. I'll get the anchors.", action: () => acceptMainStoryMission() },
-      { label: "I'll take my chances.", action: () => rejectMainStoryMission() }
-    ]
-  });
-}
-
-function acceptMainStoryMission() {
-  mainStoryState.phase = 2;
-  state.cash += 100;
-  state.fear = Math.max(0, state.fear - 5);
-  
-  spawnSoulAnchors();
-  
-  showToast("Main Story: Soul Anchor Hunt - Find 3 anchors");
-  setRadio("The Watcher: check your map. The anchors are marked. Move fast.");
-  soundUpgrade();
-  
-  // Deactivate remaining phone booths
-  for (const booth of world.phoneBooths) {
-    booth.active = false;
-    booth.glowRing.material.opacity = 0;
-    booth.light.intensity = 0;
-  }
-}
-
-function delayMainStory() {
-  mainStoryState.phoneBoothsActive = true;
-  showToast("You can return to any phone booth when ready.");
-  setRadio("The Watcher: I'll be waiting. Don't take too long.");
-}
-
-function rejectMainStoryMission() {
-  mainStoryState.active = false;
-  mainStoryState.phase = 0;
-  mainStoryState.phoneBoothsActive = false;
-  
-  for (const booth of world.phoneBooths) {
-    booth.active = false;
-    booth.glowRing.material.opacity = 0;
-    booth.light.intensity = 0;
-  }
-  
-  showToast("Main Story declined. You can restart by collecting more loot.");
-  setRadio("The Watcher: your funeral, Chase.");
-}
-
-/* ---- Phase 2: Soul Anchor Hunt ---- */
-
-function spawnSoulAnchors() {
-  const anchorPositions = [
-    { key: 'graveyard', x: -35, z: -30, label: 'Graveyard Anchor' },
-    { key: 'rooftop', x: 31, z: 12, label: 'Rooftop Anchor' },
-    { key: 'drain', x: 8, z: -8, label: 'Storm Drain Anchor' }
-  ];
-  
-  anchorPositions.forEach(pos => {
-    const group = new THREE.Group();
-    
-    const outerRing = new THREE.Mesh(
-      new THREE.TorusGeometry(0.6, 0.08, 12, 32),
-      new THREE.MeshBasicMaterial({ color: 0x9d4edd, transparent: true, opacity: 0.85 })
-    );
-    outerRing.rotation.x = Math.PI / 2;
-    group.add(outerRing);
-    
-    const innerRing = new THREE.Mesh(
-      new THREE.TorusGeometry(0.35, 0.05, 10, 24),
-      new THREE.MeshBasicMaterial({ color: 0xc77dff, transparent: true, opacity: 0.75 })
-    );
-    innerRing.rotation.x = Math.PI / 2;
-    innerRing.position.y = 0.05;
-    group.add(innerRing);
-    
-    const core = new THREE.Mesh(
-      new THREE.SphereGeometry(0.25, 16, 16),
-      new THREE.MeshStandardMaterial({
-        color: 0xe0aaff,
-        emissive: 0x9d4edd,
-        emissiveIntensity: 1.2,
-        roughness: 0.3,
-        metalness: 0.4
-      })
-    );
-    core.position.y = 0.4;
-    group.add(core);
-    
-    const particles = new THREE.Group();
-    for (let i = 0; i < 8; i++) {
-      const particle = new THREE.Mesh(
-        new THREE.SphereGeometry(0.04, 8, 8),
-        new THREE.MeshBasicMaterial({ color: 0xc77dff })
-      );
-      const angle = (i / 8) * Math.PI * 2;
-      particle.position.set(Math.cos(angle) * 0.5, 0.4, Math.sin(angle) * 0.5);
-      particles.add(particle);
-    }
-    group.add(particles);
-    
-    const light = new THREE.PointLight(0x9d4edd, 2.5, 12, 2);
-    light.position.y = 0.4;
-    group.add(light);
-    
-    group.position.set(pos.x, 0.15, pos.z);
-    scene.add(group);
-    
-    // Spawn guardian Shadow Wraith
-    const wraith = spawnShadowWraith(pos.x, pos.z, pos.key);
-    
-    const anchor = {
-      key: pos.key,
-      group,
-      core,
-      outerRing,
-      innerRing,
-      particles,
-      light,
-      x: pos.x,
-      z: pos.z,
-      label: pos.label,
-      phase: Math.random() * Math.PI * 2,
-      wraith
-    };
-    
-    world.soulAnchors.push(anchor);
-  });
-}
-
-function spawnShadowWraith(x, z, anchorKey) {
-  const group = new THREE.Group();
-  
-  const body = new THREE.Mesh(
-    new THREE.SphereGeometry(0.85, 16, 16),
-    new THREE.MeshStandardMaterial({
-      color: 0x1a0a2e,
-      emissive: 0x6a0dad,
-      emissiveIntensity: 0.9,
-      transparent: true,
-      opacity: 0.75,
-      roughness: 0.2
-    })
-  );
-  body.scale.y = 1.3;
-  group.add(body);
-  
-  const tail = new THREE.Mesh(
-    new THREE.ConeGeometry(0.7, 1.4, 12),
-    new THREE.MeshStandardMaterial({
-      color: 0x0d0221,
-      emissive: 0x6a0dad,
-      emissiveIntensity: 0.7,
-      transparent: true,
-      opacity: 0.65
-    })
-  );
-  tail.position.y = -1.1;
-  group.add(tail);
-  
-  const aura = new THREE.Mesh(
-    new THREE.SphereGeometry(1.2, 16, 16),
-    new THREE.MeshBasicMaterial({
-      color: 0x9d4edd,
-      transparent: true,
-      opacity: 0.15,
-      side: THREE.BackSide
-    })
-  );
-  group.add(aura);
-  
-  group.position.set(x, 2.8, z);
-  scene.add(group);
-  
-  const wraith = {
-    group,
-    body,
-    aura,
-    anchorKey,
-    hp: 3,
-    maxHp: 3,
-    speed: 2.8,
-    damage: 12,
-    fearGain: 8,
-    lastHit: -10,
-    baseX: x,
-    baseZ: z,
-    baseY: 2.8,
-    patrolRadius: 6,
-    defeated: false
-  };
-  
-  world.shadowWraiths.push(wraith);
-  return wraith;
-}
-
-function interactWithSoulAnchor(anchor) {
-  if (mainStoryState.soulAnchors[anchor.key].collected || mainStoryState.soulAnchors[anchor.key].destroyed) {
-    return;
-  }
-  
-  if (anchor.wraith && !anchor.wraith.defeated) {
-    showToast("Defeat the Shadow Wraith first!");
-    return;
-  }
-  
-  openSoulAnchorChoice(anchor);
-}
-
-function openSoulAnchorChoice(anchor) {
-  openDialogue({
-    speaker: "Soul Anchor",
-    text: `The ${anchor.label} pulses with ancient energy. You can feel its power — and its danger. What will you do?`,
-    closable: false,
-    choices: [
-      { label: "Take the anchor", action: () => collectSoulAnchor(anchor) },
-      { label: "Destroy the anchor", action: () => destroySoulAnchor(anchor) },
-      { label: "Leave it for now", action: () => closeDialogue() }
-    ]
-  });
-}
-
-function collectSoulAnchor(anchor) {
-  mainStoryState.soulAnchors[anchor.key].collected = true;
-  mainStoryState.anchorsCollected += 1;
-  
-  scene.remove(anchor.group);
-  const idx = world.soulAnchors.indexOf(anchor);
-  if (idx >= 0) world.soulAnchors.splice(idx, 1);
-  
-  state.cash += 150;
-  state.fear = Math.max(0, state.fear - 10);
-  missionState.heat.supernatural = Math.min(100, missionState.heat.supernatural + 15);
-  
-  showToast(`Soul Anchor collected (${mainStoryState.anchorsCollected}/3) +$150`);
-  setRadio(`The Watcher: ${anchor.label} secured. ${3 - mainStoryState.anchorsCollected} to go.`);
-  soundUpgrade();
-  
-  if (mainStoryState.anchorsCollected === 1) {
-    mainStoryState.spiritVisionUnlocked = true;
-    showToast("Spirit Vision unlocked! Press V to toggle.");
-  }
-  
-  checkSoulAnchorProgress();
-}
-
-function destroySoulAnchor(anchor) {
-  mainStoryState.soulAnchors[anchor.key].destroyed = true;
-  mainStoryState.anchorsDestroyed += 1;
-  
-  anchor.core.material.color.set(0xff4444);
-  anchor.core.material.emissive.set(0xaa0000);
-  
-  window.setTimeout(() => {
-    scene.remove(anchor.group);
-    const idx = world.soulAnchors.indexOf(anchor);
-    if (idx >= 0) world.soulAnchors.splice(idx, 1);
-  }, 500);
-  
-  state.cash += 100;
-  missionState.heat.supernatural = Math.min(100, missionState.heat.supernatural + 25);
-  
-  showToast(`${anchor.label} destroyed. The Watcher won't like this.`);
-  setRadio("The Watcher: what have you done? That anchor was our leverage!");
-  soundFail();
-  
-  checkSoulAnchorProgress();
-}
-
-function checkSoulAnchorProgress() {
-  const total = mainStoryState.anchorsCollected + mainStoryState.anchorsDestroyed;
-  
-  if (total >= 2 && !mainStoryState.truthRevealed) {
-    window.setTimeout(() => {
-      if (mainStoryState.phase === 2) {
-        triggerMainStoryPhase3();
-      }
-    }, 2000);
-  }
-}
-
-/* ---- Phase 3: The Truth About No-Face ---- */
-
-function triggerMainStoryPhase3() {
-  mainStoryState.phase = 3;
-  mainStoryState.truthRevealed = true;
-  
-  sendPhoneMessage("The Watcher", "Meet me at the old church. Northwest corner. It's time you learned the truth about No-Face.");
-  showToast("Main Story: The Truth - Head to the abandoned church");
-  setRadio("Pumpkin FM: reports of strange lights near the old church district...");
-  
-  // Create church location marker
-  createChurchZone();
-}
-
-function createChurchZone() {
-  const churchZone = createZone({
-    type: "church",
-    label: "Abandoned Church",
-    x: -38,
-    z: 38,
-    radius: 2.8,
-    color: 0x9d4edd,
-    cssColor: "#9d4edd"
-  });
-  world.zones.push(churchZone);
-}
-
-function interactWithChurch() {
-  if (mainStoryState.phase !== 3) {
-    showToast("The church doors are locked.");
-    return;
-  }
-  
-  openWatcherTruthDialogue();
-}
-
-function openWatcherTruthDialogue() {
-  openDialogue({
-    speaker: "The Watcher",
-    text: "No-Face wasn't always a monster. He was this neighborhood's protector — until Morrow and the others bound him with that beacon. They use it to control the streets, to keep people afraid. You have the power to change that, Chase.",
-    closable: true,
-    choices: [
-      { label: "Help me free No-Face", action: () => chooseRedemptionPath() },
-      { label: "Help me destroy No-Face", action: () => chooseEliminationPath() },
-      { label: "I'll decide at the beacon", action: () => chooseNeutralPath() }
-    ]
-  });
-}
-
-function chooseRedemptionPath() {
-  mainStoryState.path = 'free';
-  mainStoryState.phase = 4;
-  
-  state.cash += 200;
-  unlockCostume("grinningSaint");
-  
-  showToast("Path chosen: Liberation. Unlock special costume at Costume Crypt.");
-  setRadio("The Watcher: you're doing the right thing. Prepare for the beacon.");
-  soundUpgrade();
-}
-
-function chooseEliminationPath() {
-  mainStoryState.path = 'destroy';
-  mainStoryState.phase = 4;
-  mainStoryState.ritualDisruptionBombs = 3;
-  
-  state.cash += 200;
-  
-  showToast("Path chosen: Elimination. 3 Ritual Disruption Bombs added.");
-  setRadio("The Watcher: if that's your choice... may you find peace in the silence.");
-  soundUpgrade();
-}
-
-function chooseNeutralPath() {
-  mainStoryState.path = 'neutral';
-  mainStoryState.phase = 4;
-  
-  state.cash += 150;
-  
-  showToast("Path: Undecided. You can still choose at the beacon.");
-  setRadio("The Watcher: keep your options open. Smart.");
-  soundUpgrade();
-}
-
-/* ---- Update functions for main story ---- */
-
-function updateSoulAnchors(dt) {
-  for (const anchor of world.soulAnchors) {
-    anchor.group.rotation.y += dt * 0.8;
-    anchor.core.position.y = 0.4 + Math.sin(clock.elapsedTime * 2 + anchor.phase) * 0.15;
-    anchor.particles.rotation.y += dt * 2;
-    anchor.light.intensity = 2.5 + Math.sin(clock.elapsedTime * 3 + anchor.phase) * 0.5;
-    
-    const distance = getFlatDistance(chase.position, anchor.group.position);
-    if (distance < 2 && !mainStoryState.soulAnchors[anchor.key].collected && !mainStoryState.soulAnchors[anchor.key].destroyed) {
-      if (!anchor.wraith || anchor.wraith.defeated) {
-        ui.promptText.textContent = `Press E to interact with ${anchor.label}`;
-        ui.promptCard.classList.add("on");
-      }
-    }
-  }
-}
-
-function updateShadowWraiths(dt) {
-  for (const wraith of world.shadowWraiths) {
-    if (wraith.defeated) continue;
-    
-    const toPlayer = new THREE.Vector3(
-      chase.position.x - wraith.group.position.x,
-      0,
-      chase.position.z - wraith.group.position.z
-    );
-    const distance = toPlayer.length();
-    
-    if (distance < wraith.patrolRadius) {
-      toPlayer.normalize();
-      wraith.group.position.addScaledVector(toPlayer, wraith.speed * dt);
-      wraith.group.rotation.y = Math.atan2(toPlayer.x, toPlayer.z);
-    } else {
-      const angle = clock.elapsedTime * 0.5;
-      wraith.group.position.x = wraith.baseX + Math.cos(angle) * wraith.patrolRadius * 0.5;
-      wraith.group.position.z = wraith.baseZ + Math.sin(angle) * wraith.patrolRadius * 0.5;
-    }
-    
-    wraith.group.position.y = wraith.baseY + Math.sin(clock.elapsedTime * 2) * 0.2;
-    wraith.aura.rotation.y += dt * 1.5;
-    
-    if (distance < 2 && clock.elapsedTime - wraith.lastHit > 1.2 && !state.ended && !state.win) {
-      wraith.lastHit = clock.elapsedTime;
-      state.health = Math.max(0, state.health - wraith.damage);
-      state.fear = Math.min(100, state.fear + wraith.fearGain);
-      showToast("Shadow Wraith strikes!");
-      soundFail();
-    }
-  }
-}
-
-function updatePhoneBooths(dt) {
-  for (const booth of world.phoneBooths) {
-    if (booth.active) {
-      booth.glowRing.rotation.z += dt * 2;
-      booth.light.intensity = 1.2 + Math.sin(clock.elapsedTime * 4) * 0.3;
-      
-      const distance = getFlatDistance(chase.position, booth.group.position);
-      if (distance < 1.8) {
-        ui.promptText.textContent = "Press E to answer the phone";
-        ui.promptCard.classList.add("on");
-      }
-    }
-  }
-}
-
-function checkMainStoryInteractions() {
-  if (input.interactQueued && !input.locked && !state.driving) {
-    // Check phone booths
-    for (const booth of world.phoneBooths) {
-      if (booth.active) {
-        const distance = getFlatDistance(chase.position, booth.group.position);
-        if (distance < 1.8) {
-          interactWithPhoneBooth(booth);
-          input.interactQueued = false;
-          return;
-        }
-      }
-    }
-    
-    // Check soul anchors
-    for (const anchor of world.soulAnchors) {
-      const distance = getFlatDistance(chase.position, anchor.group.position);
-      if (distance < 2) {
-        interactWithSoulAnchor(anchor);
-        input.interactQueued = false;
-        return;
-      }
-    }
-    
-    // Check church
-    const { zone } = nearestZone();
-    if (zone && zone.type === "church") {
-      const distance = getFlatDistance(chase.position, zone.ring.position);
-      if (distance <= zone.radius + 1.1) {
-        interactWithChurch();
-        input.interactQueued = false;
-        return;
-      }
-    }
-  }
-}
-
-function updateSpiritVision(dt) {
-  if (!mainStoryState.spiritVisionUnlocked) return;
-  
-  if (mainStoryState.spiritVisionActive) {
-    state.stamina = Math.max(0, state.stamina - 8 * dt);
-    
-    // Highlight collectibles
-    for (const candy of world.candies) {
-      if (!candy.collected && candy.sparkle) {
-        candy.sparkle.material.emissiveIntensity = 2 + Math.sin(clock.elapsedTime * 8) * 0.5;
-      }
-    }
-    
-    if (state.stamina <= 0) {
-      mainStoryState.spiritVisionActive = false;
-      showToast("Spirit Vision depleted");
-    }
-  }
-}
-
-/* ---- Projectile hit detection for Shadow Wraiths ---- */
-
-function checkShadowWraithHits(shot) {
-  for (const wraith of world.shadowWraiths) {
-    if (wraith.defeated) continue;
-    
-    const hitRadius = state.upgrades.stickyEggs ? 1.25 : 0.95;
-    const hitDistance = getFlatDistance(shot.projectile.position, wraith.group.position);
-    
-    if (hitDistance < hitRadius + 0.4 && Math.abs(shot.projectile.position.y - (wraith.baseY + 1)) < 2) {
-      wraith.hp -= 1;
-      missionState.heat.supernatural = Math.min(100, missionState.heat.supernatural + 5);
-      soundHit();
-      
-      wraith.body.material.emissiveIntensity = 1.5;
-      window.setTimeout(() => {
-        if (wraith.body) wraith.body.material.emissiveIntensity = 0.9;
-      }, 100);
-      
-      if (wraith.hp <= 0) {
-        wraith.defeated = true;
-        wraith.group.visible = false;
-        state.cash += 200;
-        showToast(`Shadow Wraith defeated! +$200`);
-        setRadio("The Watcher: one less guardian. The anchor is yours.");
-        soundUpgrade();
-      } else {
-        showToast(`Shadow Wraith hit! (${wraith.hp}/${wraith.maxHp} HP)`);
-      }
-      
-      return true;
-    }
-  }
-  return false;
-}
-
-/* ===================== end Main Story: The Halloween Heist ===================== */
-
-
 function startGame() {
   state.started = true;
   ui.centerCard.classList.add("hidden");
@@ -4723,21 +3939,10 @@ function restartGame() {
   window.location.reload();
 }
 
-console.log("Setting up button listeners...");
-console.log("startButton element:", ui.startButton);
-console.log("startButton computed style:", ui.startButton ? window.getComputedStyle(ui.startButton) : "null");
-
-ui.startButton.addEventListener("click", () => {
-  console.log("START BUTTON CLICKED!");
-  startGame();
-});
-
+ui.startButton.addEventListener("click", startGame);
 ui.howButton.addEventListener("click", () => {
-  console.log("HOW BUTTON CLICKED!");
   ui.centerCard.querySelector("p").textContent = "Mission route: hit Costume Crypt for Chase's disguise, break into Hearse Garage for the keys, grab the ward sigil from Hex Market, light the beacon, then sprint Chase home. Loot stashes fund upgrades, lamp light lowers fear, and candy bombs still buy time against No-Face.";
 });
-
-console.log("Button listeners attached successfully");
 
 window.addEventListener("keydown", (event) => {
   ensureAudio();
@@ -4789,10 +3994,6 @@ window.addEventListener("keydown", (event) => {
     input.fireQueued = true;
   }
   if (event.code === "KeyE") input.interactQueued = true;
-  if (event.code === "KeyV" && mainStoryState.spiritVisionUnlocked) {
-    mainStoryState.spiritVisionActive = !mainStoryState.spiritVisionActive;
-    showToast(mainStoryState.spiritVisionActive ? "Spirit Vision: ON" : "Spirit Vision: OFF");
-  }
   if (event.code === "KeyR" && (state.ended || state.win)) restartGame();
 });
 
@@ -4807,8 +4008,10 @@ window.addEventListener("keyup", (event) => {
 canvas.addEventListener("contextmenu", (event) => event.preventDefault());
 
 canvas.addEventListener("mousedown", (event) => {
-  if (event.target !== canvas) return;
   ensureAudio();
+  if (!state.started) {
+    startGame();
+  }
   if (dialogue.open) {
     return;
   }
@@ -4817,7 +4020,7 @@ canvas.addEventListener("mousedown", (event) => {
     input.lastPointerX = event.clientX;
     input.lastPointerY = event.clientY;
   }
-  if (event.button === 0 && state.started) {
+  if (event.button === 0) {
     input.fireQueued = true;
   }
 });
@@ -5148,13 +4351,6 @@ function updateProjectiles(dt) {
       continue;
     }
 
-    // Check Shadow Wraith hits (main story)
-    if (checkShadowWraithHits(shot)) {
-      scene.remove(shot.projectile);
-      world.projectiles.splice(i, 1);
-      continue;
-    }
-
     if (shot.projectile.position.y < 0 || shot.age > 3.2) {
       scene.remove(shot.projectile);
       world.projectiles.splice(i, 1);
@@ -5291,18 +4487,12 @@ function tick() {
     }
     updateCandies(dt);
     updateEnemy(dt);
-    updateDrainClowns(dt);
     updateProjectiles(dt);
     updateMissionEnemies(dt);
     updateMissionPickups(dt);
     updateMissionTimer(dt);
     updateMissionPhoneTimer(dt);
     checkMissionWorldFailures();
-    updatePhoneBooths(dt);
-    updateSoulAnchors(dt);
-    updateShadowWraiths(dt);
-    updateSpiritVision(dt);
-    checkMainStoryInteractions();
     updateAtmosphere(dt);
     updateBlackout(dt);
     updateTargetArrow();
@@ -5349,3 +4539,5 @@ tick();
 </script>
 </body>
 </html>
+
+    updateDrainClowns(dt);
