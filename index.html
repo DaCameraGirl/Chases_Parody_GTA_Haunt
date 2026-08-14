@@ -46,6 +46,8 @@
     width: 100vw;
     height: 100vh;
     cursor: crosshair;
+    position: relative;
+    z-index: 0;
   }
 
   .overlay {
@@ -87,6 +89,7 @@
     gap: 16px;
     padding: 18px;
     pointer-events: none;
+    z-index: 10;
   }
 
   .panel {
@@ -313,6 +316,7 @@
     padding: 24px;
     pointer-events: auto;
     text-align: center;
+    z-index: 1000;
   }
 
   #centerCard h2 {
@@ -658,11 +662,11 @@
 </style>
 </head>
 <body>
-<canvas id="scene"></canvas>
-
 <div class="overlay vignette"></div>
 <div class="overlay scanlines"></div>
 <div class="overlay" id="flash"></div>
+
+<canvas id="scene"></canvas>
 
 <div id="hud">
   <section class="panel hud-card brand">
@@ -727,6 +731,7 @@
       <li><code>Left click</code> or <code>Space</code> throw candy bomb</li>
       <li><code>Right drag</code> orbit camera</li>
       <li><code>E</code> use shop or safehouse</li>
+      <li><code>V</code> toggle Spirit Vision (when unlocked)</li>
       <li><code>R</code> restart after win or loss</li>
     </ul>
   </section>
@@ -1083,6 +1088,59 @@ addRoad(0, 0, 16, 90, 0);
 addRoad(0, 0, 90, 16, 0);
 addRoad(-26, 14, 38, 12, Math.PI * 0.14);
 addRoad(26, -14, 42, 12, -Math.PI * 0.12);
+
+function createDrain(x, z, rotation = 0) {
+  const group = new THREE.Group();
+  
+  // Orange drain grate base
+  const drainBase = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.5, 0.5, 0.15, 16),
+    new THREE.MeshStandardMaterial({ color: 0xff6600, emissive: 0xcc4400, emissiveIntensity: 0.3, roughness: 0.9, metalness: 0.4 })
+  );
+  drainBase.position.y = 0.08;
+  group.add(drainBase);
+  
+  // Grate bars
+  const barMaterial = new THREE.MeshStandardMaterial({ color: 0x2a2a2a, roughness: 0.8, metalness: 0.6 });
+  for (let i = 0; i < 6; i++) {
+    const bar = new THREE.Mesh(
+      new THREE.BoxGeometry(0.08, 0.02, 0.9),
+      barMaterial
+    );
+    bar.position.set(-0.35 + i * 0.14, 0.16, 0);
+    bar.rotation.y = rotation;
+    group.add(bar);
+  }
+  
+  // Dark hole underneath
+  const hole = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.45, 0.45, 0.1, 16),
+    new THREE.MeshBasicMaterial({ color: 0x000000 })
+  );
+  hole.position.y = 0.05;
+  group.add(hole);
+  
+  // Eerie glow from drain
+  const drainLight = new THREE.PointLight(0xff3300, 0.8, 4, 2);
+  drainLight.position.y = 0.1;
+  group.add(drainLight);
+  
+  group.position.set(x, 0, z);
+  group.rotation.y = rotation;
+  scene.add(group);
+  world.drains = world.drains || [];
+  world.drains.push({ group, light: drainLight, x, z });
+}
+
+// Place drains on streets
+createDrain(-4, 8, 0);
+createDrain(4, -8, 0);
+createDrain(-8, -15, Math.PI / 4);
+createDrain(12, 12, -Math.PI / 6);
+createDrain(-15, 5, Math.PI / 3);
+createDrain(8, -22, 0);
+createDrain(-2, 18, Math.PI / 2);
+createDrain(18, -5, -Math.PI / 4);
 
 function createLamp(x, z) {
   const group = new THREE.Group();
@@ -1544,6 +1602,55 @@ const costumeZone = createZone({ type: "costume", label: "Costume Crypt", x: -33
 const garageZone = createZone({ type: "garage", label: "Hearse Garage", x: 33, z: storefrontZ(-18, 6.4), radius: 2.2, color: 0x8be8ff, cssColor: "#8be8ff" });
 const wardZone = createZone({ type: "ward", label: "Hex Market", x: -2, z: storefrontZ(-34, 6.8), radius: 2.2, color: 0x87ffb4, cssColor: "#87ffb4" });
 const beaconZone = createZone({ type: "beacon", label: "Ritual Beacon", x: 26, z: 0, radius: 2.6, color: 0xffc25f, cssColor: "#ffbf5f" });
+
+/* ---- Phone Booths for Main Story ---- */
+function createPhoneBooth(x, z) {
+  const group = new THREE.Group();
+  
+  const booth = new THREE.Mesh(
+    new THREE.BoxGeometry(1.2, 2.8, 1.2),
+    new THREE.MeshStandardMaterial({ color: 0x8b1a1a, roughness: 0.7, metalness: 0.3, transparent: true, opacity: 0.85 })
+  );
+  booth.position.y = 1.4;
+  group.add(booth);
+  
+  const roof = new THREE.Mesh(
+    new THREE.BoxGeometry(1.4, 0.2, 1.4),
+    new THREE.MeshStandardMaterial({ color: 0x2a0a0a, roughness: 0.9 })
+  );
+  roof.position.y = 2.9;
+  group.add(roof);
+  
+  const phone = new THREE.Mesh(
+    new THREE.BoxGeometry(0.15, 0.4, 0.1),
+    new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.8 })
+  );
+  phone.position.set(0, 1.6, 0.55);
+  group.add(phone);
+  
+  const glowRing = new THREE.Mesh(
+    new THREE.TorusGeometry(0.7, 0.08, 10, 24),
+    new THREE.MeshBasicMaterial({ color: 0x7cf4da, transparent: true, opacity: 0 })
+  );
+  glowRing.rotation.x = Math.PI / 2;
+  glowRing.position.y = 0.1;
+  group.add(glowRing);
+  
+  const light = new THREE.PointLight(0x7cf4da, 0, 8, 2);
+  light.position.set(0, 2.2, 0);
+  group.add(light);
+  
+  group.position.set(x, 0, z);
+  scene.add(group);
+  
+  const phoneBooth = { group, glowRing, light, x, z, active: false };
+  world.phoneBooths.push(phoneBooth);
+  return phoneBooth;
+}
+
+createPhoneBooth(-18, 22);
+createPhoneBooth(-2, -28);
+createPhoneBooth(28, -12);
 
 function createCandy(x, z) {
   const group = new THREE.Group();
@@ -2059,10 +2166,57 @@ scene.add(noFace);
 
 const noFaceMask = new THREE.Mesh(
   new THREE.SphereGeometry(0.22, 12, 12),
-  new THREE.MeshStandardMaterial({ color: 0xe7e7e1, emissive: 0x7a7a7a, emissiveIntensity: 0.18, roughness: 0.55 })
+  new THREE.MeshStandardMaterial({ color: 0xf5f5f0, emissive: 0x9a9a9a, emissiveIntensity: 0.25, roughness: 0.45 })
 );
 noFaceMask.position.set(0, 2.35, 0.29);
 noFace.add(noFaceMask);
+
+// Clown red nose
+const clownNose = new THREE.Mesh(
+  new THREE.SphereGeometry(0.06, 12, 12),
+  new THREE.MeshStandardMaterial({ color: 0xff0000, emissive: 0xaa0000, emissiveIntensity: 0.6, roughness: 0.3 })
+);
+clownNose.position.set(0, 2.32, 0.38);
+noFace.add(clownNose);
+
+// Creepy smile
+const smileMouth = new THREE.Mesh(
+  new THREE.TorusGeometry(0.12, 0.015, 8, 16, Math.PI),
+  new THREE.MeshBasicMaterial({ color: 0x8b0000 })
+);
+smileMouth.rotation.x = Math.PI;
+smileMouth.rotation.z = Math.PI;
+smileMouth.position.set(0, 2.22, 0.35);
+noFace.add(smileMouth);
+
+// Black eyes
+const leftClownEye = new THREE.Mesh(
+  new THREE.SphereGeometry(0.035, 10, 10),
+  new THREE.MeshBasicMaterial({ color: 0x000000 })
+);
+leftClownEye.position.set(-0.08, 2.38, 0.32);
+noFace.add(leftClownEye);
+
+const rightClownEye = leftClownEye.clone();
+rightClownEye.position.x = 0.08;
+noFace.add(rightClownEye);
+
+// Orange clown hair tufts
+const hairMaterial = new THREE.MeshStandardMaterial({ color: 0xff6600, emissive: 0xcc4400, emissiveIntensity: 0.4, roughness: 0.8 });
+for (let i = 0; i < 6; i++) {
+  const hairTuft = new THREE.Mesh(
+    new THREE.SphereGeometry(0.08, 8, 8),
+    hairMaterial
+  );
+  const angle = (i / 6) * Math.PI * 2;
+  hairTuft.position.set(
+    Math.cos(angle) * 0.22,
+    2.52 + Math.random() * 0.08,
+    Math.sin(angle) * 0.18
+  );
+  hairTuft.scale.set(1, 1.4, 1);
+  noFace.add(hairTuft);
+}
 
 const targetArrow = new THREE.Group();
 const arrowBody = new THREE.Mesh(
@@ -2631,6 +2785,16 @@ function collectCandy(candy) {
   showToast("+1 loot stash   +$50");
   setRadio("Stash scooped: cash, snacks, and one more reason for No-Face to stay mad.");
   refreshMissionProgress();
+  
+  // Trigger main story Phase 1 on first loot collection
+  if (!mainStoryState.firstLootCollected && !mainStoryState.active) {
+    mainStoryState.firstLootCollected = true;
+    window.setTimeout(() => {
+      if (!mainStoryState.active) {
+        triggerMainStoryPhase1();
+      }
+    }, 3000);
+  }
 }
 
 function canAfford(cost) {
@@ -2890,6 +3054,41 @@ function shootEgg() {
 
 world.missionEnemies = [];
 world.missionPickups = [];
+
+/* ===================== MAIN STORY: The Halloween Heist ===================== */
+
+const mainStoryState = {
+  id: "halloweenHeist",
+  phase: 0,
+  active: false,
+  anchorsCollected: 0,
+  anchorsDestroyed: 0,
+  watcherMet: false,
+  truthRevealed: false,
+  finalChoice: null,
+  huntersActive: false,
+  spiritVisionUnlocked: false,
+  spiritVisionActive: false,
+  ritualDisruptionBombs: 0,
+  phoneBoothsActive: false,
+  firstLootCollected: false,
+  soulAnchors: {
+    graveyard: { collected: false, destroyed: false },
+    rooftop: { collected: false, destroyed: false },
+    drain: { collected: false, destroyed: false }
+  },
+  npcInteractions: {
+    dreHeist: false,
+    brokerHeist: false,
+    morrowHeist: false
+  },
+  path: null // 'bind', 'free', 'destroy', 'reject'
+};
+
+world.phoneBooths = [];
+world.soulAnchors = [];
+world.shadowWraiths = [];
+world.hunters = [];
 
 const missionState = {
   id: "costumeDebt",
@@ -3886,6 +4085,624 @@ function finalOutcomeDestroy() {
 
 /* ===================== end Costume Debt side mission ===================== */
 
+
+/* ===================== MAIN STORY: The Halloween Heist ===================== */
+
+/* ---- Phase 1: The Warning ---- */
+
+function triggerMainStoryPhase1() {
+  mainStoryState.active = true;
+  mainStoryState.phase = 1;
+  mainStoryState.phoneBoothsActive = true;
+  
+  // Activate phone booths
+  for (const booth of world.phoneBooths) {
+    booth.active = true;
+    booth.glowRing.material.opacity = 0.75;
+    booth.light.intensity = 1.2;
+  }
+  
+  sendPhoneMessage("Unknown", "Pick up. Any phone booth. Now.");
+  showToast("Main Story: The Warning - Find a phone booth");
+  setRadio("Pumpkin FM: anyone else hearing weird static on the line tonight?");
+  soundPickup();
+}
+
+function interactWithPhoneBooth(booth) {
+  if (!booth.active || mainStoryState.watcherMet) {
+    showToast("The line is dead.");
+    return;
+  }
+  
+  mainStoryState.watcherMet = true;
+  booth.active = false;
+  booth.glowRing.material.opacity = 0;
+  booth.light.intensity = 0;
+  
+  openWatcherIntroDialogue();
+}
+
+function openWatcherIntroDialogue() {
+  openDialogue({
+    speaker: "The Watcher",
+    text: "Chase. Listen carefully. The beacon you're planning to light? It's not what Morrow told you. It's a binding ritual — and if you light it without the Soul Anchors, you'll unleash something far worse than No-Face.",
+    closable: true,
+    choices: [
+      { label: "Who are you?", action: () => openWatcherIdentity() },
+      { label: "What do you want from me?", action: () => openWatcherMission() },
+      { label: "I don't have time for conspiracy theories.", action: () => delayMainStory() }
+    ]
+  });
+}
+
+function openWatcherIdentity() {
+  openDialogue({
+    speaker: "The Watcher",
+    text: "I've been watching this neighborhood for longer than you've been alive. I know what the beacon does. I know what Morrow's hiding. And I know you're the only one who can stop this cycle.",
+    closable: true,
+    choices: [
+      { label: "What's the mission?", action: () => openWatcherMission() },
+      { label: "Why me?", action: () => openWatcherWhyChase() }
+    ]
+  });
+}
+
+function openWatcherWhyChase() {
+  openDialogue({
+    speaker: "The Watcher",
+    text: "Because you're not bound by the old agreements. You're an outsider. That makes you dangerous to them — and useful to me. Now, will you help, or will you let this neighborhood burn?",
+    closable: true,
+    choices: [
+      { label: "Tell me what to do.", action: () => openWatcherMission() },
+      { label: "I need to think about this.", action: () => delayMainStory() }
+    ]
+  });
+}
+
+function openWatcherMission() {
+  openDialogue({
+    speaker: "The Watcher",
+    text: "Three Soul Anchors are hidden around the neighborhood. Find them before you light the beacon. One behind the graveyard. One on the old rooftop. One in the storm drain. Get them, and you'll have a choice at the beacon. Ignore them, and you'll regret it.",
+    closable: false,
+    choices: [
+      { label: "I'll find them.", action: () => acceptMainStoryMission() },
+      { label: "What if I just light the beacon anyway?", action: () => openWatcherWarning() }
+    ]
+  });
+}
+
+function openWatcherWarning() {
+  openDialogue({
+    speaker: "The Watcher",
+    text: "Then No-Face becomes the least of your problems. The binding will break, but what's underneath will rise. Your choice, Chase. But don't say I didn't warn you.",
+    closable: false,
+    choices: [
+      { label: "Fine. I'll get the anchors.", action: () => acceptMainStoryMission() },
+      { label: "I'll take my chances.", action: () => rejectMainStoryMission() }
+    ]
+  });
+}
+
+function acceptMainStoryMission() {
+  mainStoryState.phase = 2;
+  state.cash += 100;
+  state.fear = Math.max(0, state.fear - 5);
+  
+  spawnSoulAnchors();
+  
+  showToast("Main Story: Soul Anchor Hunt - Find 3 anchors");
+  setRadio("The Watcher: check your map. The anchors are marked. Move fast.");
+  soundUpgrade();
+  
+  // Deactivate remaining phone booths
+  for (const booth of world.phoneBooths) {
+    booth.active = false;
+    booth.glowRing.material.opacity = 0;
+    booth.light.intensity = 0;
+  }
+}
+
+function delayMainStory() {
+  mainStoryState.phoneBoothsActive = true;
+  showToast("You can return to any phone booth when ready.");
+  setRadio("The Watcher: I'll be waiting. Don't take too long.");
+}
+
+function rejectMainStoryMission() {
+  mainStoryState.active = false;
+  mainStoryState.phase = 0;
+  mainStoryState.phoneBoothsActive = false;
+  
+  for (const booth of world.phoneBooths) {
+    booth.active = false;
+    booth.glowRing.material.opacity = 0;
+    booth.light.intensity = 0;
+  }
+  
+  showToast("Main Story declined. You can restart by collecting more loot.");
+  setRadio("The Watcher: your funeral, Chase.");
+}
+
+/* ---- Phase 2: Soul Anchor Hunt ---- */
+
+function spawnSoulAnchors() {
+  const anchorPositions = [
+    { key: 'graveyard', x: -35, z: -30, label: 'Graveyard Anchor' },
+    { key: 'rooftop', x: 31, z: 12, label: 'Rooftop Anchor' },
+    { key: 'drain', x: 8, z: -8, label: 'Storm Drain Anchor' }
+  ];
+  
+  anchorPositions.forEach(pos => {
+    const group = new THREE.Group();
+    
+    const outerRing = new THREE.Mesh(
+      new THREE.TorusGeometry(0.6, 0.08, 12, 32),
+      new THREE.MeshBasicMaterial({ color: 0x9d4edd, transparent: true, opacity: 0.85 })
+    );
+    outerRing.rotation.x = Math.PI / 2;
+    group.add(outerRing);
+    
+    const innerRing = new THREE.Mesh(
+      new THREE.TorusGeometry(0.35, 0.05, 10, 24),
+      new THREE.MeshBasicMaterial({ color: 0xc77dff, transparent: true, opacity: 0.75 })
+    );
+    innerRing.rotation.x = Math.PI / 2;
+    innerRing.position.y = 0.05;
+    group.add(innerRing);
+    
+    const core = new THREE.Mesh(
+      new THREE.SphereGeometry(0.25, 16, 16),
+      new THREE.MeshStandardMaterial({
+        color: 0xe0aaff,
+        emissive: 0x9d4edd,
+        emissiveIntensity: 1.2,
+        roughness: 0.3,
+        metalness: 0.4
+      })
+    );
+    core.position.y = 0.4;
+    group.add(core);
+    
+    const particles = new THREE.Group();
+    for (let i = 0; i < 8; i++) {
+      const particle = new THREE.Mesh(
+        new THREE.SphereGeometry(0.04, 8, 8),
+        new THREE.MeshBasicMaterial({ color: 0xc77dff })
+      );
+      const angle = (i / 8) * Math.PI * 2;
+      particle.position.set(Math.cos(angle) * 0.5, 0.4, Math.sin(angle) * 0.5);
+      particles.add(particle);
+    }
+    group.add(particles);
+    
+    const light = new THREE.PointLight(0x9d4edd, 2.5, 12, 2);
+    light.position.y = 0.4;
+    group.add(light);
+    
+    group.position.set(pos.x, 0.15, pos.z);
+    scene.add(group);
+    
+    // Spawn guardian Shadow Wraith
+    const wraith = spawnShadowWraith(pos.x, pos.z, pos.key);
+    
+    const anchor = {
+      key: pos.key,
+      group,
+      core,
+      outerRing,
+      innerRing,
+      particles,
+      light,
+      x: pos.x,
+      z: pos.z,
+      label: pos.label,
+      phase: Math.random() * Math.PI * 2,
+      wraith
+    };
+    
+    world.soulAnchors.push(anchor);
+  });
+}
+
+function spawnShadowWraith(x, z, anchorKey) {
+  const group = new THREE.Group();
+  
+  const body = new THREE.Mesh(
+    new THREE.SphereGeometry(0.85, 16, 16),
+    new THREE.MeshStandardMaterial({
+      color: 0x1a0a2e,
+      emissive: 0x6a0dad,
+      emissiveIntensity: 0.9,
+      transparent: true,
+      opacity: 0.75,
+      roughness: 0.2
+    })
+  );
+  body.scale.y = 1.3;
+  group.add(body);
+  
+  const tail = new THREE.Mesh(
+    new THREE.ConeGeometry(0.7, 1.4, 12),
+    new THREE.MeshStandardMaterial({
+      color: 0x0d0221,
+      emissive: 0x6a0dad,
+      emissiveIntensity: 0.7,
+      transparent: true,
+      opacity: 0.65
+    })
+  );
+  tail.position.y = -1.1;
+  group.add(tail);
+  
+  const aura = new THREE.Mesh(
+    new THREE.SphereGeometry(1.2, 16, 16),
+    new THREE.MeshBasicMaterial({
+      color: 0x9d4edd,
+      transparent: true,
+      opacity: 0.15,
+      side: THREE.BackSide
+    })
+  );
+  group.add(aura);
+  
+  group.position.set(x, 2.8, z);
+  scene.add(group);
+  
+  const wraith = {
+    group,
+    body,
+    aura,
+    anchorKey,
+    hp: 3,
+    maxHp: 3,
+    speed: 2.8,
+    damage: 12,
+    fearGain: 8,
+    lastHit: -10,
+    baseX: x,
+    baseZ: z,
+    baseY: 2.8,
+    patrolRadius: 6,
+    defeated: false
+  };
+  
+  world.shadowWraiths.push(wraith);
+  return wraith;
+}
+
+function interactWithSoulAnchor(anchor) {
+  if (mainStoryState.soulAnchors[anchor.key].collected || mainStoryState.soulAnchors[anchor.key].destroyed) {
+    return;
+  }
+  
+  if (anchor.wraith && !anchor.wraith.defeated) {
+    showToast("Defeat the Shadow Wraith first!");
+    return;
+  }
+  
+  openSoulAnchorChoice(anchor);
+}
+
+function openSoulAnchorChoice(anchor) {
+  openDialogue({
+    speaker: "Soul Anchor",
+    text: `The ${anchor.label} pulses with ancient energy. You can feel its power — and its danger. What will you do?`,
+    closable: false,
+    choices: [
+      { label: "Take the anchor", action: () => collectSoulAnchor(anchor) },
+      { label: "Destroy the anchor", action: () => destroySoulAnchor(anchor) },
+      { label: "Leave it for now", action: () => closeDialogue() }
+    ]
+  });
+}
+
+function collectSoulAnchor(anchor) {
+  mainStoryState.soulAnchors[anchor.key].collected = true;
+  mainStoryState.anchorsCollected += 1;
+  
+  scene.remove(anchor.group);
+  const idx = world.soulAnchors.indexOf(anchor);
+  if (idx >= 0) world.soulAnchors.splice(idx, 1);
+  
+  state.cash += 150;
+  state.fear = Math.max(0, state.fear - 10);
+  missionState.heat.supernatural = Math.min(100, missionState.heat.supernatural + 15);
+  
+  showToast(`Soul Anchor collected (${mainStoryState.anchorsCollected}/3) +$150`);
+  setRadio(`The Watcher: ${anchor.label} secured. ${3 - mainStoryState.anchorsCollected} to go.`);
+  soundUpgrade();
+  
+  if (mainStoryState.anchorsCollected === 1) {
+    mainStoryState.spiritVisionUnlocked = true;
+    showToast("Spirit Vision unlocked! Press V to toggle.");
+  }
+  
+  checkSoulAnchorProgress();
+}
+
+function destroySoulAnchor(anchor) {
+  mainStoryState.soulAnchors[anchor.key].destroyed = true;
+  mainStoryState.anchorsDestroyed += 1;
+  
+  anchor.core.material.color.set(0xff4444);
+  anchor.core.material.emissive.set(0xaa0000);
+  
+  window.setTimeout(() => {
+    scene.remove(anchor.group);
+    const idx = world.soulAnchors.indexOf(anchor);
+    if (idx >= 0) world.soulAnchors.splice(idx, 1);
+  }, 500);
+  
+  state.cash += 100;
+  missionState.heat.supernatural = Math.min(100, missionState.heat.supernatural + 25);
+  
+  showToast(`${anchor.label} destroyed. The Watcher won't like this.`);
+  setRadio("The Watcher: what have you done? That anchor was our leverage!");
+  soundFail();
+  
+  checkSoulAnchorProgress();
+}
+
+function checkSoulAnchorProgress() {
+  const total = mainStoryState.anchorsCollected + mainStoryState.anchorsDestroyed;
+  
+  if (total >= 2 && !mainStoryState.truthRevealed) {
+    window.setTimeout(() => {
+      if (mainStoryState.phase === 2) {
+        triggerMainStoryPhase3();
+      }
+    }, 2000);
+  }
+}
+
+/* ---- Phase 3: The Truth About No-Face ---- */
+
+function triggerMainStoryPhase3() {
+  mainStoryState.phase = 3;
+  mainStoryState.truthRevealed = true;
+  
+  sendPhoneMessage("The Watcher", "Meet me at the old church. Northwest corner. It's time you learned the truth about No-Face.");
+  showToast("Main Story: The Truth - Head to the abandoned church");
+  setRadio("Pumpkin FM: reports of strange lights near the old church district...");
+  
+  // Create church location marker
+  createChurchZone();
+}
+
+function createChurchZone() {
+  const churchZone = createZone({
+    type: "church",
+    label: "Abandoned Church",
+    x: -38,
+    z: 38,
+    radius: 2.8,
+    color: 0x9d4edd,
+    cssColor: "#9d4edd"
+  });
+  world.zones.push(churchZone);
+}
+
+function interactWithChurch() {
+  if (mainStoryState.phase !== 3) {
+    showToast("The church doors are locked.");
+    return;
+  }
+  
+  openWatcherTruthDialogue();
+}
+
+function openWatcherTruthDialogue() {
+  openDialogue({
+    speaker: "The Watcher",
+    text: "No-Face wasn't always a monster. He was this neighborhood's protector — until Morrow and the others bound him with that beacon. They use it to control the streets, to keep people afraid. You have the power to change that, Chase.",
+    closable: true,
+    choices: [
+      { label: "Help me free No-Face", action: () => chooseRedemptionPath() },
+      { label: "Help me destroy No-Face", action: () => chooseEliminationPath() },
+      { label: "I'll decide at the beacon", action: () => chooseNeutralPath() }
+    ]
+  });
+}
+
+function chooseRedemptionPath() {
+  mainStoryState.path = 'free';
+  mainStoryState.phase = 4;
+  
+  state.cash += 200;
+  unlockCostume("grinningSaint");
+  
+  showToast("Path chosen: Liberation. Unlock special costume at Costume Crypt.");
+  setRadio("The Watcher: you're doing the right thing. Prepare for the beacon.");
+  soundUpgrade();
+}
+
+function chooseEliminationPath() {
+  mainStoryState.path = 'destroy';
+  mainStoryState.phase = 4;
+  mainStoryState.ritualDisruptionBombs = 3;
+  
+  state.cash += 200;
+  
+  showToast("Path chosen: Elimination. 3 Ritual Disruption Bombs added.");
+  setRadio("The Watcher: if that's your choice... may you find peace in the silence.");
+  soundUpgrade();
+}
+
+function chooseNeutralPath() {
+  mainStoryState.path = 'neutral';
+  mainStoryState.phase = 4;
+  
+  state.cash += 150;
+  
+  showToast("Path: Undecided. You can still choose at the beacon.");
+  setRadio("The Watcher: keep your options open. Smart.");
+  soundUpgrade();
+}
+
+/* ---- Update functions for main story ---- */
+
+function updateSoulAnchors(dt) {
+  for (const anchor of world.soulAnchors) {
+    anchor.group.rotation.y += dt * 0.8;
+    anchor.core.position.y = 0.4 + Math.sin(clock.elapsedTime * 2 + anchor.phase) * 0.15;
+    anchor.particles.rotation.y += dt * 2;
+    anchor.light.intensity = 2.5 + Math.sin(clock.elapsedTime * 3 + anchor.phase) * 0.5;
+    
+    const distance = getFlatDistance(chase.position, anchor.group.position);
+    if (distance < 2 && !mainStoryState.soulAnchors[anchor.key].collected && !mainStoryState.soulAnchors[anchor.key].destroyed) {
+      if (!anchor.wraith || anchor.wraith.defeated) {
+        ui.promptText.textContent = `Press E to interact with ${anchor.label}`;
+        ui.promptCard.classList.add("on");
+      }
+    }
+  }
+}
+
+function updateShadowWraiths(dt) {
+  for (const wraith of world.shadowWraiths) {
+    if (wraith.defeated) continue;
+    
+    const toPlayer = new THREE.Vector3(
+      chase.position.x - wraith.group.position.x,
+      0,
+      chase.position.z - wraith.group.position.z
+    );
+    const distance = toPlayer.length();
+    
+    if (distance < wraith.patrolRadius) {
+      toPlayer.normalize();
+      wraith.group.position.addScaledVector(toPlayer, wraith.speed * dt);
+      wraith.group.rotation.y = Math.atan2(toPlayer.x, toPlayer.z);
+    } else {
+      const angle = clock.elapsedTime * 0.5;
+      wraith.group.position.x = wraith.baseX + Math.cos(angle) * wraith.patrolRadius * 0.5;
+      wraith.group.position.z = wraith.baseZ + Math.sin(angle) * wraith.patrolRadius * 0.5;
+    }
+    
+    wraith.group.position.y = wraith.baseY + Math.sin(clock.elapsedTime * 2) * 0.2;
+    wraith.aura.rotation.y += dt * 1.5;
+    
+    if (distance < 2 && clock.elapsedTime - wraith.lastHit > 1.2 && !state.ended && !state.win) {
+      wraith.lastHit = clock.elapsedTime;
+      state.health = Math.max(0, state.health - wraith.damage);
+      state.fear = Math.min(100, state.fear + wraith.fearGain);
+      showToast("Shadow Wraith strikes!");
+      soundFail();
+    }
+  }
+}
+
+function updatePhoneBooths(dt) {
+  for (const booth of world.phoneBooths) {
+    if (booth.active) {
+      booth.glowRing.rotation.z += dt * 2;
+      booth.light.intensity = 1.2 + Math.sin(clock.elapsedTime * 4) * 0.3;
+      
+      const distance = getFlatDistance(chase.position, booth.group.position);
+      if (distance < 1.8) {
+        ui.promptText.textContent = "Press E to answer the phone";
+        ui.promptCard.classList.add("on");
+      }
+    }
+  }
+}
+
+function checkMainStoryInteractions() {
+  if (input.interactQueued && !input.locked && !state.driving) {
+    // Check phone booths
+    for (const booth of world.phoneBooths) {
+      if (booth.active) {
+        const distance = getFlatDistance(chase.position, booth.group.position);
+        if (distance < 1.8) {
+          interactWithPhoneBooth(booth);
+          input.interactQueued = false;
+          return;
+        }
+      }
+    }
+    
+    // Check soul anchors
+    for (const anchor of world.soulAnchors) {
+      const distance = getFlatDistance(chase.position, anchor.group.position);
+      if (distance < 2) {
+        interactWithSoulAnchor(anchor);
+        input.interactQueued = false;
+        return;
+      }
+    }
+    
+    // Check church
+    const { zone } = nearestZone();
+    if (zone && zone.type === "church") {
+      const distance = getFlatDistance(chase.position, zone.ring.position);
+      if (distance <= zone.radius + 1.1) {
+        interactWithChurch();
+        input.interactQueued = false;
+        return;
+      }
+    }
+  }
+}
+
+function updateSpiritVision(dt) {
+  if (!mainStoryState.spiritVisionUnlocked) return;
+  
+  if (mainStoryState.spiritVisionActive) {
+    state.stamina = Math.max(0, state.stamina - 8 * dt);
+    
+    // Highlight collectibles
+    for (const candy of world.candies) {
+      if (!candy.collected && candy.sparkle) {
+        candy.sparkle.material.emissiveIntensity = 2 + Math.sin(clock.elapsedTime * 8) * 0.5;
+      }
+    }
+    
+    if (state.stamina <= 0) {
+      mainStoryState.spiritVisionActive = false;
+      showToast("Spirit Vision depleted");
+    }
+  }
+}
+
+/* ---- Projectile hit detection for Shadow Wraiths ---- */
+
+function checkShadowWraithHits(shot) {
+  for (const wraith of world.shadowWraiths) {
+    if (wraith.defeated) continue;
+    
+    const hitRadius = state.upgrades.stickyEggs ? 1.25 : 0.95;
+    const hitDistance = getFlatDistance(shot.projectile.position, wraith.group.position);
+    
+    if (hitDistance < hitRadius + 0.4 && Math.abs(shot.projectile.position.y - (wraith.baseY + 1)) < 2) {
+      wraith.hp -= 1;
+      missionState.heat.supernatural = Math.min(100, missionState.heat.supernatural + 5);
+      soundHit();
+      
+      wraith.body.material.emissiveIntensity = 1.5;
+      window.setTimeout(() => {
+        if (wraith.body) wraith.body.material.emissiveIntensity = 0.9;
+      }, 100);
+      
+      if (wraith.hp <= 0) {
+        wraith.defeated = true;
+        wraith.group.visible = false;
+        state.cash += 200;
+        showToast(`Shadow Wraith defeated! +$200`);
+        setRadio("The Watcher: one less guardian. The anchor is yours.");
+        soundUpgrade();
+      } else {
+        showToast(`Shadow Wraith hit! (${wraith.hp}/${wraith.maxHp} HP)`);
+      }
+      
+      return true;
+    }
+  }
+  return false;
+}
+
+/* ===================== end Main Story: The Halloween Heist ===================== */
+
+
 function startGame() {
   state.started = true;
   ui.centerCard.classList.add("hidden");
@@ -3899,10 +4716,21 @@ function restartGame() {
   window.location.reload();
 }
 
-ui.startButton.addEventListener("click", startGame);
+console.log("Setting up button listeners...");
+console.log("startButton element:", ui.startButton);
+console.log("startButton computed style:", ui.startButton ? window.getComputedStyle(ui.startButton) : "null");
+
+ui.startButton.addEventListener("click", () => {
+  console.log("START BUTTON CLICKED!");
+  startGame();
+});
+
 ui.howButton.addEventListener("click", () => {
+  console.log("HOW BUTTON CLICKED!");
   ui.centerCard.querySelector("p").textContent = "Mission route: hit Costume Crypt for Chase's disguise, break into Hearse Garage for the keys, grab the ward sigil from Hex Market, light the beacon, then sprint Chase home. Loot stashes fund upgrades, lamp light lowers fear, and candy bombs still buy time against No-Face.";
 });
+
+console.log("Button listeners attached successfully");
 
 window.addEventListener("keydown", (event) => {
   ensureAudio();
@@ -3954,6 +4782,10 @@ window.addEventListener("keydown", (event) => {
     input.fireQueued = true;
   }
   if (event.code === "KeyE") input.interactQueued = true;
+  if (event.code === "KeyV" && mainStoryState.spiritVisionUnlocked) {
+    mainStoryState.spiritVisionActive = !mainStoryState.spiritVisionActive;
+    showToast(mainStoryState.spiritVisionActive ? "Spirit Vision: ON" : "Spirit Vision: OFF");
+  }
   if (event.code === "KeyR" && (state.ended || state.win)) restartGame();
 });
 
@@ -3968,10 +4800,8 @@ window.addEventListener("keyup", (event) => {
 canvas.addEventListener("contextmenu", (event) => event.preventDefault());
 
 canvas.addEventListener("mousedown", (event) => {
+  if (event.target !== canvas) return;
   ensureAudio();
-  if (!state.started) {
-    startGame();
-  }
   if (dialogue.open) {
     return;
   }
@@ -3980,7 +4810,7 @@ canvas.addEventListener("mousedown", (event) => {
     input.lastPointerX = event.clientX;
     input.lastPointerY = event.clientY;
   }
-  if (event.button === 0) {
+  if (event.button === 0 && state.started) {
     input.fireQueued = true;
   }
 });
@@ -4311,6 +5141,13 @@ function updateProjectiles(dt) {
       continue;
     }
 
+    // Check Shadow Wraith hits (main story)
+    if (checkShadowWraithHits(shot)) {
+      scene.remove(shot.projectile);
+      world.projectiles.splice(i, 1);
+      continue;
+    }
+
     if (shot.projectile.position.y < 0 || shot.age > 3.2) {
       scene.remove(shot.projectile);
       world.projectiles.splice(i, 1);
@@ -4454,6 +5291,11 @@ function tick() {
     updateMissionTimer(dt);
     updateMissionPhoneTimer(dt);
     checkMissionWorldFailures();
+    updatePhoneBooths(dt);
+    updateSoulAnchors(dt);
+    updateShadowWraiths(dt);
+    updateSpiritVision(dt);
+    checkMainStoryInteractions();
     updateAtmosphere(dt);
     updateBlackout(dt);
     updateTargetArrow();
