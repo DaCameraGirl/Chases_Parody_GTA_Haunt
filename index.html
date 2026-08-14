@@ -2082,6 +2082,218 @@ arrowRing.position.y = 3.34;
 targetArrow.add(arrowRing);
 scene.add(targetArrow);
 
+// === DRAIN CLOWN – Sewer ambush enemy ===
+world.drainClowns = [];
+world.drainCovers = [];
+
+const DRAIN_SPOTS = [
+  { x:  18, z:  -8 },   // Main drag – east
+  { x: -12, z: -22 },   // North cross street
+  { x:   6, z:  14 },   // South side
+  { x: -28, z:   4 },   // West alley
+  { x:  32, z: -18 },   // East edge
+];
+
+function createDrainClown(x, z) {
+  // Creepy sewer clown – pale, red accents, glowing eyes
+  const clown = createCharacter(0xf0e8dc, 0xd22a2a, { kind: "drainclown" });
+  const g = clown.group;
+  
+  // Red clown nose
+  const nose = new THREE.Mesh(
+    new THREE.SphereGeometry(0.11, 10, 10),
+    new THREE.MeshStandardMaterial({ color: 0xff1a1a, emissive: 0xff1a1a, emissiveIntensity: 0.35, roughness: 0.5 })
+  );
+  nose.scale.set(1, 0.85, 0.85);
+  nose.position.set(0, 2.45, 0.31);
+  g.add(nose);
+  clown.nose = nose;
+
+  // Creepy grin
+  const grin = new THREE.Mesh(
+    new THREE.TorusGeometry(0.13, 0.022, 6, 14, Math.PI),
+    new THREE.MeshBasicMaterial({ color: 0x8b0000 })
+  );
+  grin.rotation.x = Math.PI;
+  grin.rotation.z = Math.PI;
+  grin.position.set(0, 2.32, 0.29);
+  g.add(grin);
+  clown.grin = grin;
+
+  // Glowing red eyes
+  if (clown.leftEye && clown.rightEye) {
+    clown.leftEye.material = clown.leftEye.material.clone();
+    clown.leftEye.material.color.setHex(0xff3030);
+    clown.leftEye.material.emissive = new THREE.Color(0xff0000);
+    clown.leftEye.material.emissiveIntensity = 0.9;
+    clown.rightEye.material = clown.leftEye.material.clone();
+  }
+
+  // Make the outfit more clown-like – bright red pom poms
+  for (let i = 0; i < 3; i++) {
+    const pom = new THREE.Mesh(
+      new THREE.SphereGeometry(0.07, 8, 8),
+      new THREE.MeshStandardMaterial({ color: 0xffd63a, emissive: 0xff9500, emissiveIntensity: 0.2 })
+    );
+    pom.position.set(0, 1.75 - i * 0.32, 0.28);
+    g.add(pom);
+  }
+
+  g.position.set(x, -1.4, z); // start hidden below ground
+  g.visible = false;
+  scene.add(g);
+
+  return {
+    model: clown,
+    group: g,
+    drainX: x,
+    drainZ: z,
+    state: "hidden", // hidden | peeking | emerging | chasing | retreating
+    stateTimer: Math.random() * 3,
+    peekHeight: 0,
+    emergeSpeed: 0,
+    chaseSpeed: 3.8,
+    triggerRadius: 11,
+    emergeRadius: 6.5,
+    loseRadius: 22,
+    lastSeen: 0,
+    bobPhase: Math.random() * Math.PI * 2,
+  };
+}
+
+// Build drain covers + clowns
+for (const spot of DRAIN_SPOTS) {
+  // Manhole cover
+  const coverGroup = new THREE.Group();
+  const cover = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.72, 0.72, 0.08, 24),
+    new THREE.MeshStandardMaterial({ color: 0x2a2d36, roughness: 0.9, metalness: 0.4 })
+  );
+  cover.position.y = 0.04;
+  coverGroup.add(cover);
+  // drain grate lines
+  for (let i = 0; i < 5; i++) {
+    const bar = new THREE.Mesh(
+      new THREE.BoxGeometry(1.15, 0.025, 0.06),
+      new THREE.MeshStandardMaterial({ color: 0x1a1c22, metalness: 0.6, roughness: 0.7 })
+    );
+    bar.position.set(0, 0.085, -0.28 + i * 0.14);
+    coverGroup.add(bar);
+  }
+  // rim
+  const rim = new THREE.Mesh(
+    new THREE.TorusGeometry(0.74, 0.06, 8, 28),
+    new THREE.MeshStandardMaterial({ color: 0x3a3d46, roughness: 0.8, metalness: 0.3 })
+  );
+  rim.rotation.x = Math.PI / 2;
+  rim.position.y = 0.02;
+  coverGroup.add(rim);
+  
+  coverGroup.position.set(spot.x, 0, spot.z);
+  scene.add(coverGroup);
+  world.drainCovers.push({ group: coverGroup, x: spot.x, z: spot.z });
+
+  // Clown lurking below
+  const clown = createDrainClown(spot.x, spot.z);
+  world.drainClowns.push(clown);
+}
+
+function updateDrainClowns(dt) {
+  const px = chase.position.x;
+  const pz = chase.position.z;
+  const t = clock.elapsedTime;
+
+  for (const dc of world.drainClowns) {
+    const dx = px - dc.drainX;
+    const dz = pz - dc.drainZ;
+    const dist = Math.hypot(dx, dz);
+    dc.stateTimer -= dt;
+    dc.bobPhase += dt * 4.5;
+
+    if (dc.state === "hidden") {
+      dc.group.visible = false;
+      dc.group.position.y = -1.4;
+      // Random peek chance when Chase is kinda close
+      if (dist < 16 && Math.random() < dt * 0.35) {
+        dc.state = "peeking";
+        dc.stateTimer = 1.2 + Math.random() * 1.8;
+        dc.peekHeight = 0;
+      }
+    } else if (dc.state === "peeking") {
+      dc.group.visible = true;
+      // Bob head/shoulders just above the grate
+      dc.peekHeight = Math.min(1.0, dc.peekHeight + dt * 2.5);
+      const peekY = -0.95 + dc.peekHeight * 0.95 + Math.sin(dc.bobPhase) * 0.035;
+      dc.group.position.set(dc.drainX, peekY, dc.drainZ);
+      // Look at Chase – creepy
+      dc.group.rotation.y = Math.atan2(dx, dz) + Math.PI;
+      // Eyes glow brighter when peeking
+      if (dc.model.leftEye) {
+        dc.model.leftEye.material.emissiveIntensity = 0.9 + Math.sin(t * 8) * 0.3;
+      }
+      // If Chase gets close – EMERGE!
+      if (dist < dc.emergeRadius) {
+        dc.state = "emerging";
+        dc.stateTimer = 0.55;
+        dc.emergeSpeed = 0;
+        if (typeof soundFail === "function") soundFail();
+        showToast("Something crawled out of the drain…");
+      } else if (dc.stateTimer <= 0 || dist > 20) {
+        // Duck back down
+        dc.state = "hidden";
+      }
+    } else if (dc.state === "emerging") {
+      dc.group.visible = true;
+      dc.stateTimer -= dt;
+      dc.emergeSpeed += dt * 9;
+      const y = THREE.MathUtils.lerp(-0.15, 0, 1 - Math.max(0, dc.stateTimer) / 0.55);
+      dc.group.position.set(dc.drainX, y, dc.drainZ);
+      dc.group.rotation.y = Math.atan2(dx, dz) + Math.PI;
+      if (dc.stateTimer <= 0) {
+        dc.state = "chasing";
+        dc.lastSeen = t;
+      }
+    } else if (dc.state === "chasing") {
+      dc.group.visible = true;
+      // Chase Chase!
+      if (dist > 0.9) {
+        const moveX = dx / dist;
+        const moveZ = dz / dist;
+        dc.group.position.x += moveX * dc.chaseSpeed * dt;
+        dc.group.position.z += moveZ * dc.chaseSpeed * dt;
+        dc.group.rotation.y = Math.atan2(moveX, moveZ);
+      }
+      dc.group.position.y = Math.sin(t * 9 + dc.bobPhase) * 0.06;
+      // Damage if close enough
+      if (dist < 1.5 && clock.elapsedTime - state.lastDamageTime > 0.85 && !state.ended && !state.win) {
+        state.lastDamageTime = clock.elapsedTime;
+        state.health = Math.max(0, state.health - 11);
+        state.fear = Math.min(100, state.fear + 12);
+        showToast("Drain clown got you!");
+        if (typeof soundFail === "function") soundFail();
+      }
+      // Lose interest if Chase gets far away
+      if (dist > dc.loseRadius) {
+        dc.state = "retreating";
+      }
+      dc.lastSeen = t;
+    } else if (dc.state === "retreating") {
+      // Run back to drain
+      const rdx = dc.drainX - dc.group.position.x;
+      const rdz = dc.drainZ - dc.group.position.z;
+      const rdist = Math.hypot(rdx, rdz);
+      if (rdist > 0.35) {
+        dc.group.position.x += (rdx / rdist) * 4.2 * dt;
+        dc.group.position.z += (rdz / rdist) * 4.2 * dt;
+        dc.group.rotation.y = Math.atan2(rdx, rdz);
+      } else {
+        dc.state = "hidden";
+        dc.group.visible = false;
+      }
+    }
+  }
+}
+
 const rainCount = 900;
 const rainGeometry = new THREE.BufferGeometry();
 const rainPositions = new Float32Array(rainCount * 3);
@@ -4212,6 +4424,7 @@ function tick() {
     }
     updateCandies(dt);
     updateEnemy(dt);
+    updateDrainClowns(dt);
     updateProjectiles(dt);
     updateMissionEnemies(dt);
     updateMissionPickups(dt);
