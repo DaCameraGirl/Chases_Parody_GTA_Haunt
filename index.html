@@ -2087,11 +2087,11 @@ world.drainClowns = [];
 world.drainCovers = [];
 
 const DRAIN_SPOTS = [
-  { x:  18, z:  -8 },   // Main drag – east
-  { x: -12, z: -22 },   // North cross street
-  { x:   6, z:  14 },   // South side
+  { x: -18, z:  14 },   // RIGHT AT SPAWN – turn around!
+  { x:   6, z:  14 },   // South market
+  { x:  18, z:  -8 },   // Main drag east
+  { x: -12, z: -22 },   // North cross
   { x: -28, z:   4 },   // West alley
-  { x:  32, z: -18 },   // East edge
 ];
 
 function createDrainClown(x, z) {
@@ -2099,43 +2099,66 @@ function createDrainClown(x, z) {
   const clown = createCharacter(0xf0e8dc, 0xd22a2a, { kind: "drainclown" });
   const g = clown.group;
   
-  // Red clown nose
-  const nose = new THREE.Mesh(
-    new THREE.SphereGeometry(0.11, 10, 10),
-    new THREE.MeshStandardMaterial({ color: 0xff1a1a, emissive: 0xff1a1a, emissiveIntensity: 0.35, roughness: 0.5 })
+  // No-Face body doesn't have eyes/nose built in (only Chase does)
+  // so we build the clown face from scratch.
+  // No-Face head center is at y ≈ 2.35, radius ≈ 0.34
+  const headY = 2.35;
+  const faceZ = 0.30;
+
+  // Glowing RED EYES – left
+  const leftEye = new THREE.Mesh(
+    new THREE.SphereGeometry(0.055, 10, 10),
+    new THREE.MeshStandardMaterial({ color: 0xff1515, emissive: 0xff0000, emissiveIntensity: 1.4, roughness: 0.3 })
   );
-  nose.scale.set(1, 0.85, 0.85);
-  nose.position.set(0, 2.45, 0.31);
+  leftEye.position.set(-0.11, headY + 0.04, faceZ);
+  g.add(leftEye);
+  clown.leftEye = leftEye;
+
+  // Glowing RED EYES – right
+  const rightEye = leftEye.clone();
+  rightEye.position.x = 0.11;
+  rightEye.material = leftEye.material.clone();
+  g.add(rightEye);
+  clown.rightEye = rightEye;
+
+  // Big red clown nose
+  const nose = new THREE.Mesh(
+    new THREE.SphereGeometry(0.095, 12, 12),
+    new THREE.MeshStandardMaterial({ color: 0xff1a1a, emissive: 0xff1a1a, emissiveIntensity: 0.6, roughness: 0.4 })
+  );
+  nose.position.set(0, headY - 0.06, faceZ + 0.06);
   g.add(nose);
   clown.nose = nose;
 
-  // Creepy grin
+  // Creepy red grin
   const grin = new THREE.Mesh(
-    new THREE.TorusGeometry(0.13, 0.022, 6, 14, Math.PI),
-    new THREE.MeshBasicMaterial({ color: 0x8b0000 })
+    new THREE.TorusGeometry(0.13, 0.025, 8, 16, Math.PI),
+    new THREE.MeshBasicMaterial({ color: 0xcc0000 })
   );
   grin.rotation.x = Math.PI;
-  grin.rotation.z = Math.PI;
-  grin.position.set(0, 2.32, 0.29);
+  grin.position.set(0, headY - 0.18, faceZ - 0.01);
   g.add(grin);
   clown.grin = grin;
 
-  // Glowing red eyes
-  if (clown.leftEye && clown.rightEye) {
-    clown.leftEye.material = clown.leftEye.material.clone();
-    clown.leftEye.material.color.setHex(0xff3030);
-    clown.leftEye.material.emissive = new THREE.Color(0xff0000);
-    clown.leftEye.material.emissiveIntensity = 0.9;
-    clown.rightEye.material = clown.leftEye.material.clone();
+  // Wild orange clown hair – tufts
+  const hairMat = new THREE.MeshStandardMaterial({ color: 0xff6b00, emissive: 0xff3c00, emissiveIntensity: 0.25, roughness: 0.85 });
+  for (const side of [-1, 1]) {
+    const tuft = new THREE.Mesh(
+      new THREE.SphereGeometry(0.16, 10, 10),
+      hairMat
+    );
+    tuft.scale.set(0.9, 0.75, 0.9);
+    tuft.position.set(side * 0.28, headY + 0.22, -0.04);
+    g.add(tuft);
   }
 
-  // Make the outfit more clown-like – bright red pom poms
+  // Bright yellow pom-poms down the front
   for (let i = 0; i < 3; i++) {
     const pom = new THREE.Mesh(
-      new THREE.SphereGeometry(0.07, 8, 8),
-      new THREE.MeshStandardMaterial({ color: 0xffd63a, emissive: 0xff9500, emissiveIntensity: 0.2 })
+      new THREE.SphereGeometry(0.075, 10, 10),
+      new THREE.MeshStandardMaterial({ color: 0xffd63a, emissive: 0xff9500, emissiveIntensity: 0.45, roughness: 0.5 })
     );
-    pom.position.set(0, 1.75 - i * 0.32, 0.28);
+    pom.position.set(0, 1.55 - i * 0.38, 0.30);
     g.add(pom);
   }
 
@@ -2167,26 +2190,26 @@ for (const spot of DRAIN_SPOTS) {
   const coverGroup = new THREE.Group();
   const cover = new THREE.Mesh(
     new THREE.CylinderGeometry(0.72, 0.72, 0.08, 24),
-    new THREE.MeshStandardMaterial({ color: 0x2a2d36, roughness: 0.9, metalness: 0.4 })
+    new THREE.MeshStandardMaterial({ color: 0xff8f3d, emissive: 0xff5a00, emissiveIntensity: 0.6, roughness: 0.5, metalness: 0.2 })
   );
-  cover.position.y = 0.04;
+  cover.position.y = 0.14;
   coverGroup.add(cover);
   // drain grate lines
   for (let i = 0; i < 5; i++) {
     const bar = new THREE.Mesh(
       new THREE.BoxGeometry(1.15, 0.025, 0.06),
-      new THREE.MeshStandardMaterial({ color: 0x1a1c22, metalness: 0.6, roughness: 0.7 })
-    );
-    bar.position.set(0, 0.085, -0.28 + i * 0.14);
+      new THREE.MeshStandardMaterial({ color: 0xffd264, emissive: 0xff8f3d, emissiveIntensity: 0.45 })
+  );
+    bar.position.set(0, 0.185, -0.28 + i * 0.14);
     coverGroup.add(bar);
   }
   // rim
   const rim = new THREE.Mesh(
     new THREE.TorusGeometry(0.74, 0.06, 8, 28),
-    new THREE.MeshStandardMaterial({ color: 0x3a3d46, roughness: 0.8, metalness: 0.3 })
+    new THREE.MeshStandardMaterial({ color: 0xff5d3d, emissive: 0xff2f00, emissiveIntensity: 0.75, roughness: 0.4 })
   );
   rim.rotation.x = Math.PI / 2;
-  rim.position.y = 0.02;
+  rim.position.y = 0.16;
   coverGroup.add(rim);
   
   coverGroup.position.set(spot.x, 0, spot.z);
