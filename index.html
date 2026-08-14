@@ -2165,56 +2165,58 @@ noFace.position.set(10, 0, -10);
 scene.add(noFace);
 
 const noFaceMask = new THREE.Mesh(
-  new THREE.SphereGeometry(0.22, 12, 12),
-  new THREE.MeshStandardMaterial({ color: 0xf5f5f0, emissive: 0x9a9a9a, emissiveIntensity: 0.25, roughness: 0.45 })
+  new THREE.SphereGeometry(0.32, 16, 16),
+  new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xcccccc, emissiveIntensity: 0.4, roughness: 0.3 })
 );
-noFaceMask.position.set(0, 2.35, 0.29);
+noFaceMask.position.set(0, 2.35, 0.15);
 noFace.add(noFaceMask);
 
-// Clown red nose
+// HUGE red clown nose
 const clownNose = new THREE.Mesh(
-  new THREE.SphereGeometry(0.06, 12, 12),
-  new THREE.MeshStandardMaterial({ color: 0xff0000, emissive: 0xaa0000, emissiveIntensity: 0.6, roughness: 0.3 })
+  new THREE.SphereGeometry(0.15, 12, 12),
+  new THREE.MeshStandardMaterial({ color: 0xff0000, emissive: 0xff0000, emissiveIntensity: 1.2, roughness: 0.2 })
 );
-clownNose.position.set(0, 2.32, 0.38);
+clownNose.position.set(0, 2.28, 0.42);
 noFace.add(clownNose);
 
-// Creepy smile
+// Wide creepy smile - MUCH BIGGER
 const smileMouth = new THREE.Mesh(
-  new THREE.TorusGeometry(0.12, 0.015, 8, 16, Math.PI),
-  new THREE.MeshBasicMaterial({ color: 0x8b0000 })
+  new THREE.TorusGeometry(0.22, 0.04, 8, 16, Math.PI),
+  new THREE.MeshBasicMaterial({ color: 0xff0000 })
 );
 smileMouth.rotation.x = Math.PI;
 smileMouth.rotation.z = Math.PI;
-smileMouth.position.set(0, 2.22, 0.35);
+smileMouth.position.set(0, 2.08, 0.38);
 noFace.add(smileMouth);
 
-// Black eyes
+// HUGE black eyes
 const leftClownEye = new THREE.Mesh(
-  new THREE.SphereGeometry(0.035, 10, 10),
+  new THREE.SphereGeometry(0.08, 12, 12),
   new THREE.MeshBasicMaterial({ color: 0x000000 })
 );
-leftClownEye.position.set(-0.08, 2.38, 0.32);
+leftClownEye.scale.set(1.2, 1, 0.8);
+leftClownEye.position.set(-0.12, 2.42, 0.35);
 noFace.add(leftClownEye);
 
 const rightClownEye = leftClownEye.clone();
-rightClownEye.position.x = 0.08;
+rightClownEye.position.x = 0.12;
 noFace.add(rightClownEye);
 
-// Orange clown hair tufts
-const hairMaterial = new THREE.MeshStandardMaterial({ color: 0xff6600, emissive: 0xcc4400, emissiveIntensity: 0.4, roughness: 0.8 });
-for (let i = 0; i < 6; i++) {
+// MASSIVE orange clown hair - wild and crazy
+const hairMaterial = new THREE.MeshStandardMaterial({ color: 0xff6600, emissive: 0xff6600, emissiveIntensity: 0.8, roughness: 0.9 });
+for (let i = 0; i < 12; i++) {
   const hairTuft = new THREE.Mesh(
-    new THREE.SphereGeometry(0.08, 8, 8),
+    new THREE.SphereGeometry(0.18, 8, 8),
     hairMaterial
   );
-  const angle = (i / 6) * Math.PI * 2;
+  const angle = (i / 12) * Math.PI * 2;
+  const radius = 0.28 + Math.random() * 0.08;
   hairTuft.position.set(
-    Math.cos(angle) * 0.22,
-    2.52 + Math.random() * 0.08,
-    Math.sin(angle) * 0.18
+    Math.cos(angle) * radius,
+    2.58 + Math.random() * 0.15,
+    Math.sin(angle) * radius * 0.7
   );
-  hairTuft.scale.set(1, 1.4, 1);
+  hairTuft.scale.set(0.8 + Math.random() * 0.4, 1.6 + Math.random() * 0.6, 0.8 + Math.random() * 0.4);
   noFace.add(hairTuft);
 }
 
