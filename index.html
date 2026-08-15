@@ -1904,6 +1904,274 @@ function createCharacter(primary, accent, profile = {}) {
   group.add(shadow);
 
   return { group, leftLeg, rightLeg, leftArm, rightArm, shadow, torso, jacket, hood, hoodTail, shoulderShell, waistShell, hemShell, shirtPanel, zipperLine, leftString, rightString, head, hair, hairMaterial, armMat, legMat, neck, jaw, leftBrow, rightBrow, leftEye, rightEye, noseBridge, noseTip, mouthLine };
+/* ===================== DRAIN CLOWNS ===================== */
+
+function buildDrainClown() {
+  const group = new THREE.Group();
+
+  // silver / grey clown suit
+  const suitMat = new THREE.MeshStandardMaterial({ color: 0xcfcfd6, roughness: 0.78 });
+  const torso = new THREE.Mesh(new THREE.CapsuleGeometry(0.42, 1.0, 6, 12), suitMat);
+  torso.position.y = 1.28;
+  group.add(torso);
+
+  // red ruffle collar
+  const collar = new THREE.Mesh(new THREE.TorusGeometry(0.45, 0.09, 8, 16),
+    new THREE.MeshStandardMaterial({ color: 0xd42a2a, roughness: 0.7 }));
+  collar.rotation.x = Math.PI / 2;
+  collar.position.y = 1.78;
+  group.add(collar);
+
+  // puffy sleeves
+  const sleeveMat = new THREE.MeshStandardMaterial({ color: 0xe8e8ec, roughness: 0.8 });
+  for (const side of [-1, 1]) {
+    const arm = new THREE.Mesh(new THREE.CapsuleGeometry(0.13, 0.72, 4, 8), sleeveMat);
+    arm.position.set(side * 0.56, 1.38, 0);
+    arm.rotation.z = side * 0.22;
+    group.add(arm);
+    const cuff = new THREE.Mesh(new THREE.SphereGeometry(0.15, 10, 10),
+      new THREE.MeshStandardMaterial({ color: 0xd42a2a, roughness: 0.7 }));
+    cuff.position.set(side * 0.56, 0.92, 0);
+    group.add(cuff);
+  }
+
+  // baggy pants
+  const pantsMat = new THREE.MeshStandardMaterial({ color: 0xb8b8c0, roughness: 0.88 });
+  for (const side of [-1, 1]) {
+    const leg = new THREE.Mesh(new THREE.CapsuleGeometry(0.17, 0.78, 4, 8), pantsMat);
+    leg.position.set(side * 0.2, 0.48, 0);
+    group.add(leg);
+  }
+
+  // big red clown shoes
+  for (const side of [-1, 1]) {
+    const shoe = new THREE.Mesh(new THREE.SphereGeometry(0.22, 10, 10),
+      new THREE.MeshStandardMaterial({ color: 0xc41e1e, roughness: 0.6 }));
+    shoe.scale.set(1.4, 0.7, 1.0);
+    shoe.position.set(side * 0.2, 0.12, 0.12);
+    group.add(shoe);
+  }
+
+  // white face
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.32, 16, 16),
+    new THREE.MeshStandardMaterial({ color: 0xf0f0f0, roughness: 0.65 }));
+  head.position.y = 2.18;
+  group.add(head);
+
+  // red nose
+  const nose = new THREE.Mesh(new THREE.SphereGeometry(0.072, 10, 10),
+    new THREE.MeshStandardMaterial({ color: 0xe53935, roughness: 0.5 }));
+  nose.position.set(0, 2.16, 0.30);
+  group.add(nose);
+
+  // red smile – thin torus arc
+  const smile = new THREE.Mesh(new THREE.TorusGeometry(0.14, 0.018, 8, 16, Math.PI),
+    new THREE.MeshBasicMaterial({ color: 0xc41e1e }));
+  smile.position.set(0, 2.04, 0.27);
+  smile.rotation.z = Math.PI;
+  group.add(smile);
+
+  // eyes – dark sockets, NO emissive blowout
+  const eyeMat = new THREE.MeshBasicMaterial({ color: 0x1a1a1a });
+  const leftEye = new THREE.Mesh(new THREE.SphereGeometry(0.038, 8, 8), eyeMat);
+  leftEye.position.set(-0.09, 2.22, 0.27);
+  const rightEye = leftEye.clone();
+  rightEye.position.x = 0.09;
+  group.add(leftEye, rightEye);
+
+  // orange pom-poms down the front
+  for (let i = 0; i < 3; i++) {
+    const pom = new THREE.Mesh(new THREE.SphereGeometry(0.075, 10, 10),
+      new THREE.MeshStandardMaterial({ color: 0xff6a00, roughness: 0.7 }));
+    pom.position.set(0, 1.55 - i * 0.28, 0.42);
+    group.add(pom);
+  }
+
+  // red curly hair puffs
+  const hairMat = new THREE.MeshStandardMaterial({ color: 0xd93600, roughness: 0.9 });
+  for (const [x, y, z] of [[-0.28,2.28,0], [0.28,2.28,0], [0,2.42,-0.15]]) {
+    const puff = new THREE.Mesh(new THREE.SphereGeometry(0.16, 10, 10), hairMat);
+    puff.position.set(x, y, z);
+    group.add(puff);
+  }
+
+  // point light so he's visible at night, subtle
+  const glow = new THREE.PointLight(0xff8a5a, 0.55, 6, 2);
+  glow.position.set(0, 1.6, 0);
+  group.add(glow);
+
+  group.visible = false;
+  group.scale.set(0.92, 0.92, 0.92);
+  return { group, head, leftEye, rightEye };
+}
+
+function createStormDrain(x, z) {
+  const grate = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.85, 0.85, 0.08, 16),
+    new THREE.MeshStandardMaterial({ color: 0x2b2b2b, roughness: 0.95, metalness: 0.4 })
+  );
+  grate.position.set(x, 0.04, z);
+  scene.add(grate);
+
+  // dark hole underneath
+  const hole = new THREE.Mesh(
+    new THREE.CircleGeometry(0.72, 20),
+    new THREE.MeshBasicMaterial({ color: 0x050505 })
+  );
+  hole.rotation.x = -Math.PI / 2;
+  hole.position.set(x, 0.015, z);
+  scene.add(hole);
+
+  return { x, z, grate };
+}
+
+function spawnDrainClown(x, z) {
+  const drain = createStormDrain(x, z);
+  const clown = buildDrainClown();
+  clown.group.position.set(x, -1.8, z);
+  scene.add(clown.group);
+
+  world.drainClowns.push({
+    x, z,
+    drain,
+    group: clown.group,
+    head: clown.head,
+    state: 'hidden',
+    stateTime: 0,
+    cooldown: 2 + Math.random() * 3,
+    chaseTime: 0,
+    homeX: x,
+    homeZ: z
+  });
+}
+
+function initDrainClowns() {
+  // 5 drains spread around the block
+  const spots = [
+    [  8,  -8],
+    [-14,   4],
+    [ 22,  14],
+    [-6, -22],
+    [ 18, -14]
+  ];
+  for (const [x, z] of spots) spawnDrainClown(x, z);
+}
+
+function updateDrainClowns(dt) {
+  const chasePos = chase.position;
+  const peekDist = 7.5;
+  const emergeDist = 5.0;
+  const chaseSpeed = 2.3;
+  const returnSpeed = 2.8;
+  const maxChaseDist = 18;
+
+  for (const c of world.drainClowns) {
+    const dx = chasePos.x - c.x;
+    const dz = chasePos.z - c.z;
+    const dist = Math.hypot(dx, dz);
+    c.stateTime += dt;
+
+    const g = c.group;
+
+    if (c.state === 'hidden') {
+      g.visible = false;
+      c.cooldown -= dt;
+      if (dist < peekDist && c.cooldown <= 0) {
+        c.state = 'peeking';
+        c.stateTime = 0;
+        g.visible = true;
+        g.position.set(c.x, 0.35, c.z);
+      }
+      continue;
+    }
+
+    g.visible = true;
+
+    if (c.state === 'peeking') {
+      // head poking out of the drain
+      g.position.set(c.x, 0.35 + Math.sin(c.stateTime * 5) * 0.035, c.z);
+      // look at Chase
+      g.rotation.y = Math.atan2(dx, dz);
+
+      if (dist < emergeDist) {
+        c.state = 'emerging';
+        c.stateTime = 0;
+      } else if (dist > peekDist + 1.5 || c.stateTime > 4.0) {
+        // duck back down
+        c.state = 'hidden';
+        c.cooldown = 1.5 + Math.random() * 2;
+      }
+      continue;
+    }
+
+    if (c.state === 'emerging') {
+      const t = Math.min(1, c.stateTime / 1.2);
+      const e = 1 - Math.pow(1 - t, 3);
+      g.position.set(c.x, 0.35 + e * 1.25, c.z);
+      g.rotation.y = Math.atan2(dx, dz);
+      if (t >= 1) {
+        c.state = 'chasing';
+        c.stateTime = 0;
+        c.chaseTime = 0;
+      }
+      continue;
+    }
+
+    if (c.state === 'chasing') {
+      c.chaseTime += dt;
+      // move toward Chase
+      if (dist > 0.8) {
+        g.position.x += (dx / dist) * chaseSpeed * dt;
+        g.position.z += (dz / dist) * chaseSpeed * dt;
+      }
+      g.position.y = 0.02 + Math.sin(c.stateTime * 7) * 0.04;
+      g.rotation.y = Math.atan2(dx, dz);
+
+      // damage on touch
+      if (dist < 1.25 && !state.ended && !state.win && state.started) {
+        state.health = Math.max(0, state.health - 18 * dt);
+        state.fear = Math.min(100, state.fear + 22 * dt);
+        if (Math.random() < 0.04) soundHit();
+      }
+
+      // give up conditions
+      const fromHome = Math.hypot(g.position.x - c.homeX, g.position.z - c.homeZ);
+      if (fromHome > maxChaseDist || dist > 11 || c.chaseTime > 10) {
+        c.state = 'returning';
+        c.stateTime = 0;
+      }
+      continue;
+    }
+
+    if (c.state === 'returning') {
+      const hx = c.homeX - g.position.x;
+      const hz = c.homeZ - g.position.z;
+      const hd = Math.hypot(hx, hz);
+      if (hd > 0.15) {
+        g.position.x += (hx / hd) * returnSpeed * dt;
+        g.position.z += (hz / hd) * returnSpeed * dt;
+        g.rotation.y = Math.atan2(hx, hz);
+      } else {
+        c.state = 'retreating';
+        c.stateTime = 0;
+      }
+      g.position.y = 0.02;
+      continue;
+    }
+
+    if (c.state === 'retreating') {
+      const t = Math.min(1, c.stateTime / 0.7);
+      g.position.set(c.x, 1.6 * (1 - t) + 0.35 * t - 1.8 * t, c.z);
+      if (t >= 1) {
+        c.state = 'hidden';
+        c.cooldown = 3 + Math.random() * 3;
+        g.visible = false;
+      }
+      continue;
+    }
+  }
+}
+
 }
 
 const chaseModel = createCharacter(0x6e2130, 0x7d1627, { kind: "chase" });
@@ -2056,6 +2324,8 @@ const noFaceModel = createCharacter(0x441013, 0x22070b, { kind: "noface" });
 const noFace = noFaceModel.group;
 noFace.position.set(10, 0, -10);
 scene.add(noFace);
+
+initDrainClowns();
 
 const noFaceMask = new THREE.Mesh(
   new THREE.SphereGeometry(0.22, 12, 12),
@@ -4213,6 +4483,7 @@ function tick() {
     updateCandies(dt);
     updateEnemy(dt);
     updateProjectiles(dt);
+    updateDrainClowns(dt);
     updateMissionEnemies(dt);
     updateMissionPickups(dt);
     updateMissionTimer(dt);
