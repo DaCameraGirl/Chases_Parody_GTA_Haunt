@@ -3995,6 +3995,21 @@ function updateEnemy(dt) {
       const move = new THREE.Vector3(toPlayer.x, 0, toPlayer.z).normalize();
       noFace.position.addScaledVector(move, chaseSpeed * slow * dt);
       noFace.rotation.y = Math.atan2(move.x, move.z);
+      
+      // Animate legs while walking
+      const walkSpeed = chaseSpeed * slow;
+      const swing = clock.elapsedTime * walkSpeed * 3.5;
+      const legAmp = 0.45;
+      noFaceModel.leftLeg.rotation.x = Math.sin(swing) * legAmp;
+      noFaceModel.rightLeg.rotation.x = Math.sin(swing + Math.PI) * legAmp;
+      noFaceModel.leftArm.rotation.x = Math.sin(swing + Math.PI) * 0.3;
+      noFaceModel.rightArm.rotation.x = Math.sin(swing) * 0.3;
+    } else {
+      // Idle - reset leg positions
+      noFaceModel.leftLeg.rotation.x *= Math.exp(-8 * dt);
+      noFaceModel.rightLeg.rotation.x *= Math.exp(-8 * dt);
+      noFaceModel.leftArm.rotation.x *= Math.exp(-8 * dt);
+      noFaceModel.rightArm.rotation.x *= Math.exp(-8 * dt);
     }
   }
 
