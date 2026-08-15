@@ -1028,18 +1028,18 @@ const skyGlow = new THREE.Mesh(
 skyGlow.position.copy(moon.position);
 scene.add(skyGlow);
 
-scene.add(new THREE.AmbientLight(0xa8b9ec, 2.4));
-scene.add(new THREE.HemisphereLight(0x9ab8ff, 0x254028, 1.6));
+scene.add(new THREE.AmbientLight(0xa8b9ec, 1.72));
+scene.add(new THREE.HemisphereLight(0x9ab8ff, 0x254028, 1.08));
 
-const moonLight = new THREE.DirectionalLight(0xdbe7ff, 3.2);
+const moonLight = new THREE.DirectionalLight(0xdbe7ff, 2.35);
 moonLight.position.set(-20, 34, -18);
 scene.add(moonLight);
 
-const warmFill = new THREE.PointLight(0xffb56e, 2.5, 56, 2);
+const warmFill = new THREE.PointLight(0xffb56e, 1.8, 56, 2);
 warmFill.position.set(-18, 8, 18);
 scene.add(warmFill);
 
-const coolStreetFill = new THREE.PointLight(0xa8d8ff, 1.8, 72, 2);
+const coolStreetFill = new THREE.PointLight(0xa8d8ff, 1.18, 72, 2);
 coolStreetFill.position.set(8, 9, -6);
 scene.add(coolStreetFill);
 
@@ -1342,7 +1342,7 @@ function createPumpkin(x, z, scale = 1) {
   const group = new THREE.Group();
   const body = new THREE.Mesh(
     new THREE.SphereGeometry(0.56 * scale, 14, 12),
-    new THREE.MeshStandardMaterial({ color: 0xd76618, roughness: 0.82, emissive: 0x4c1807, emissiveIntensity: 0.25 })
+    new THREE.MeshStandardMaterial({ color: 0xd76618, roughness: 0.82, emissive: 0x4c1807, emissiveIntensity: 0.6 })
   );
   body.scale.y = 0.82;
   body.position.y = 0.46 * scale;
@@ -3995,21 +3995,6 @@ function updateEnemy(dt) {
       const move = new THREE.Vector3(toPlayer.x, 0, toPlayer.z).normalize();
       noFace.position.addScaledVector(move, chaseSpeed * slow * dt);
       noFace.rotation.y = Math.atan2(move.x, move.z);
-      
-      // Animate legs while walking
-      const walkSpeed = chaseSpeed * slow;
-      const swing = clock.elapsedTime * walkSpeed * 3.5;
-      const legAmp = 0.45;
-      noFaceModel.leftLeg.rotation.x = Math.sin(swing) * legAmp;
-      noFaceModel.rightLeg.rotation.x = Math.sin(swing + Math.PI) * legAmp;
-      noFaceModel.leftArm.rotation.x = Math.sin(swing + Math.PI) * 0.3;
-      noFaceModel.rightArm.rotation.x = Math.sin(swing) * 0.3;
-    } else {
-      // Idle - reset leg positions
-      noFaceModel.leftLeg.rotation.x *= Math.exp(-8 * dt);
-      noFaceModel.rightLeg.rotation.x *= Math.exp(-8 * dt);
-      noFaceModel.leftArm.rotation.x *= Math.exp(-8 * dt);
-      noFaceModel.rightArm.rotation.x *= Math.exp(-8 * dt);
     }
   }
 
