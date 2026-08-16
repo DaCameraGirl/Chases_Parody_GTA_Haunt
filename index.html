@@ -784,12 +784,12 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 0.88;
+renderer.toneMappingExposure = 1.25;
 renderer.shadowMap.enabled = false;
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x080b12);
-scene.fog = new THREE.FogExp2(0x0a0f1a, 0.022);
+scene.background = new THREE.Color(0x0c111c);
+scene.fog = new THREE.FogExp2(0x121827, 0.014);
 
 const camera = new THREE.PerspectiveCamera(62, window.innerWidth / window.innerHeight, 0.1, 220);
 
@@ -1040,33 +1040,33 @@ const skyGlow = new THREE.Mesh(
 skyGlow.position.copy(moon.position);
 scene.add(skyGlow);
 
-scene.add(new THREE.AmbientLight(0x6b7288, 0.42));
-scene.add(new THREE.HemisphereLight(0x4a5568, 0x0a0d14, 0.35));
+scene.add(new THREE.AmbientLight(0x7b8498, 0.72));
+scene.add(new THREE.HemisphereLight(0x5a6b80, 0x151820, 0.55));
 
-const moonLight = new THREE.DirectionalLight(0xb8c5d6, 0.65);
+const moonLight = new THREE.DirectionalLight(0xc8d4e8, 1.35);
 moonLight.position.set(-20, 34, -18);
 scene.add(moonLight);
 
-// was warm orange fill – now cold desaturated street fill
-const warmFill = new THREE.PointLight(0x5a6b7a, 0.45, 56, 2);
+// cold street fill – desaturated, low
+const warmFill = new THREE.PointLight(0x6a7682, 0.72, 56, 2);
 warmFill.position.set(-18, 8, 18);
 scene.add(warmFill);
 
-const coolStreetFill = new THREE.PointLight(0x6b7d8e, 0.32, 72, 2);
+const coolStreetFill = new THREE.PointLight(0x7a8a9a, 0.52, 72, 2);
 coolStreetFill.position.set(8, 9, -6);
 scene.add(coolStreetFill);
 
 const grass = new THREE.Mesh(
   new THREE.PlaneGeometry(180, 180),
-  new THREE.MeshStandardMaterial({ map: grassTexture, color: 0x4a4f52, roughness: 1, metalness: 0 })
+  new THREE.MeshStandardMaterial({ map: grassTexture, color: 0x5a5f5a, roughness: 1, metalness: 0 })
 );
 grass.rotation.x = -Math.PI / 2;
 scene.add(grass);
 
 const asphaltMaterial = new THREE.MeshStandardMaterial({
   map: asphaltTexture,
-  color: 0x15181d,
-  roughness: 0.72,
+  color: 0x232830,
+  roughness: 0.88,
   metalness: 0.0
 });
 
@@ -1116,18 +1116,18 @@ function createLamp(x, z) {
 
   const lantern = new THREE.Mesh(
     new THREE.BoxGeometry(0.44, 0.54, 0.44),
-    new THREE.MeshStandardMaterial({ color: 0x8a8d92, emissive: 0xb8bec6, emissiveIntensity: 0.35, roughness: 0.65 })
+    new THREE.MeshStandardMaterial({ color: 0xa8acb2, emissive: 0xd8dce2, emissiveIntensity: 0.85, roughness: 0.55 })
   );
   lantern.position.set(0.9, 4.35, 0);
   group.add(lantern);
 
-  const light = new THREE.PointLight(0xd8dde4, 0.85, 14, 2);
+  const light = new THREE.PointLight(0xe8ecf4, 1.65, 22, 1.5);
   light.position.set(0.9, 4.3, 0);
   group.add(light);
 
   group.position.set(x, 0, z);
   scene.add(group);
-  world.lamps.push({ group, light, lantern, x, z, phase: Math.random() * Math.PI * 2, flickerTime: Math.random() * 10, isDead: Math.random() < 0.25 });
+  world.lamps.push({ group, light, lantern, x, z, phase: Math.random() * Math.PI * 2, flickerTime: Math.random() * 10, isDead: Math.random() < 0.08 });
 }
 
 [
@@ -4382,8 +4382,45 @@ function updateProjectiles(dt) {
 }
 
 function updateAtmosphere(dt) {
+  // streetlamps – subtle flicker, rare outages
   for (const lamp of world.lamps) {
-    lamp.light.intensity = 1.85 + Math.sin(clock.elapsedTime * 6 + lamp.phase) * 0.24 + Math.random() * 0.08;
+    lamp.flickerTime += dt;
+    const baseIntensity = 1.65;
+    let intensity = baseIntensity;
+    const emissiveBase = 0.85;
+    let emissiveIntensity = emissiveBase;
+
+    if (lamp.isDead) {
+      // dead lamp – occasional sputter back to life
+      if (Math.random() < 0.004) {
+        lamp.isDead = false;
+        lamp.flickerTime = 0;
+      }
+      intensity = 0.15 + Math.random() * 0.08;
+      emissiveIntensity = 0.12;
+    } else {
+      // subtle flicker
+      const buzz = Math.sin(clock.elapsedTime * 14 + lamp.phase * 3.7) * 0.06;
+      const slow = Math.sin(clock.elapsedTime * 1.8 + lamp.phase) * 0.08;
+      const noise = (Math.random() - 0.5) * 0.035;
+      intensity = baseIntensity + buzz + slow + noise;
+
+      // occasional flicker – 0.6% chance per frame
+      if (Math.random() < 0.006) {
+        intensity *= 0.45 + Math.random() * 0.35;
+      }
+      // rare blackout – 0.015% chance
+      if (Math.random() < 0.00015) {
+        lamp.isDead = true;
+        lamp.flickerTime = 0;
+      }
+      intensity = Math.max(0.55, Math.min(1.95, intensity));
+      emissiveIntensity = 0.55 + (intensity / baseIntensity) * 0.4;
+    }
+    lamp.light.intensity = intensity;
+    if (lamp.lantern && lamp.lantern.material && lamp.lantern.material.emissiveIntensity !== undefined) {
+      lamp.lantern.material.emissiveIntensity = emissiveIntensity;
+    }
   }
 
   chaseGlow.intensity = 1.2 + Math.sin(clock.elapsedTime * 2.4) * 0.12;
