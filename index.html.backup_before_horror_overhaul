@@ -56,12 +56,12 @@
 
   .vignette {
     background:
-      radial-gradient(circle at center, transparent 65%, rgba(5, 7, 14, 0.12) 85%, rgba(1, 1, 3, 0.28) 100%),
-      linear-gradient(180deg, rgba(0, 0, 0, 0.0), rgba(0, 0, 0, 0.06));
+      radial-gradient(circle at center, transparent 42%, rgba(5, 7, 14, 0.42) 68%, rgba(1, 1, 3, 0.82) 100%),
+      linear-gradient(180deg, rgba(0, 0, 0, 0.05), rgba(0, 0, 0, 0.28));
   }
 
   .scanlines {
-    opacity: 0.035;
+    opacity: 0.16;
     background:
       repeating-linear-gradient(
         180deg,
@@ -784,12 +784,12 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.68;
+renderer.toneMappingExposure = 1.72;
 renderer.shadowMap.enabled = false;
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x141b2a);
-scene.fog = new THREE.FogExp2(0x1e2438, 0.0035);
+scene.background = new THREE.Color(0x13203a);
+scene.fog = new THREE.FogExp2(0x18263f, 0.0072);
 
 const camera = new THREE.PerspectiveCamera(62, window.innerWidth / window.innerHeight, 0.1, 220);
 
@@ -980,29 +980,18 @@ function createBadgeTexture(text, options = {}) {
 }
 
 const asphaltTexture = createCanvasTexture(512, 512, (ctx, w, h) => {
-  // base – near-black cool asphalt
-  ctx.fillStyle = "#0d1014";
+  ctx.fillStyle = "#11151f";
   ctx.fillRect(0, 0, w, h);
-  // fine aggregate noise – desaturated, subtle
-  for (let i = 0; i < 900; i++) {
-    const alpha = 0.025 + Math.random() * 0.045;
-    const size = 1 + Math.random() * 2;
-    const g = 110 + Math.random() * 30 | 0;
-    ctx.fillStyle = `rgba(${g},${g+2},${g+6},${alpha})`;
+  for (let i = 0; i < 1700; i++) {
+    const alpha = 0.05 + Math.random() * 0.08;
+    const size = 1 + Math.random() * 3;
+    ctx.fillStyle = `rgba(255,255,255,${alpha})`;
     ctx.fillRect(Math.random() * w, Math.random() * h, size, size);
   }
-  // faint lane wear / oil streaks – horizontal, very subtle
-  ctx.fillStyle = "rgba(18, 20, 26, 0.5)";
-  for (let i = 0; i < 12; i++) {
-    const y = (i / 12) * h;
-    ctx.fillRect(0, y, w, 4 + Math.random() * 6);
-  }
-  // random oil spots / cracks
-  ctx.fillStyle = "rgba(6, 7, 9, 0.55)";
-  for (let i = 0; i < 22; i++) {
-    ctx.beginPath();
-    ctx.ellipse(Math.random() * w, Math.random() * h, 8 + Math.random() * 22, 3 + Math.random() * 7, Math.random() * Math.PI, 0, Math.PI * 2);
-    ctx.fill();
+  ctx.fillStyle = "rgba(18, 20, 27, 0.65)";
+  for (let i = 0; i < 18; i++) {
+    const y = (i / 18) * h;
+    ctx.fillRect(0, y, w, 8);
   }
 });
 asphaltTexture.wrapS = THREE.RepeatWrapping;
@@ -1040,34 +1029,33 @@ const skyGlow = new THREE.Mesh(
 skyGlow.position.copy(moon.position);
 scene.add(skyGlow);
 
-scene.add(new THREE.AmbientLight(0x9ba5b8, 1.65));
-scene.add(new THREE.HemisphereLight(0x7b8da2, 0x222832, 1.15));
+scene.add(new THREE.AmbientLight(0xa8b9ec, 1.72));
+scene.add(new THREE.HemisphereLight(0x9ab8ff, 0x254028, 1.08));
 
-const moonLight = new THREE.DirectionalLight(0xe8f0ff, 2.4);
+const moonLight = new THREE.DirectionalLight(0xdbe7ff, 2.35);
 moonLight.position.set(-20, 34, -18);
 scene.add(moonLight);
 
-// cold street fill – desaturated, low
-const warmFill = new THREE.PointLight(0x8a95a2, 1.45, 68, 2);
+const warmFill = new THREE.PointLight(0xffb56e, 1.8, 56, 2);
 warmFill.position.set(-18, 8, 18);
 scene.add(warmFill);
 
-const coolStreetFill = new THREE.PointLight(0x9aaab8, 1.15, 82, 2);
+const coolStreetFill = new THREE.PointLight(0xa8d8ff, 1.18, 72, 2);
 coolStreetFill.position.set(8, 9, -6);
 scene.add(coolStreetFill);
 
 const grass = new THREE.Mesh(
   new THREE.PlaneGeometry(180, 180),
-  new THREE.MeshStandardMaterial({ map: grassTexture, color: 0x5a5f5a, roughness: 1, metalness: 0 })
+  new THREE.MeshStandardMaterial({ map: grassTexture, color: 0xd1ffd1, roughness: 1, metalness: 0 })
 );
 grass.rotation.x = -Math.PI / 2;
 scene.add(grass);
 
 const asphaltMaterial = new THREE.MeshStandardMaterial({
   map: asphaltTexture,
-  color: 0x232830,
-  roughness: 0.88,
-  metalness: 0.0
+  color: 0xdfe5ff,
+  roughness: 0.86,
+  metalness: 0.1
 });
 
 function addRoad(x, z, width, depth, rotation = 0) {
@@ -1116,18 +1104,18 @@ function createLamp(x, z) {
 
   const lantern = new THREE.Mesh(
     new THREE.BoxGeometry(0.44, 0.54, 0.44),
-    new THREE.MeshStandardMaterial({ color: 0xa8acb2, emissive: 0xd8dce2, emissiveIntensity: 0.85, roughness: 0.55 })
+    new THREE.MeshStandardMaterial({ color: 0xffbc7d, emissive: 0xff8c39, emissiveIntensity: 1.5, roughness: 0.35 })
   );
   lantern.position.set(0.9, 4.35, 0);
   group.add(lantern);
 
-  const light = new THREE.PointLight(0xe8ecf4, 1.65, 22, 1.5);
+  const light = new THREE.PointLight(0xff9e57, 1.5, 14, 2);
   light.position.set(0.9, 4.3, 0);
   group.add(light);
 
   group.position.set(x, 0, z);
   scene.add(group);
-  world.lamps.push({ group, light, lantern, x, z, phase: Math.random() * Math.PI * 2, flickerTime: Math.random() * 10, isDead: Math.random() < 0.08 });
+  world.lamps.push({ group, light, x, z, phase: Math.random() * Math.PI * 2 });
 }
 
 [
@@ -2207,20 +2195,9 @@ const chase = chaseModel.group;
 chase.position.set(-18, 0, 18);
 scene.add(chase);
 
-const chaseGlow = new THREE.PointLight(0xd8e0f0, 0.85, 9, 2);
-chaseGlow.position.set(0, 2.2, 0);
+const chaseGlow = new THREE.PointLight(0xffd7ba, 1.35, 12, 2);
+chaseGlow.position.set(0, 3.3, 1.9);
 chase.add(chaseGlow);
-
-// flashlight – forward cone, Friday 13th / GTA night run vibes
-const flashlight = new THREE.SpotLight(0xf0f4ff, 3.2, 28, Math.PI * 0.31, 0.42, 1.15);
-flashlight.position.set(0, 2.35, 0.35);
-flashlight.target.position.set(0, 1.2, 6);
-chase.add(flashlight);
-chase.add(flashlight.target);
-
-const flashlightFill = new THREE.PointLight(0xc8d8e8, 0.45, 5.5, 2);
-flashlightFill.position.set(0, 2.2, 0.5);
-chase.add(flashlightFill);
 
 const chaseCostumeRig = new THREE.Group();
 chase.add(chaseCostumeRig);
@@ -4393,45 +4370,8 @@ function updateProjectiles(dt) {
 }
 
 function updateAtmosphere(dt) {
-  // streetlamps – subtle flicker, rare outages
   for (const lamp of world.lamps) {
-    lamp.flickerTime += dt;
-    const baseIntensity = 1.65;
-    let intensity = baseIntensity;
-    const emissiveBase = 0.85;
-    let emissiveIntensity = emissiveBase;
-
-    if (lamp.isDead) {
-      // dead lamp – occasional sputter back to life
-      if (Math.random() < 0.004) {
-        lamp.isDead = false;
-        lamp.flickerTime = 0;
-      }
-      intensity = 0.15 + Math.random() * 0.08;
-      emissiveIntensity = 0.12;
-    } else {
-      // subtle flicker
-      const buzz = Math.sin(clock.elapsedTime * 14 + lamp.phase * 3.7) * 0.06;
-      const slow = Math.sin(clock.elapsedTime * 1.8 + lamp.phase) * 0.08;
-      const noise = (Math.random() - 0.5) * 0.035;
-      intensity = baseIntensity + buzz + slow + noise;
-
-      // occasional flicker – 0.6% chance per frame
-      if (Math.random() < 0.006) {
-        intensity *= 0.45 + Math.random() * 0.35;
-      }
-      // rare blackout – 0.015% chance
-      if (Math.random() < 0.00015) {
-        lamp.isDead = true;
-        lamp.flickerTime = 0;
-      }
-      intensity = Math.max(0.55, Math.min(1.95, intensity));
-      emissiveIntensity = 0.55 + (intensity / baseIntensity) * 0.4;
-    }
-    lamp.light.intensity = intensity;
-    if (lamp.lantern && lamp.lantern.material && lamp.lantern.material.emissiveIntensity !== undefined) {
-      lamp.lantern.material.emissiveIntensity = emissiveIntensity;
-    }
+    lamp.light.intensity = 1.85 + Math.sin(clock.elapsedTime * 6 + lamp.phase) * 0.24 + Math.random() * 0.08;
   }
 
   chaseGlow.intensity = 1.2 + Math.sin(clock.elapsedTime * 2.4) * 0.12;
