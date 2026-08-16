@@ -784,12 +784,12 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.72;
+renderer.toneMappingExposure = 0.88;
 renderer.shadowMap.enabled = false;
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x13203a);
-scene.fog = new THREE.FogExp2(0x18263f, 0.0072);
+scene.background = new THREE.Color(0x080b12);
+scene.fog = new THREE.FogExp2(0x0a0f1a, 0.022);
 
 const camera = new THREE.PerspectiveCamera(62, window.innerWidth / window.innerHeight, 0.1, 220);
 
@@ -980,18 +980,29 @@ function createBadgeTexture(text, options = {}) {
 }
 
 const asphaltTexture = createCanvasTexture(512, 512, (ctx, w, h) => {
-  ctx.fillStyle = "#11151f";
+  // base – near-black cool asphalt
+  ctx.fillStyle = "#0d1014";
   ctx.fillRect(0, 0, w, h);
-  for (let i = 0; i < 1700; i++) {
-    const alpha = 0.05 + Math.random() * 0.08;
-    const size = 1 + Math.random() * 3;
-    ctx.fillStyle = `rgba(255,255,255,${alpha})`;
+  // fine aggregate noise – desaturated, subtle
+  for (let i = 0; i < 900; i++) {
+    const alpha = 0.025 + Math.random() * 0.045;
+    const size = 1 + Math.random() * 2;
+    const g = 110 + Math.random() * 30 | 0;
+    ctx.fillStyle = `rgba(${g},${g+2},${g+6},${alpha})`;
     ctx.fillRect(Math.random() * w, Math.random() * h, size, size);
   }
-  ctx.fillStyle = "rgba(18, 20, 27, 0.65)";
-  for (let i = 0; i < 18; i++) {
-    const y = (i / 18) * h;
-    ctx.fillRect(0, y, w, 8);
+  // faint lane wear / oil streaks – horizontal, very subtle
+  ctx.fillStyle = "rgba(18, 20, 26, 0.5)";
+  for (let i = 0; i < 12; i++) {
+    const y = (i / 12) * h;
+    ctx.fillRect(0, y, w, 4 + Math.random() * 6);
+  }
+  // random oil spots / cracks
+  ctx.fillStyle = "rgba(6, 7, 9, 0.55)";
+  for (let i = 0; i < 22; i++) {
+    ctx.beginPath();
+    ctx.ellipse(Math.random() * w, Math.random() * h, 8 + Math.random() * 22, 3 + Math.random() * 7, Math.random() * Math.PI, 0, Math.PI * 2);
+    ctx.fill();
   }
 });
 asphaltTexture.wrapS = THREE.RepeatWrapping;
@@ -1029,33 +1040,34 @@ const skyGlow = new THREE.Mesh(
 skyGlow.position.copy(moon.position);
 scene.add(skyGlow);
 
-scene.add(new THREE.AmbientLight(0xa8b9ec, 1.72));
-scene.add(new THREE.HemisphereLight(0x9ab8ff, 0x254028, 1.08));
+scene.add(new THREE.AmbientLight(0x6b7288, 0.42));
+scene.add(new THREE.HemisphereLight(0x4a5568, 0x0a0d14, 0.35));
 
-const moonLight = new THREE.DirectionalLight(0xdbe7ff, 2.35);
+const moonLight = new THREE.DirectionalLight(0xb8c5d6, 0.65);
 moonLight.position.set(-20, 34, -18);
 scene.add(moonLight);
 
-const warmFill = new THREE.PointLight(0xffb56e, 1.8, 56, 2);
+// was warm orange fill – now cold desaturated street fill
+const warmFill = new THREE.PointLight(0x5a6b7a, 0.45, 56, 2);
 warmFill.position.set(-18, 8, 18);
 scene.add(warmFill);
 
-const coolStreetFill = new THREE.PointLight(0xa8d8ff, 1.18, 72, 2);
+const coolStreetFill = new THREE.PointLight(0x6b7d8e, 0.32, 72, 2);
 coolStreetFill.position.set(8, 9, -6);
 scene.add(coolStreetFill);
 
 const grass = new THREE.Mesh(
   new THREE.PlaneGeometry(180, 180),
-  new THREE.MeshStandardMaterial({ map: grassTexture, color: 0xd1ffd1, roughness: 1, metalness: 0 })
+  new THREE.MeshStandardMaterial({ map: grassTexture, color: 0x4a4f52, roughness: 1, metalness: 0 })
 );
 grass.rotation.x = -Math.PI / 2;
 scene.add(grass);
 
 const asphaltMaterial = new THREE.MeshStandardMaterial({
   map: asphaltTexture,
-  color: 0xdfe5ff,
-  roughness: 0.86,
-  metalness: 0.1
+  color: 0x15181d,
+  roughness: 0.72,
+  metalness: 0.0
 });
 
 function addRoad(x, z, width, depth, rotation = 0) {
@@ -1104,18 +1116,18 @@ function createLamp(x, z) {
 
   const lantern = new THREE.Mesh(
     new THREE.BoxGeometry(0.44, 0.54, 0.44),
-    new THREE.MeshStandardMaterial({ color: 0xffbc7d, emissive: 0xff8c39, emissiveIntensity: 1.5, roughness: 0.35 })
+    new THREE.MeshStandardMaterial({ color: 0x8a8d92, emissive: 0xb8bec6, emissiveIntensity: 0.35, roughness: 0.65 })
   );
   lantern.position.set(0.9, 4.35, 0);
   group.add(lantern);
 
-  const light = new THREE.PointLight(0xff9e57, 1.5, 14, 2);
+  const light = new THREE.PointLight(0xd8dde4, 0.85, 14, 2);
   light.position.set(0.9, 4.3, 0);
   group.add(light);
 
   group.position.set(x, 0, z);
   scene.add(group);
-  world.lamps.push({ group, light, x, z, phase: Math.random() * Math.PI * 2 });
+  world.lamps.push({ group, light, lantern, x, z, phase: Math.random() * Math.PI * 2, flickerTime: Math.random() * 10, isDead: Math.random() < 0.25 });
 }
 
 [
