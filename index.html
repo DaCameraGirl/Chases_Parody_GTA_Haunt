@@ -2123,24 +2123,37 @@ function updateDrainClowns(dt) {
 
     if (c.state === 'chasing') {
       c.chaseTime += dt;
-      // move toward Chase
-      if (dist > 0.8) {
-        g.position.x += (dx / dist) * chaseSpeed * dt;
-        g.position.z += (dz / dist) * chaseSpeed * dt;
+      // move toward Chase - use clown's actual position, not drain home
+      const cx = g.position.x;
+      const cz = g.position.z;
+      let cdx = chasePos.x - cx;
+      let cdz = chasePos.z - cz;
+      let cdist = Math.hypot(cdx, cdz) || 0.001;
+      if (cdist > 0.8) {
+        g.position.x += (cdx / cdist) * chaseSpeed * dt;
+        g.position.z += (cdz / cdist) * chaseSpeed * dt;
+        // recompute after move for accurate collision
+        cdx = chasePos.x - g.position.x;
+        cdz = chasePos.z - g.position.z;
+        cdist = Math.hypot(cdx, cdz);
       }
       g.position.y = 0.02 + Math.sin(c.stateTime * 7) * 0.04;
-      g.rotation.y = Math.atan2(dx, dz);
+      g.rotation.y = Math.atan2(cdx, cdz);
 
-      // damage on touch
-      if (dist < 1.25 && !state.ended && !state.win && state.started) {
+      // damage on touch - use clown-to-Chase distance
+      if (cdist < 1.25 && !state.ended && !state.win && state.started) {
         state.health = Math.max(0, state.health - 18 * dt);
         state.fear = Math.min(100, state.fear + 22 * dt);
         if (Math.random() < 0.04) soundHit();
+        // simple pushback so clown can't phase through Chase
+        const push = 1.8 * dt;
+        chase.position.x += (cdx / cdist) * -push;
+        chase.position.z += (cdz / cdist) * -push;
       }
 
       // give up conditions
       const fromHome = Math.hypot(g.position.x - c.homeX, g.position.z - c.homeZ);
-      if (fromHome > maxChaseDist || dist > 11 || c.chaseTime > 10) {
+      if (fromHome > maxChaseDist || cdist > 11 || c.chaseTime > 10) {
         c.state = 'returning';
         c.stateTime = 0;
       }
