@@ -727,6 +727,7 @@
       <li><code>Left click</code> or <code>Space</code> throw candy bomb</li>
       <li><code>Right drag</code> orbit camera</li>
       <li><code>E</code> use shop or safehouse</li>
+      <li><code>H</code> toggle haunt mode</li>
       <li><code>R</code> restart after win or loss</li>
     </ul>
   </section>
@@ -899,6 +900,12 @@ const state = {
     costume: false,
     sprintBoost: false,
     ward: false
+  },
+  haunt: {
+    active: false,
+    intensity: 0,
+    t: 0,
+    seedOffset: Math.random() * 1000
   }
 };
 
@@ -1139,6 +1146,14 @@ function createHouse(config) {
   const wallMaterial = new THREE.MeshStandardMaterial({ color: config.color, roughness: 0.94 });
   const wallDepth = 0.32;
 
+  // collect morphable parts for haunted house effect
+  const morphWalls = [];
+  const morphRoofs = [];
+  const morphDoors = [];
+  const windowMats = [];
+  let wallBaseColor = new THREE.Color(config.color);
+  let roofBaseColor = new THREE.Color(config.roof);
+
   if (config.enterable) {
     const backWall = new THREE.Mesh(
       new THREE.BoxGeometry(config.w, config.h, wallDepth),
@@ -1146,6 +1161,7 @@ function createHouse(config) {
     );
     backWall.position.set(0, config.h / 2, -config.d / 2 + wallDepth / 2);
     group.add(backWall);
+    morphWalls.push(backWall);
 
     const leftWall = new THREE.Mesh(
       new THREE.BoxGeometry(wallDepth, config.h, config.d),
@@ -1153,10 +1169,12 @@ function createHouse(config) {
     );
     leftWall.position.set(-config.w / 2 + wallDepth / 2, config.h / 2, 0);
     group.add(leftWall);
+    morphWalls.push(leftWall);
 
     const rightWall = leftWall.clone();
     rightWall.position.x = config.w / 2 - wallDepth / 2;
     group.add(rightWall);
+    morphWalls.push(rightWall);
 
     const fascia = new THREE.Mesh(
       new THREE.BoxGeometry(config.w, config.h * 0.26, wallDepth),
@@ -1164,6 +1182,7 @@ function createHouse(config) {
     );
     fascia.position.set(0, config.h * 0.88, config.d / 2 - wallDepth / 2);
     group.add(fascia);
+    morphWalls.push(fascia);
 
     const interiorFloor = new THREE.Mesh(
       new THREE.BoxGeometry(config.w * 0.88, 0.14, config.d * 0.78),
@@ -1225,15 +1244,18 @@ function createHouse(config) {
     );
     body.position.y = config.h / 2;
     group.add(body);
+    morphWalls.push(body);
   }
 
+  const roofMat = new THREE.MeshStandardMaterial({ color: config.roof, roughness: 0.9 });
   const roof = new THREE.Mesh(
     new THREE.ConeGeometry(Math.max(config.w, config.d) * 0.64, config.h * 0.82, 4),
-    new THREE.MeshStandardMaterial({ color: config.roof, roughness: 0.9 })
+    roofMat
   );
   roof.rotation.y = Math.PI * 0.25;
   roof.position.y = config.h + config.h * 0.33;
   group.add(roof);
+  morphRoofs.push(roof);
 
   const porch = new THREE.Mesh(
     new THREE.BoxGeometry(config.w * 0.32, 0.18, config.d * 0.18),
@@ -1243,12 +1265,15 @@ function createHouse(config) {
   group.add(porch);
 
   if (!config.enterable) {
+    const doorMat = new THREE.MeshBasicMaterial({ color: 0x261818 });
     const door = new THREE.Mesh(
       new THREE.PlaneGeometry(config.w * 0.16, config.h * 0.46),
-      new THREE.MeshBasicMaterial({ color: 0x261818 })
+      doorMat
     );
     door.position.set(0, config.h * 0.26, config.d / 2 + 0.01);
     group.add(door);
+    morphDoors.push(door);
+    windowMats.push(doorMat);
   } else {
     const welcomeMat = new THREE.Mesh(
       new THREE.PlaneGeometry(config.w * 0.3, 0.7),
@@ -1260,12 +1285,15 @@ function createHouse(config) {
   }
 
   for (const side of [-1, 1]) {
+    const winMat = new THREE.MeshBasicMaterial({ color: config.window, transparent: true, opacity: 0.95 });
     const windowMesh = new THREE.Mesh(
       new THREE.PlaneGeometry(config.w * 0.16, config.h * 0.18),
-      new THREE.MeshBasicMaterial({ color: config.window, transparent: true, opacity: 0.95 })
+      winMat
     );
     windowMesh.position.set(side * config.w * 0.22, config.h * 0.55, config.d / 2 + 0.02);
     group.add(windowMesh);
+    morphDoors.push(windowMesh);
+    windowMats.push(winMat);
   }
 
   if (config.sign) {
@@ -1289,13 +1317,45 @@ function createHouse(config) {
   group.position.set(config.x, 0, config.z);
   group.rotation.y = config.rotation || 0;
   scene.add(group);
+
+  // haunt morph state per house
+  const hauntPhase = Math.random() * Math.PI * 2;
+  const wallMorphs = morphWalls.map(m => ({
+    mesh: m,
+    basePos: m.position.clone(),
+    baseScale: m.scale.clone(),
+    baseRot: m.rotation.clone()
+  }));
+  const roofMorphs = morphRoofs.map(m => ({
+    mesh: m,
+    basePos: m.position.clone(),
+    baseScale: m.scale.clone(),
+    baseRot: m.rotation.clone()
+  }));
+  const doorMorphs = morphDoors.map(m => ({
+    mesh: m,
+    basePos: m.position.clone(),
+    baseScale: m.scale.clone()
+  }));
+
   world.houses.push({
     group,
     x: config.x,
     z: config.z,
     w: config.w,
     d: config.d,
-    enterable: !!config.enterable
+    enterable: !!config.enterable,
+    hauntPhase,
+    hauntPhase2: hauntPhase * 1.37,
+    wallMorphs,
+    roofMorphs,
+    doorMorphs,
+    wallMaterials: [wallMaterial],
+    roofMaterials: [roofMat],
+    windowMats,
+    wallBaseColor,
+    roofBaseColor,
+    windowBaseColors: windowMats.map(m => new THREE.Color(m.color.getHex()))
   });
 
   if (config.enterable) {
@@ -4028,6 +4088,7 @@ window.addEventListener("keydown", (event) => {
     input.fireQueued = true;
   }
   if (event.code === "KeyE") input.interactQueued = true;
+  if (event.code === "KeyH") toggleHaunt();
   if (event.code === "KeyR" && (state.ended || state.win)) restartGame();
 });
 
@@ -4476,6 +4537,182 @@ function updateAtmosphere(dt) {
   rain.position.set(chase.position.x, 0, chase.position.z);
 }
 
+/* ---- haunted houses – breathing / melting ---- */
+
+function updateHauntedHouses(dt) {
+  const h = state.haunt;
+  h.t += dt;
+
+  // auto-trigger when beacon lights, or when No-Face is close
+  if (!h.active && state.story.beacon) {
+    h.active = true;
+    h.intensity = 0.01;
+    showToast("The street is waking up…");
+    setRadio("Pumpkin FM: — is anyone out there? The houses — they're breathing —");
+  }
+
+  // ease intensity in/out
+  const target = h.active ? 1 : 0;
+  h.intensity += (target - h.intensity) * dt * 1.8;
+
+  if (h.intensity < 0.001) {
+    // snap everything clean and bail early
+    for (const house of world.houses) {
+      if (!house.wallMorphs) continue;
+      for (const p of house.wallMorphs) {
+        p.mesh.position.copy(p.basePos);
+        p.mesh.scale.copy(p.baseScale);
+        p.mesh.rotation.set(p.baseRot.x, p.baseRot.y, p.baseRot.z);
+      }
+      for (const p of house.roofMorphs) {
+        p.mesh.position.copy(p.basePos);
+        p.mesh.scale.copy(p.baseScale);
+        p.mesh.rotation.set(p.baseRot.x, p.baseRot.y, p.baseRot.z);
+      }
+      for (const p of house.doorMorphs) {
+        p.mesh.position.copy(p.basePos);
+        p.mesh.scale.copy(p.baseScale);
+      }
+    }
+    return;
+  }
+
+  const k = h.intensity;
+  const k2 = k * k; // ease-in feel
+  const time = h.t;
+
+  for (const house of world.houses) {
+    if (!house.wallMorphs) continue;
+
+    const phase = house.hauntPhase;
+    const phase2 = house.hauntPhase2;
+
+    // breathing pulse – slow inhale/exhale
+    const breathe = Math.sin(time * 1.15 + phase) * 0.5 + 0.5; // 0..1
+    const breatheSlow = Math.sin(time * 0.72 + phase2) * 0.5 + 0.5;
+
+    // melt wobble
+    const wob = Math.sin(time * 2.1 + phase);
+    const wob2 = Math.cos(time * 1.67 + phase2);
+
+    // walls – breathe + sag
+    for (let i = 0; i < house.wallMorphs.length; i++) {
+      const p = house.wallMorphs[i];
+      const m = p.mesh;
+      const bp = p.basePos;
+      const bs = p.baseScale;
+
+      const ib = 0.92 + breathe * 0.16 * k2; // X/Z puff
+      const ob = 0.92 + breatheSlow * 0.14 * k2;
+      const ySquash = 1 - breathe * 0.055 * k;
+
+      m.scale.set(bs.x * ib, bs.y * ySquash, bs.z * ob);
+      m.position.set(
+        bp.x + wob * 0.035 * k,
+        bp.y - breathe * 0.065 * k,
+        bp.z + wob2 * 0.03 * k
+      );
+      m.rotation.set(
+        p.baseRot.x + wob * 0.022 * k,
+        p.baseRot.y,
+        p.baseRot.z + wob2 * 0.018 * k
+      );
+
+      // color shift -> sick flesh / haunted
+      if (house.wallMaterials && house.wallMaterials[0]) {
+        const mat = house.wallMaterials[0];
+        const bc = house.wallBaseColor;
+        // lerp toward desaturated bruised purple
+        mat.color.r = bc.r * (1 - 0.45 * k) + 0.18 * k;
+        mat.color.g = bc.g * (1 - 0.62 * k) + 0.06 * k;
+        mat.color.b = bc.b * (1 - 0.28 * k) + 0.16 * k;
+        mat.emissive.setRGB(0.06 * k, 0.008 * k, 0.035 * k);
+        mat.emissiveIntensity = 0.35 * k;
+      }
+    }
+
+    // roof – drip / sag / tilt
+    for (const p of house.roofMorphs) {
+      const m = p.mesh;
+      const bp = p.basePos;
+      const br = p.baseRot;
+      const sag = breathe * 0.11 * k;
+      m.position.set(
+        bp.x + wob * 0.05 * k,
+        bp.y - sag * 0.9,
+        bp.z + wob2 * 0.04 * k
+      );
+      m.scale.set(
+        p.baseScale.x * (1 + wob * 0.04 * k),
+        p.baseScale.y * (1 - sag * 0.35),
+        p.baseScale.z * (1 + wob2 * 0.035 * k)
+      );
+      m.rotation.set(
+        br.x + wob * 0.045 * k,
+        br.y,
+        br.z + wob2 * 0.038 * k
+      );
+      if (house.roofMaterials && house.roofMaterials[0]) {
+        const mat = house.roofMaterials[0];
+        const bc = house.roofBaseColor;
+        mat.color.r = bc.r * (1 - 0.3 * k) + 0.12 * k;
+        mat.color.g = bc.g * (1 - 0.5 * k) + 0.025 * k;
+        mat.color.b = bc.b * (1 - 0.15 * k) + 0.06 * k;
+        mat.emissive.setRGB(0.04 * k, 0.005 * k, 0.015 * k);
+      }
+    }
+
+    // doors/windows – pulse / flicker eyes
+    for (let i = 0; i < house.doorMorphs.length; i++) {
+      const p = house.doorMorphs[i];
+      const m = p.mesh;
+      const bp = p.basePos;
+      const pulse = 0.96 + Math.sin(time * 3.2 + phase + i) * 0.08 * k;
+      m.scale.set(p.baseScale.x * pulse, p.baseScale.y, p.baseScale.z);
+      m.position.set(bp.x, bp.y, bp.z);
+    }
+    if (house.windowMats) {
+      for (let i = 0; i < house.windowMats.length; i++) {
+        const mat = house.windowMats[i];
+        const bc = house.windowBaseColors[i];
+        // windows go blood-amber / flicker like eyes
+        const flick = 0.7 + Math.sin(time * 9 + phase + i * 1.7) * 0.3;
+        const eye = Math.min(1, k * flick);
+        mat.color.r = bc.r * (1 - eye) + 1.0 * eye;
+        mat.color.g = bc.g * (1 - eye) + 0.18 * eye;
+        mat.color.b = bc.b * (1 - eye) + 0.04 * eye;
+        mat.opacity = 0.95 + eye * 0.05;
+      }
+    }
+
+    // whole house subtly leans/breathes
+    const leanX = Math.sin(time * 0.84 + phase) * 0.028 * k;
+    const leanZ = Math.cos(time * 0.71 + phase2) * 0.024 * k;
+    house.group.rotation.x = leanX;
+    house.group.rotation.z = leanZ;
+    // keep Y rotation at 0 (houses aren't rotated)
+  }
+}
+
+function toggleHaunt(force) {
+  const h = state.haunt;
+  h.active = force !== undefined ? force : !h.active;
+  if (h.active) {
+    showToast("THE VEIL DROPS — the houses are alive.");
+    setRadio("Pumpkin FM: !! — run Chase, RUN —");
+    soundFail();
+  } else {
+    showToast("The street exhales… houses going still.");
+  }
+  // reset house group tilts when turning off
+  if (!h.active) {
+    for (const house of world.houses) {
+      house.group.rotation.x = 0;
+      house.group.rotation.z = 0;
+    }
+  }
+}
+
 function updateTargetArrow() {
   const target = currentObjectiveTarget();
   if (!target) {
@@ -4566,6 +4803,7 @@ function tick() {
     updateMissionPhoneTimer(dt);
     checkMissionWorldFailures();
     updateAtmosphere(dt);
+    updateHauntedHouses(dt);
     updateBlackout(dt);
     updateTargetArrow();
     updateMissionArrow();
@@ -4579,6 +4817,7 @@ function tick() {
     runQueuedActions();
   } else {
     updateAtmosphere(dt);
+    updateHauntedHouses(dt);
     updateTargetArrow();
     updateMissionArrow();
     updateCamera(dt);
