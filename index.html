@@ -2420,75 +2420,53 @@ function ensureAudio() {
     if (listener.ctx.state === "suspended") {
       listener.ctx.resume();
     }
-    return true;
+    return;
   }
   const AudioContextCtor = window.AudioContext || window.webkitAudioContext;
   if (!AudioContextCtor) {
-    return false;
+    return;
   }
   listener.ctx = new AudioContextCtor();
-
-  // compressor to prevent clipping on music start / stacked SFX
-  listener.comp = listener.ctx.createDynamicsCompressor();
-  listener.comp.threshold.setValueAtTime(-18, listener.ctx.currentTime);
-  listener.comp.knee.setValueAtTime(12, listener.ctx.currentTime);
-  listener.comp.ratio.setValueAtTime(4, listener.ctx.currentTime);
-  listener.comp.attack.setValueAtTime(0.003, listener.ctx.currentTime);
-  listener.comp.release.setValueAtTime(0.25, listener.ctx.currentTime);
-
   listener.gain = listener.ctx.createGain();
-  listener.gain.gain.value = 0.34;
-
+  listener.gain.gain.value = 0.38;
+  listener.gain.connect(listener.ctx.destination);
   listener.musicGain = listener.ctx.createGain();
-  listener.musicGain.gain.value = 0.0;  // fade in, don't slam
-
+  listener.musicGain.gain.value = 1.45;
   listener.musicGain.connect(listener.gain);
-  listener.gain.connect(listener.comp);
-  listener.comp.connect(listener.ctx.destination);
-
-  // warm up audio graph – kills first-play crackle
-  const silence = listener.ctx.createBufferSource();
-  silence.buffer = listener.ctx.createBuffer(1, 128, listener.ctx.sampleRate);
-  silence.connect(listener.gain);
-  silence.start();
-
-  return true;
 }
 
-function playTone({ frequency = 440, frequencyEnd = frequency, duration = 0.12, type = "sine", volume = 0.35 }) {
-  if (!listener.ctx || !listener.gain || listener.ctx.state !== "running") {
+function playTone({ frequency = 440, frequencyEnd = frequency, duration = 0.12, type = "sine", volume = 0.4 }) {
+  if (!listener.ctx || !listener.gain) {
     return;
   }
   const osc = listener.ctx.createOscillator();
   const gain = listener.ctx.createGain();
-  const now = listener.ctx.currentTime + 0.005;  // tiny lookahead kills first-click pop
+  const now = listener.ctx.currentTime;
   osc.type = type;
   osc.frequency.setValueAtTime(frequency, now);
   osc.frequency.exponentialRampToValueAtTime(Math.max(40, frequencyEnd), now + duration);
-  gain.gain.setValueAtTime(0, now);
-  gain.gain.linearRampToValueAtTime(volume, now + 0.012);
-  gain.gain.setValueAtTime(volume, now + duration - 0.03);
-  gain.gain.linearRampToValueAtTime(0, now + duration);
+  gain.gain.setValueAtTime(0.0001, now);
+  gain.gain.exponentialRampToValueAtTime(volume, now + 0.01);
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
   osc.connect(gain);
   gain.connect(listener.gain);
   osc.start(now);
-  osc.stop(now + duration + 0.03);
+  osc.stop(now + duration + 0.02);
 }
 
-function playMusicVoice({ frequency = 220, frequencyEnd = frequency, duration = 0.9, type = "triangle", volume = 0.055, attack = 0.08 }) {
-  if (!listener.ctx || !listener.musicGain || listener.ctx.state !== "running") {
+function playMusicVoice({ frequency = 220, frequencyEnd = frequency, duration = 0.9, type = "triangle", volume = 0.06, attack = 0.08 }) {
+  if (!listener.ctx || !listener.musicGain) {
     return;
   }
   const osc = listener.ctx.createOscillator();
   const gain = listener.ctx.createGain();
-  const now = listener.ctx.currentTime + 0.005;
+  const now = listener.ctx.currentTime;
   osc.type = type;
   osc.frequency.setValueAtTime(frequency, now);
   osc.frequency.exponentialRampToValueAtTime(Math.max(40, frequencyEnd), now + duration);
-  gain.gain.setValueAtTime(0, now);
-  gain.gain.linearRampToValueAtTime(volume, now + attack);
-  gain.gain.setValueAtTime(volume, now + duration - 0.08);
-  gain.gain.linearRampToValueAtTime(0, now + duration);
+  gain.gain.setValueAtTime(0.0001, now);
+  gain.gain.exponentialRampToValueAtTime(volume, now + attack);
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
   osc.connect(gain);
   gain.connect(listener.musicGain);
   osc.start(now);
@@ -2499,43 +2477,28 @@ function startSpookyMusic() {
   if (!listener.ctx || listener.musicTimer) {
     return;
   }
-  const ctx = listener.ctx;
-  const doStart = () => {
-    if (ctx.state !== "running") return;
-    // fade music bus in over 0.6s – kills startup thump
-    const now = ctx.currentTime;
-    listener.musicGain.gain.cancelScheduledValues(now);
-    listener.musicGain.gain.setValueAtTime(0, now);
-    listener.musicGain.gain.linearRampToValueAtTime(0.72, now + 0.6);
+  if (listener.ctx.state === "suspended") {
+    listener.ctx.resume();
+  }
+  const bassline = [146.83, 174.61, 130.81, 164.81, 146.83, 196.0, 130.81, 174.61];
+  const melody = [293.66, 261.63, 246.94, 220.0, 261.63, 329.63, 246.94, 293.66];
+  const accent = [440.0, 392.0, 369.99, 329.63, 392.0, 493.88, 369.99, 440.0];
 
-    const bassline = [146.83, 174.61, 130.81, 164.81, 146.83, 196.0, 130.81, 174.61];
-    const melody = [293.66, 261.63, 246.94, 220.0, 261.63, 329.63, 246.94, 293.66];
-    const accent = [440.0, 392.0, 369.99, 329.63, 392.0, 493.88, 369.99, 440.0];
-
-    const pulse = () => {
-      const step = listener.musicStep % bassline.length;
-      // volumes rebalanced for compressor + lower music bus – no clipping
-      playMusicVoice({ frequency: bassline[step], frequencyEnd: bassline[step] * 0.985, duration: 1.5, type: "sawtooth", volume: 0.11, attack: 0.08 });
-      playMusicVoice({ frequency: melody[step], frequencyEnd: melody[step] * 1.01, duration: 0.82, type: "triangle", volume: 0.065, attack: 0.03 });
-      if (step % 2 === 0) {
-        playMusicVoice({ frequency: accent[step], frequencyEnd: accent[step] * 1.03, duration: 0.48, type: "square", volume: 0.038, attack: 0.025 });
-      }
-      if (step === 3 || step === 7) {
-        playMusicVoice({ frequency: accent[step] * 0.5, frequencyEnd: accent[step] * 0.48, duration: 1.9, type: "sine", volume: 0.045, attack: 0.12 });
-      }
-      listener.musicStep += 1;
-    };
-
-    // stagger first notes – no more 4-oscillator slam on beat 0
-    setTimeout(pulse, 80);
-    listener.musicTimer = window.setInterval(pulse, 900);
+  const pulse = () => {
+    const step = listener.musicStep % bassline.length;
+    playMusicVoice({ frequency: bassline[step], frequencyEnd: bassline[step] * 0.985, duration: 1.5, type: "sawtooth", volume: 0.22, attack: 0.08 });
+    playMusicVoice({ frequency: melody[step], frequencyEnd: melody[step] * 1.01, duration: 0.82, type: "triangle", volume: 0.13, attack: 0.03 });
+    if (step % 2 === 0) {
+      playMusicVoice({ frequency: accent[step], frequencyEnd: accent[step] * 1.03, duration: 0.48, type: "square", volume: 0.08, attack: 0.02 });
+    }
+    if (step === 3 || step === 7) {
+      playMusicVoice({ frequency: accent[step] * 0.5, frequencyEnd: accent[step] * 0.48, duration: 1.9, type: "sine", volume: 0.09, attack: 0.12 });
+    }
+    listener.musicStep += 1;
   };
 
-  if (ctx.state === "suspended") {
-    ctx.resume().then(doStart).catch(doStart);
-  } else {
-    doStart();
-  }
+  pulse();
+  listener.musicTimer = window.setInterval(pulse, 900);
 }
 
 function soundThrow() {
