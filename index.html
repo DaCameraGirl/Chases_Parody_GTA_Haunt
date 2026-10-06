@@ -177,7 +177,7 @@
   .stats {
     margin-top: 16px;
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 10px;
   }
 
@@ -326,6 +326,12 @@
     max-width: 38ch;
     color: var(--muted);
     line-height: 1.5;
+  }
+
+  #centerCard p.score-line {
+    color: var(--accent-cool);
+    font: 700 15px/1.4 "Azeret Mono", monospace;
+    letter-spacing: 0.04em;
   }
 
   .button-row {
@@ -495,6 +501,10 @@
         <span class="utility">Bombs</span>
         <strong id="eggValue">12</strong>
       </div>
+      <div class="stat">
+        <span class="utility">Speed</span>
+        <strong id="speedValue">On foot</strong>
+      </div>
     </div>
     <div id="warnBadge">No-Face is breathing down your neck.</div>
   </section>
@@ -515,7 +525,8 @@
       <li><code>Shift</code> sprint</li>
       <li><code>Left click</code> or <code>Space</code> throw candy bomb</li>
       <li><code>Right drag</code> orbit camera</li>
-      <li><code>E</code> use shop or safehouse</li>
+      <li><code>E</code> use shop, safehouse, or get in/out of a car</li>
+      <li><code>W/S</code> gas/reverse, <code>A/D</code> steer, <code>Shift</code> brake while driving</li>
       <li><code>R</code> restart after win or loss</li>
     </ul>
   </section>
@@ -527,7 +538,8 @@
 <section class="panel" id="centerCard">
   <span class="eyebrow">Single-file browser game</span>
   <h2>Storm the Block</h2>
-  <p>Slip Chase into a disguise, raid the block for gear, light the ritual beacon, and outrun No-Face back to the safehouse.</p>
+  <p>Slip Chase into a disguise, raid the block for gear, light the ritual beacon, and outrun No-Face back to the safehouse. Any parked car on the block is fair game, hop in and drive.</p>
+  <p class="score-line" id="bestScoreLine"></p>
   <div class="button-row">
     <button id="startButton">Start the Night</button>
     <button class="secondary" id="howButton">Show Mission</button>
@@ -562,6 +574,7 @@ const ui = {
   cashValue: document.getElementById("cashValue"),
   candyValue: document.getElementById("candyValue"),
   eggValue: document.getElementById("eggValue"),
+  speedValue: document.getElementById("speedValue"),
   warnBadge: document.getElementById("warnBadge"),
   objectiveText: document.getElementById("objectiveText"),
   objectiveHint: document.getElementById("objectiveHint"),
@@ -610,6 +623,7 @@ const state = {
   started: false,
   ended: false,
   win: false,
+  driving: false,
   health: 100,
   fear: 20,
   stamina: 100,
@@ -642,8 +656,59 @@ const state = {
 };
 
 const clock = new THREE.Clock();
-const listener = { ctx: null, gain: null, musicGain: null, musicTimer: null, musicStep: 0 };
+const listener = { ctx: null, gain: null, musicGain: null, musicTimer: null, musicStep: 0, engineOsc: null, engineGain: null };
 const worldBounds = 48;
+let activeCar = null;
+let runStartTime = 0;
+const HIGH_SCORE_KEY = "chaseHalloweenHeatHighScore";
+
+function getHighScore() {
+  return Number(window.localStorage.getItem(HIGH_SCORE_KEY) || 0);
+}
+
+function setHighScoreIfBetter(score) {
+  const current = getHighScore();
+  if (score > current) {
+    window.localStorage.setItem(HIGH_SCORE_KEY, String(score));
+    return true;
+  }
+  return false;
+}
+
+function computeScore(win) {
+  const elapsed = Math.max(0, clock.elapsedTime - runStartTime);
+  const timeBonus = win ? Math.max(0, Math.round(400 - elapsed * 4)) : 0;
+  const score = Math.round(state.cash + state.candy * 120 + state.hits * 60 + (win ? 800 : 0) + timeBonus);
+  return { score, elapsed, timeBonus };
+}
+
+const missionStageLabel = {
+  costume: "barely out the safehouse door",
+  garage: "still hunting the hearse keys",
+  ward: "sigil in reach at Hex Market",
+  beacon: "beacon lit, steps from home",
+  escape: "so close to the safehouse"
+};
+
+function hypeTitle(win, score) {
+  if (win) {
+    if (score >= 1400) return "LEGENDARY RUN";
+    if (score >= 1000) return "STONE COLD HEIST";
+    return "CHASE MADE IT HOME";
+  }
+  return `NO-FACE GOT HIM (${missionStageLabel[state.mission] || "on the run"})`;
+}
+
+function scoreLineHtml(score, isNewBest, best) {
+  return `<p class="score-line"><strong>Score: ${score}</strong>${isNewBest ? " — NEW BEST!" : ` (Best: ${best})`}</p>`;
+}
+const CAR_MAX_SPEED = 17;
+const CAR_REVERSE_SPEED = -7;
+const CAR_ACCEL = 11;
+const CAR_BRAKE = 16;
+const CAR_DRAG = 4.5;
+const CAR_TURN_RATE = 2.6;
+const CAR_RADIUS = 1.7;
 
 function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value));
@@ -1144,7 +1209,7 @@ function createCar(x, z, rotation, color) {
   group.position.set(x, 0, z);
   group.rotation.y = rotation;
   scene.add(group);
-  world.cars.push(group);
+  world.cars.push({ group, speed: 0, color, entryRadius: 2.5 });
 }
 
 createCar(-8, 11, 0, 0x7c1e31);
@@ -1906,6 +1971,42 @@ function soundThunder() {
   playTone({ frequency: 70, frequencyEnd: 45, duration: 0.7, type: "sawtooth", volume: 0.12 });
 }
 
+function startEngineSound() {
+  if (!listener.ctx || listener.engineOsc) {
+    return;
+  }
+  const osc = listener.ctx.createOscillator();
+  const gain = listener.ctx.createGain();
+  osc.type = "sawtooth";
+  osc.frequency.value = 55;
+  gain.gain.value = 0.0001;
+  osc.connect(gain);
+  gain.connect(listener.gain);
+  osc.start();
+  listener.engineOsc = osc;
+  listener.engineGain = gain;
+}
+
+function updateEngineSound(speed) {
+  if (!listener.ctx || !listener.engineOsc) {
+    return;
+  }
+  const now = listener.ctx.currentTime;
+  listener.engineOsc.frequency.setTargetAtTime(55 + Math.abs(speed) * 9, now, 0.08);
+  listener.engineGain.gain.setTargetAtTime(0.045 + Math.min(0.06, Math.abs(speed) * 0.0035), now, 0.08);
+}
+
+function stopEngineSound() {
+  if (!listener.ctx || !listener.engineOsc) {
+    return;
+  }
+  const now = listener.ctx.currentTime;
+  listener.engineGain.gain.setTargetAtTime(0.0001, now, 0.12);
+  listener.engineOsc.stop(now + 0.4);
+  listener.engineOsc = null;
+  listener.engineGain = null;
+}
+
 function setRadio(text) {
   ui.radioText.textContent = text;
   state.radioTimer = 6;
@@ -1982,6 +2083,7 @@ function updateStatusUI() {
   ui.cashValue.textContent = `$${state.cash}`;
   ui.candyValue.textContent = `${state.candy} / 6`;
   ui.eggValue.textContent = `${state.eggs}`;
+  ui.speedValue.textContent = state.driving && activeCar ? `${Math.round(Math.abs(activeCar.speed) * 3.2)} mph` : "On foot";
 
   ui.warnBadge.classList.toggle("on", getFlatDistance(chase.position, noFace.position) < 6.5 && state.started && !state.ended && !state.win);
 }
@@ -1999,9 +2101,35 @@ function nearestZone() {
   return { zone: best, distance: bestDistance };
 }
 
+function nearestCar() {
+  let best = null;
+  let bestDistance = Infinity;
+  for (const car of world.cars) {
+    const distance = getFlatDistance(chase.position, car.group.position);
+    if (distance < bestDistance) {
+      bestDistance = distance;
+      best = car;
+    }
+  }
+  return { car: best, distance: bestDistance };
+}
+
 function updatePrompt() {
   if (!state.started || state.ended || state.win) {
     ui.promptCard.classList.remove("on");
+    return;
+  }
+
+  if (state.driving) {
+    ui.promptText.textContent = "Press E to get out of the car.";
+    ui.promptCard.classList.add("on");
+    return;
+  }
+
+  const { car, distance: carDistance } = nearestCar();
+  if (car && carDistance <= car.entryRadius) {
+    ui.promptText.textContent = "Press E to get in the car.";
+    ui.promptCard.classList.add("on");
     return;
   }
 
@@ -2075,14 +2203,18 @@ function interactWithZone(zone) {
       state.win = true;
       state.ended = true;
       state.health = Math.max(state.health, 35);
+      const { score, timeBonus } = computeScore(true);
+      const isNewBest = setHighScoreIfBetter(score);
+      const best = getHighScore();
       showToast("Run complete.");
       soundUpgrade();
       setRadio("Chase made it home. Somebody hide the candy before he loads another run.");
       ui.centerCard.classList.remove("hidden");
       ui.centerCard.innerHTML = `
         <span class="eyebrow">Mission complete</span>
-        <h2>Safehouse Secured</h2>
-        <p>You escaped with ${state.candy} loot stashes, $${state.cash} cash, and ${state.hits} candy bomb hits landed on No-Face.</p>
+        <h2>${hypeTitle(true, score)}</h2>
+        <p>You escaped with ${state.candy} loot stashes, $${state.cash} cash, and ${state.hits} candy bomb hits landed on No-Face. Speed bonus: ${timeBonus}.</p>
+        ${scoreLineHtml(score, isNewBest, best)}
         <div class="button-row">
           <button id="restartWin">Run It Again</button>
         </div>
@@ -2258,6 +2390,7 @@ function shootEgg() {
 
 function startGame() {
   state.started = true;
+  runStartTime = clock.elapsedTime;
   ui.centerCard.classList.add("hidden");
   ensureAudio();
   startSpookyMusic();
@@ -2271,7 +2404,7 @@ function restartGame() {
 
 ui.startButton.addEventListener("click", startGame);
 ui.howButton.addEventListener("click", () => {
-  ui.centerCard.querySelector("p").textContent = "Mission route: hit Costume Crypt for Chase's disguise, break into Hearse Garage for the keys, grab the ward sigil from Hex Market, light the beacon, then sprint Chase home. Loot stashes fund upgrades, lamp light lowers fear, and candy bombs still buy time against No-Face.";
+  ui.centerCard.querySelector("p").textContent = "Mission route: hit Costume Crypt for Chase's disguise, break into Hearse Garage for the keys, grab the ward sigil from Hex Market, light the beacon, then sprint Chase home. Loot stashes fund upgrades, lamp light lowers fear, candy bombs still buy time against No-Face, and any parked car on the block is yours to steal and drive.";
 });
 
 window.addEventListener("keydown", (event) => {
@@ -2393,6 +2526,113 @@ function applyMovement(dt) {
   }
 }
 
+function carSolidCollides(x, z, ignoreCar) {
+  for (const solid of world.solids) {
+    const nearestX = clamp(x, solid.minX, solid.maxX);
+    const nearestZ = clamp(z, solid.minZ, solid.maxZ);
+    if (Math.hypot(x - nearestX, z - nearestZ) < CAR_RADIUS) {
+      return true;
+    }
+  }
+  for (const other of world.cars) {
+    if (other === ignoreCar) {
+      continue;
+    }
+    if (getFlatDistance({ x, z }, other.group.position) < CAR_RADIUS * 1.55) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function enterCar(car) {
+  ensureAudio();
+  state.driving = true;
+  activeCar = car;
+  chase.visible = false;
+  scene.add(chaseGlow);
+  chaseGlow.position.set(car.group.position.x, car.group.position.y + 2.6, car.group.position.z);
+  chase.position.copy(car.group.position);
+  chase.rotation.y = car.group.rotation.y;
+  showToast("Chase jacks the ride and floors it.");
+  setRadio("Pumpkin FM traffic: a car just peeled out on the block. Watch for it.");
+  startEngineSound();
+}
+
+function exitCar() {
+  if (!activeCar) {
+    return;
+  }
+  const car = activeCar;
+  car.speed = 0;
+  const exitOffset = new THREE.Vector3(Math.cos(car.group.rotation.y), 0, -Math.sin(car.group.rotation.y)).multiplyScalar(1.9);
+  chase.position.copy(car.group.position).add(exitOffset);
+  chase.position.x = clamp(chase.position.x, -worldBounds, worldBounds);
+  chase.position.z = clamp(chase.position.z, -worldBounds, worldBounds);
+  chase.rotation.y = car.group.rotation.y;
+  chase.add(chaseGlow);
+  chaseGlow.position.set(0, 3.3, 1.9);
+  chase.visible = true;
+  state.driving = false;
+  activeCar = null;
+  showToast("Back on foot.");
+  stopEngineSound();
+}
+
+function updateDriving(dt) {
+  const car = activeCar;
+  const group = car.group;
+
+  if (input.forward > 0) {
+    car.speed = Math.min(CAR_MAX_SPEED, car.speed + CAR_ACCEL * dt);
+  } else if (input.forward < 0) {
+    car.speed = Math.max(CAR_REVERSE_SPEED, car.speed - CAR_ACCEL * dt);
+  } else {
+    const drag = CAR_DRAG * dt;
+    if (car.speed > 0) {
+      car.speed = Math.max(0, car.speed - drag);
+    } else if (car.speed < 0) {
+      car.speed = Math.min(0, car.speed + drag);
+    }
+  }
+
+  if (input.sprint && car.speed !== 0) {
+    const brake = CAR_BRAKE * dt;
+    if (car.speed > 0) {
+      car.speed = Math.max(0, car.speed - brake);
+    } else {
+      car.speed = Math.min(0, car.speed + brake);
+    }
+  }
+
+  if (Math.abs(car.speed) > 0.15) {
+    const speedFrac = clamp(Math.abs(car.speed) / CAR_MAX_SPEED, 0, 1);
+    const turnDir = car.speed > 0 ? 1 : -1;
+    group.rotation.y += input.strafe * CAR_TURN_RATE * (0.35 + speedFrac * 0.65) * turnDir * dt;
+  }
+
+  const forward = new THREE.Vector3(Math.sin(group.rotation.y), 0, Math.cos(group.rotation.y));
+  const nextX = clamp(group.position.x + forward.x * car.speed * dt, -worldBounds, worldBounds);
+  const nextZ = clamp(group.position.z + forward.z * car.speed * dt, -worldBounds, worldBounds);
+
+  if (!carSolidCollides(nextX, group.position.z, car)) {
+    group.position.x = nextX;
+  } else {
+    car.speed *= 0.2;
+  }
+  if (!carSolidCollides(group.position.x, nextZ, car)) {
+    group.position.z = nextZ;
+  } else {
+    car.speed *= 0.2;
+  }
+
+  chase.position.copy(group.position);
+  chase.rotation.y = group.rotation.y;
+  chaseGlow.position.set(group.position.x, group.position.y + 2.6, group.position.z);
+
+  updateEngineSound(car.speed);
+}
+
 function updateCandies(dt) {
   for (const candy of world.candies) {
     if (candy.collected) {
@@ -2460,11 +2700,15 @@ function updateEnemy(dt) {
 
   if (state.health <= 0 || state.fear >= 100) {
     state.ended = true;
+    const { score } = computeScore(false);
+    const isNewBest = setHighScoreIfBetter(score);
+    const best = getHighScore();
     ui.centerCard.classList.remove("hidden");
     ui.centerCard.innerHTML = `
       <span class="eyebrow">Run failed</span>
-      <h2>Night Over</h2>
+      <h2>${hypeTitle(false, score)}</h2>
       <p>No-Face shut the route down. Use shops earlier, stay in lamp light, and keep candy bombs ready for the stun window.</p>
+      ${scoreLineHtml(score, isNewBest, best)}
       <div class="button-row">
         <button id="restartLose">Restart</button>
       </div>
@@ -2570,10 +2814,12 @@ function updateTargetArrow() {
 }
 
 function updateCamera(dt) {
+  const distance = state.driving ? 9.6 : 7.4;
+  const height = state.driving ? 5.1 : 4.4;
   const offset = new THREE.Vector3(
-    Math.sin(input.yaw) * 7.4,
-    4.4 + Math.sin(input.pitch) * 0.8,
-    Math.cos(input.yaw) * 7.4
+    Math.sin(input.yaw) * distance,
+    height + Math.sin(input.pitch) * 0.8,
+    Math.cos(input.yaw) * distance
   );
   const ideal = chase.position.clone().add(offset);
   camera.position.lerp(ideal, 1 - Math.exp(-6 * dt));
@@ -2588,14 +2834,25 @@ function updateMissionProximity() {
 
 function runQueuedActions() {
   if (input.fireQueued) {
-    shootEgg();
+    if (!state.driving) {
+      shootEgg();
+    }
     input.fireQueued = false;
   }
 
   if (input.interactQueued) {
-    const { zone, distance } = nearestZone();
-    if (zone && distance <= zone.radius + 1.1) {
-      interactWithZone(zone);
+    if (state.driving) {
+      exitCar();
+    } else {
+      const { car, distance: carDistance } = nearestCar();
+      if (car && carDistance <= car.entryRadius) {
+        enterCar(car);
+      } else {
+        const { zone, distance } = nearestZone();
+        if (zone && distance <= zone.radius + 1.1) {
+          interactWithZone(zone);
+        }
+      }
     }
     input.interactQueued = false;
   }
@@ -2614,7 +2871,11 @@ function tick() {
       state.lightningTimer = 6 + Math.random() * 10;
     }
 
-    applyMovement(dt);
+    if (state.driving) {
+      updateDriving(dt);
+    } else {
+      applyMovement(dt);
+    }
     updateCandies(dt);
     updateEnemy(dt);
     updateProjectiles(dt);
@@ -2648,6 +2909,10 @@ function tick() {
   updateStatusUI();
   renderer.render(scene, camera);
 }
+
+const bestScoreLine = document.getElementById("bestScoreLine");
+const startingBest = getHighScore();
+bestScoreLine.textContent = startingBest > 0 ? `Best Run: ${startingBest}` : "No runs on the books yet. Set the first score.";
 
 updateObjectiveText();
 updateStatusUI();

@@ -52,6 +52,7 @@ This is the loud, stylized, Halloween-parody version of the game: low-poly, dram
 - `Costume Crypt` rotates Chase through Halloween looks.
 - `Spooky background loop` starts when the run begins.
 - `Shops and pickups` support faster replay loops.
+- `Parked cars` are all driveable, hop in for a faster, GTA-style getaway.
 
 ## Language Bar
 
@@ -63,11 +64,11 @@ CSS         [#####---------------]  11%
 
 ## Controls
 
-- `WASD` move
-- `Shift` sprint
+- `WASD` move (on foot) or gas/reverse + steer (in a car)
+- `Shift` sprint (on foot) or brake (in a car)
 - `Left click` or `Space` throw candy bomb
 - `Right drag` orbit camera
-- `E` interact with stores, beacon, and safehouse
+- `E` interact with stores, beacon, and safehouse, or get in/out of a car
 - `R` restart after win or loss
 
 ## Run Local
