@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Button Test</title>
+<style>
+  body { margin: 0; padding: 20px; font-family: sans-serif; }
+  #testCanvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    pointer-events: none;
+  }
+  #centerCard {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(255, 255, 255, 0.9);
+    padding: 30px;
+    border-radius: 10px;
+    pointer-events: auto;
+    z-index: 100;
+  }
+  button {
+    padding: 12px 24px;
+    font-size: 16px;
+    cursor: pointer;
+    background: #667eea;
+    color: white;
+    border: none;
+    border-radius: 5px;
+  }
+  button:hover {
+    background: #5568d3;
+  }
+  #result {
+    margin-top: 20px;
+    padding: 10px;
+    background: #e8f5e9;
+    border-radius: 5px;
+    display: none;
+  }
+</style>
+</head>
+<body>
+<div id="testCanvas"></div>
+<div id="centerCard">
+  <h2>Button Click Test</h2>
+  <p>If this button works, the issue is elsewhere in the main game.</p>
+  <button id="testButton">Click Me!</button>
+  <div id="result"></div>
+</div>
+
+<script>
+const button = document.getElementById('testButton');
+const result = document.getElementById('result');
+let clickCount = 0;
+
+button.addEventListener('click', () => {
+  clickCount++;
+  result.style.display = 'block';
+  result.textContent = `Button clicked ${clickCount} time(s)! ✓`;
+  console.log('Button clicked:', clickCount);
+});
+
+console.log('Test page loaded. Button element:', button);
+console.log('Button computed style:', window.getComputedStyle(button));
+</script>
+</body>
+</html>

@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Game Test</title>
+    <style>
+        body { margin: 0; background: #000; color: #fff; font-family: monospace; padding: 20px; }
+        #log { white-space: pre-wrap; }
+        button { padding: 10px 20px; font-size: 16px; margin: 10px; }
+    </style>
+</head>
+<body>
+    <h1>Chase's Halloween Heat - Diagnostic Test</h1>
+    <button onclick="testBasics()">Test 1: Basic JavaScript</button>
+    <button onclick="testThreeJS()">Test 2: THREE.js Loading</button>
+    <button onclick="testGameFile()">Test 3: Load Main Game</button>
+    <div id="log"></div>
+
+    <script type="module">
+        const log = document.getElementById('log');
+
+        window.testBasics = function() {
+            log.textContent = '';
+            log.textContent += 'Testing basic JavaScript...\n';
+            try {
+                log.textContent += '✓ JavaScript is working\n';
+                log.textContent += '✓ Console available: ' + (typeof console !== 'undefined') + '\n';
+                log.textContent += '✓ Window object: ' + (typeof window !== 'undefined') + '\n';
+                log.textContent += '\nBASIC TEST PASSED\n';
+            } catch(e) {
+                log.textContent += '✗ ERROR: ' + e.message + '\n';
+            }
+        };
+
+        window.testThreeJS = async function() {
+            log.textContent = '';
+            log.textContent += 'Testing THREE.js import...\n';
+            try {
+                const THREE = await import("https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js");
+                log.textContent += '✓ THREE.js loaded successfully\n';
+                log.textContent += '✓ THREE.Scene: ' + (typeof THREE.Scene !== 'undefined') + '\n';
+                log.textContent += '✓ THREE.WebGLRenderer: ' + (typeof THREE.WebGLRenderer !== 'undefined') + '\n';
+
+                const scene = new THREE.Scene();
+                log.textContent += '✓ Created test scene\n';
+
+                log.textContent += '\nTHREE.JS TEST PASSED\n';
+            } catch(e) {
+                log.textContent += '✗ ERROR: ' + e.message + '\n';
+                log.textContent += '\nStack: ' + e.stack + '\n';
+            }
+        };
+
+        window.testGameFile = function() {
+            log.textContent = '';
+            log.textContent += 'Opening main game in new window...\n';
+            log.textContent += 'Check browser console (F12) for errors\n';
+            log.textContent += '\nLook for:\n';
+            log.textContent += '- Red error messages\n';
+            log.textContent += '- "Uncaught" errors\n';
+            log.textContent += '- "SyntaxError" messages\n';
+            log.textContent += '- "ReferenceError" messages\n';
+
+            window.open('index.html', '_blank');
+        };
+
+        // Auto-run basic test
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                log.textContent = 'Click buttons above to run tests\n\n';
+                log.textContent += 'If Test 1 and 2 pass but game still doesn\'t work,\n';
+                log.textContent += 'there is likely a syntax error in index.html\n';
+            }, 100);
+        });
+    </script>
+</body>
+</html>
