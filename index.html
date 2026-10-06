@@ -56,12 +56,12 @@
 
   .vignette {
     background:
-      radial-gradient(circle at center, transparent 42%, rgba(5, 7, 14, 0.42) 68%, rgba(1, 1, 3, 0.82) 100%),
-      linear-gradient(180deg, rgba(0, 0, 0, 0.05), rgba(0, 0, 0, 0.28));
+      radial-gradient(circle at center, transparent 65%, rgba(5, 7, 14, 0.12) 85%, rgba(1, 1, 3, 0.28) 100%),
+      linear-gradient(180deg, rgba(0, 0, 0, 0.0), rgba(0, 0, 0, 0.06));
   }
 
   .scanlines {
-    opacity: 0.16;
+    opacity: 0.035;
     background:
       repeating-linear-gradient(
         180deg,
@@ -415,6 +415,217 @@
     display: none;
   }
 
+  #missionPanel {
+    grid-column: 3;
+    grid-row: 2;
+    align-self: start;
+    justify-self: end;
+    width: min(300px, calc(100vw - 32px));
+    padding: 14px 16px;
+    pointer-events: auto;
+    display: none;
+  }
+
+  #missionPanel.on {
+    display: block;
+  }
+
+  #missionPanel .missionHead {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  #missionPanel h3 {
+    margin: 0;
+    font: 400 1rem/1.1 "Bungee", sans-serif;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--accent-hot);
+  }
+
+  #missionCollapse {
+    padding: 4px 10px;
+    font-size: 0.7rem;
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--ink);
+  }
+
+  #missionBody {
+    margin-top: 10px;
+    display: grid;
+    gap: 8px;
+  }
+
+  #missionBody.collapsed {
+    display: none;
+  }
+
+  #missionPanel .missionPhase {
+    font: 700 0.72rem/1 "Azeret Mono", monospace;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent-cool);
+  }
+
+  #missionPanel .missionObjective {
+    font-size: 0.92rem;
+    font-weight: 700;
+  }
+
+  #missionPanel .missionSub {
+    font-size: 0.82rem;
+    color: var(--muted);
+  }
+
+  #missionPanel .missionTimer {
+    font: 700 0.9rem/1 "Azeret Mono", monospace;
+    color: var(--danger);
+  }
+
+  #missionPanel .missionMeters {
+    display: grid;
+    gap: 4px;
+    font-size: 0.78rem;
+    color: var(--muted);
+  }
+
+  #missionPanel .missionWarn {
+    color: var(--danger);
+    font-weight: 700;
+    font-size: 0.82rem;
+  }
+
+  #phoneOverlay {
+    grid-column: 1;
+    grid-row: 2;
+    align-self: start;
+    width: min(300px, calc(100vw - 32px));
+    padding: 12px 16px;
+    pointer-events: none;
+    opacity: 0;
+    transform: translateY(-8px);
+    transition: opacity 160ms linear, transform 160ms linear;
+  }
+
+  #phoneOverlay.on {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  #phoneOverlay .phoneSender {
+    font: 700 0.74rem/1 "Azeret Mono", monospace;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+
+  #phoneOverlay .phoneText {
+    margin-top: 6px;
+    font-size: 0.9rem;
+  }
+
+  #phoneHistory {
+    margin-top: 10px;
+    padding-top: 8px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    display: grid;
+    gap: 4px;
+    font-size: 0.72rem;
+    color: var(--muted);
+  }
+
+  #dialogueOverlay {
+    position: absolute;
+    inset: 0;
+    display: none;
+    align-items: flex-end;
+    justify-content: center;
+    padding: 40px;
+    pointer-events: auto;
+  }
+
+  #dialogueOverlay.on {
+    display: flex;
+  }
+
+  #dialogueBox {
+    width: min(640px, calc(100vw - 48px));
+    padding: 22px 24px;
+  }
+
+  #dialogueSpeaker {
+    margin: 0;
+    font: 700 0.78rem/1 "Azeret Mono", monospace;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--accent-hot);
+  }
+
+  #dialogueText {
+    margin: 10px 0 0;
+    font-size: 1.02rem;
+    line-height: 1.5;
+    white-space: pre-line;
+  }
+
+  #dialogueChoices {
+    margin-top: 16px;
+    display: grid;
+    gap: 8px;
+  }
+
+  .dialogueChoice {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+    width: 100%;
+    text-align: left;
+    padding: 10px 14px;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--ink);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    font: 500 0.92rem/1.3 "Space Grotesk", sans-serif;
+    text-transform: none;
+    letter-spacing: 0;
+  }
+
+  .dialogueChoice .choiceKey {
+    font: 700 0.7rem/1 "Azeret Mono", monospace;
+    color: var(--accent-cool);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .dialogueChoice.active {
+    background: linear-gradient(135deg, rgba(255, 231, 174, 0.22), rgba(255, 143, 61, 0.22));
+    border-color: var(--accent);
+  }
+
+  .dialogueChoice:disabled,
+  .dialogueChoice.disabled {
+    opacity: 0.42;
+    cursor: not-allowed;
+  }
+
+  .dialogueChoice .choiceReason {
+    font-size: 0.76rem;
+    color: var(--muted);
+  }
+
+  @media (max-width: 980px) {
+    #missionPanel,
+    #phoneOverlay {
+      grid-column: 1;
+      grid-row: auto;
+      justify-self: stretch;
+      width: 100%;
+    }
+  }
+
   @media (max-width: 980px) {
     #hud {
       grid-template-columns: 1fr;
@@ -447,7 +658,7 @@
     }
 
     .stats {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-columns: repeat(4, minmax(0, 1fr));
     }
   }
 </style>
@@ -526,14 +737,45 @@
       <li><code>Left click</code> or <code>Space</code> throw candy bomb</li>
       <li><code>Right drag</code> orbit camera</li>
       <li><code>E</code> use shop, safehouse, or get in/out of a car</li>
-      <li><code>W/S</code> gas/reverse, <code>A/D</code> steer, <code>Shift</code> brake while driving</li>
+      <li><code>W/S</code> gas/reverse, <code>A/D</code> steer while driving</li>
+      <li><code>H</code> toggle haunt mode</li>
       <li><code>R</code> restart after win or loss</li>
     </ul>
+  </section>
+
+  <section class="panel hud-card" id="missionPanel">
+    <div class="missionHead">
+      <h3>The Costume Debt</h3>
+      <button id="missionCollapse" type="button">_</button>
+    </div>
+    <div id="missionBody">
+      <p class="missionPhase" id="missionPhase">Side job</p>
+      <p class="missionObjective" id="missionObjective">Talk to Morrow at Costume Crypt.</p>
+      <p class="missionSub" id="missionSub"></p>
+      <p class="missionTimer hidden" id="missionTimer"></p>
+      <div class="missionMeters" id="missionMeters"></div>
+      <p class="missionWarn hidden" id="missionWarn"></p>
+    </div>
+  </section>
+
+  <section class="panel hud-card" id="phoneOverlay">
+    <span class="phoneSender" id="phoneSender">Dre</span>
+    <p class="phoneText" id="phoneText"></p>
+    <div id="phoneHistory"></div>
   </section>
 </div>
 
 <div id="crosshair"></div>
 <div id="toast"></div>
+
+<div id="dialogueOverlay">
+  <section class="panel" id="dialogueBox">
+    <p id="dialogueSpeaker">Morrow</p>
+    <p id="dialogueText"></p>
+    <div id="dialogueChoices"></div>
+    <p class="missionSub">1-9 choose &bull; &uarr;&darr; + Enter &bull; Esc to walk away</p>
+  </section>
+</div>
 
 <section class="panel" id="centerCard">
   <span class="eyebrow">Single-file browser game</span>
@@ -555,12 +797,12 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.72;
+renderer.toneMappingExposure = 1.68;
 renderer.shadowMap.enabled = false;
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x13203a);
-scene.fog = new THREE.FogExp2(0x18263f, 0.0072);
+scene.background = new THREE.Color(0x141b2a);
+scene.fog = new THREE.FogExp2(0x1e2438, 0.0035);
 
 const camera = new THREE.PerspectiveCamera(62, window.innerWidth / window.innerHeight, 0.1, 220);
 
@@ -585,7 +827,24 @@ const ui = {
   centerCard: document.getElementById("centerCard"),
   startButton: document.getElementById("startButton"),
   howButton: document.getElementById("howButton"),
-  flash: document.getElementById("flash")
+  flash: document.getElementById("flash"),
+  missionPanel: document.getElementById("missionPanel"),
+  missionCollapse: document.getElementById("missionCollapse"),
+  missionBody: document.getElementById("missionBody"),
+  missionPhase: document.getElementById("missionPhase"),
+  missionObjective: document.getElementById("missionObjective"),
+  missionSub: document.getElementById("missionSub"),
+  missionTimer: document.getElementById("missionTimer"),
+  missionMeters: document.getElementById("missionMeters"),
+  missionWarn: document.getElementById("missionWarn"),
+  phoneOverlay: document.getElementById("phoneOverlay"),
+  phoneSender: document.getElementById("phoneSender"),
+  phoneText: document.getElementById("phoneText"),
+  phoneHistory: document.getElementById("phoneHistory"),
+  dialogueOverlay: document.getElementById("dialogueOverlay"),
+  dialogueSpeaker: document.getElementById("dialogueSpeaker"),
+  dialogueText: document.getElementById("dialogueText"),
+  dialogueChoices: document.getElementById("dialogueChoices")
 };
 
 const world = {
@@ -601,6 +860,7 @@ const world = {
   ghosts: [],
   candies: [],
   zones: [],
+  drainClowns: [],
   projectiles: [],
   arrows: [],
   signs: []
@@ -616,7 +876,8 @@ const input = {
   yaw: Math.PI * 0.1,
   pitch: 0.48,
   lastPointerX: 0,
-  lastPointerY: 0
+  lastPointerY: 0,
+  locked: false
 };
 
 const state = {
@@ -641,6 +902,7 @@ const state = {
   lightningTimer: 5,
   unlockedAudio: false,
   costumeIndex: 0,
+  driving: false,
   story: {
     disguise: false,
     keys: false,
@@ -652,6 +914,12 @@ const state = {
     costume: false,
     sprintBoost: false,
     ward: false
+  },
+  haunt: {
+    active: false,
+    intensity: 0,
+    t: 0,
+    seedOffset: Math.random() * 1000
   }
 };
 
@@ -702,13 +970,6 @@ function hypeTitle(win, score) {
 function scoreLineHtml(score, isNewBest, best) {
   return `<p class="score-line"><strong>Score: ${score}</strong>${isNewBest ? " — NEW BEST!" : ` (Best: ${best})`}</p>`;
 }
-const CAR_MAX_SPEED = 17;
-const CAR_REVERSE_SPEED = -7;
-const CAR_ACCEL = 11;
-const CAR_BRAKE = 16;
-const CAR_DRAG = 4.5;
-const CAR_TURN_RATE = 2.6;
-const CAR_RADIUS = 1.7;
 
 function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value));
@@ -784,18 +1045,29 @@ function createBadgeTexture(text, options = {}) {
 }
 
 const asphaltTexture = createCanvasTexture(512, 512, (ctx, w, h) => {
-  ctx.fillStyle = "#11151f";
+  // base – near-black cool asphalt
+  ctx.fillStyle = "#0d1014";
   ctx.fillRect(0, 0, w, h);
-  for (let i = 0; i < 1700; i++) {
-    const alpha = 0.05 + Math.random() * 0.08;
-    const size = 1 + Math.random() * 3;
-    ctx.fillStyle = `rgba(255,255,255,${alpha})`;
+  // fine aggregate noise – desaturated, subtle
+  for (let i = 0; i < 900; i++) {
+    const alpha = 0.025 + Math.random() * 0.045;
+    const size = 1 + Math.random() * 2;
+    const g = 110 + Math.random() * 30 | 0;
+    ctx.fillStyle = `rgba(${g},${g+2},${g+6},${alpha})`;
     ctx.fillRect(Math.random() * w, Math.random() * h, size, size);
   }
-  ctx.fillStyle = "rgba(18, 20, 27, 0.65)";
-  for (let i = 0; i < 18; i++) {
-    const y = (i / 18) * h;
-    ctx.fillRect(0, y, w, 8);
+  // faint lane wear / oil streaks – horizontal, very subtle
+  ctx.fillStyle = "rgba(18, 20, 26, 0.5)";
+  for (let i = 0; i < 12; i++) {
+    const y = (i / 12) * h;
+    ctx.fillRect(0, y, w, 4 + Math.random() * 6);
+  }
+  // random oil spots / cracks
+  ctx.fillStyle = "rgba(6, 7, 9, 0.55)";
+  for (let i = 0; i < 22; i++) {
+    ctx.beginPath();
+    ctx.ellipse(Math.random() * w, Math.random() * h, 8 + Math.random() * 22, 3 + Math.random() * 7, Math.random() * Math.PI, 0, Math.PI * 2);
+    ctx.fill();
   }
 });
 asphaltTexture.wrapS = THREE.RepeatWrapping;
@@ -833,33 +1105,34 @@ const skyGlow = new THREE.Mesh(
 skyGlow.position.copy(moon.position);
 scene.add(skyGlow);
 
-scene.add(new THREE.AmbientLight(0xa8b9ec, 1.72));
-scene.add(new THREE.HemisphereLight(0x9ab8ff, 0x254028, 1.08));
+scene.add(new THREE.AmbientLight(0x9ba5b8, 1.65));
+scene.add(new THREE.HemisphereLight(0x7b8da2, 0x222832, 1.15));
 
-const moonLight = new THREE.DirectionalLight(0xdbe7ff, 2.35);
+const moonLight = new THREE.DirectionalLight(0xe8f0ff, 2.4);
 moonLight.position.set(-20, 34, -18);
 scene.add(moonLight);
 
-const warmFill = new THREE.PointLight(0xffb56e, 1.8, 56, 2);
+// cold street fill – desaturated, low
+const warmFill = new THREE.PointLight(0x8a95a2, 1.45, 68, 2);
 warmFill.position.set(-18, 8, 18);
 scene.add(warmFill);
 
-const coolStreetFill = new THREE.PointLight(0xa8d8ff, 1.18, 72, 2);
+const coolStreetFill = new THREE.PointLight(0x9aaab8, 1.15, 82, 2);
 coolStreetFill.position.set(8, 9, -6);
 scene.add(coolStreetFill);
 
 const grass = new THREE.Mesh(
   new THREE.PlaneGeometry(180, 180),
-  new THREE.MeshStandardMaterial({ map: grassTexture, color: 0xd1ffd1, roughness: 1, metalness: 0 })
+  new THREE.MeshStandardMaterial({ map: grassTexture, color: 0x5a5f5a, roughness: 1, metalness: 0 })
 );
 grass.rotation.x = -Math.PI / 2;
 scene.add(grass);
 
 const asphaltMaterial = new THREE.MeshStandardMaterial({
   map: asphaltTexture,
-  color: 0xdfe5ff,
-  roughness: 0.86,
-  metalness: 0.1
+  color: 0x232830,
+  roughness: 0.88,
+  metalness: 0.0
 });
 
 function addRoad(x, z, width, depth, rotation = 0) {
@@ -908,18 +1181,18 @@ function createLamp(x, z) {
 
   const lantern = new THREE.Mesh(
     new THREE.BoxGeometry(0.44, 0.54, 0.44),
-    new THREE.MeshStandardMaterial({ color: 0xffbc7d, emissive: 0xff8c39, emissiveIntensity: 1.5, roughness: 0.35 })
+    new THREE.MeshStandardMaterial({ color: 0xa8acb2, emissive: 0xd8dce2, emissiveIntensity: 0.85, roughness: 0.55 })
   );
   lantern.position.set(0.9, 4.35, 0);
   group.add(lantern);
 
-  const light = new THREE.PointLight(0xff9e57, 1.5, 14, 2);
+  const light = new THREE.PointLight(0xe8ecf4, 1.65, 22, 1.5);
   light.position.set(0.9, 4.3, 0);
   group.add(light);
 
   group.position.set(x, 0, z);
   scene.add(group);
-  world.lamps.push({ group, light, x, z, phase: Math.random() * Math.PI * 2 });
+  world.lamps.push({ group, light, lantern, x, z, phase: Math.random() * Math.PI * 2, flickerTime: Math.random() * 10, isDead: Math.random() < 0.08 });
 }
 
 [
@@ -931,6 +1204,14 @@ function createHouse(config) {
   const wallMaterial = new THREE.MeshStandardMaterial({ color: config.color, roughness: 0.94 });
   const wallDepth = 0.32;
 
+  // collect morphable parts for haunted house effect
+  const morphWalls = [];
+  const morphRoofs = [];
+  const morphDoors = [];
+  const windowMats = [];
+  let wallBaseColor = new THREE.Color(config.color);
+  let roofBaseColor = new THREE.Color(config.roof);
+
   if (config.enterable) {
     const backWall = new THREE.Mesh(
       new THREE.BoxGeometry(config.w, config.h, wallDepth),
@@ -938,6 +1219,7 @@ function createHouse(config) {
     );
     backWall.position.set(0, config.h / 2, -config.d / 2 + wallDepth / 2);
     group.add(backWall);
+    morphWalls.push(backWall);
 
     const leftWall = new THREE.Mesh(
       new THREE.BoxGeometry(wallDepth, config.h, config.d),
@@ -945,10 +1227,12 @@ function createHouse(config) {
     );
     leftWall.position.set(-config.w / 2 + wallDepth / 2, config.h / 2, 0);
     group.add(leftWall);
+    morphWalls.push(leftWall);
 
     const rightWall = leftWall.clone();
     rightWall.position.x = config.w / 2 - wallDepth / 2;
     group.add(rightWall);
+    morphWalls.push(rightWall);
 
     const fascia = new THREE.Mesh(
       new THREE.BoxGeometry(config.w, config.h * 0.26, wallDepth),
@@ -956,6 +1240,7 @@ function createHouse(config) {
     );
     fascia.position.set(0, config.h * 0.88, config.d / 2 - wallDepth / 2);
     group.add(fascia);
+    morphWalls.push(fascia);
 
     const interiorFloor = new THREE.Mesh(
       new THREE.BoxGeometry(config.w * 0.88, 0.14, config.d * 0.78),
@@ -1017,15 +1302,18 @@ function createHouse(config) {
     );
     body.position.y = config.h / 2;
     group.add(body);
+    morphWalls.push(body);
   }
 
+  const roofMat = new THREE.MeshStandardMaterial({ color: config.roof, roughness: 0.9 });
   const roof = new THREE.Mesh(
     new THREE.ConeGeometry(Math.max(config.w, config.d) * 0.64, config.h * 0.82, 4),
-    new THREE.MeshStandardMaterial({ color: config.roof, roughness: 0.9 })
+    roofMat
   );
   roof.rotation.y = Math.PI * 0.25;
   roof.position.y = config.h + config.h * 0.33;
   group.add(roof);
+  morphRoofs.push(roof);
 
   const porch = new THREE.Mesh(
     new THREE.BoxGeometry(config.w * 0.32, 0.18, config.d * 0.18),
@@ -1035,12 +1323,15 @@ function createHouse(config) {
   group.add(porch);
 
   if (!config.enterable) {
+    const doorMat = new THREE.MeshBasicMaterial({ color: 0x261818 });
     const door = new THREE.Mesh(
       new THREE.PlaneGeometry(config.w * 0.16, config.h * 0.46),
-      new THREE.MeshBasicMaterial({ color: 0x261818 })
+      doorMat
     );
     door.position.set(0, config.h * 0.26, config.d / 2 + 0.01);
     group.add(door);
+    morphDoors.push(door);
+    windowMats.push(doorMat);
   } else {
     const welcomeMat = new THREE.Mesh(
       new THREE.PlaneGeometry(config.w * 0.3, 0.7),
@@ -1052,12 +1343,15 @@ function createHouse(config) {
   }
 
   for (const side of [-1, 1]) {
+    const winMat = new THREE.MeshBasicMaterial({ color: config.window, transparent: true, opacity: 0.95 });
     const windowMesh = new THREE.Mesh(
       new THREE.PlaneGeometry(config.w * 0.16, config.h * 0.18),
-      new THREE.MeshBasicMaterial({ color: config.window, transparent: true, opacity: 0.95 })
+      winMat
     );
     windowMesh.position.set(side * config.w * 0.22, config.h * 0.55, config.d / 2 + 0.02);
     group.add(windowMesh);
+    morphDoors.push(windowMesh);
+    windowMats.push(winMat);
   }
 
   if (config.sign) {
@@ -1081,13 +1375,45 @@ function createHouse(config) {
   group.position.set(config.x, 0, config.z);
   group.rotation.y = config.rotation || 0;
   scene.add(group);
+
+  // haunt morph state per house
+  const hauntPhase = Math.random() * Math.PI * 2;
+  const wallMorphs = morphWalls.map(m => ({
+    mesh: m,
+    basePos: m.position.clone(),
+    baseScale: m.scale.clone(),
+    baseRot: m.rotation.clone()
+  }));
+  const roofMorphs = morphRoofs.map(m => ({
+    mesh: m,
+    basePos: m.position.clone(),
+    baseScale: m.scale.clone(),
+    baseRot: m.rotation.clone()
+  }));
+  const doorMorphs = morphDoors.map(m => ({
+    mesh: m,
+    basePos: m.position.clone(),
+    baseScale: m.scale.clone()
+  }));
+
   world.houses.push({
     group,
     x: config.x,
     z: config.z,
     w: config.w,
     d: config.d,
-    enterable: !!config.enterable
+    enterable: !!config.enterable,
+    hauntPhase,
+    hauntPhase2: hauntPhase * 1.37,
+    wallMorphs,
+    roofMorphs,
+    doorMorphs,
+    wallMaterials: [wallMaterial],
+    roofMaterials: [roofMat],
+    windowMats,
+    wallBaseColor,
+    roofBaseColor,
+    windowBaseColors: windowMats.map(m => new THREE.Color(m.color.getHex()))
   });
 
   if (config.enterable) {
@@ -1209,7 +1535,7 @@ function createCar(x, z, rotation, color) {
   group.position.set(x, 0, z);
   group.rotation.y = rotation;
   scene.add(group);
-  world.cars.push({ group, speed: 0, color, entryRadius: 2.5 });
+  world.cars.push({ group, speed: 0 });
 }
 
 createCar(-8, 11, 0, 0x7c1e31);
@@ -1708,17 +2034,311 @@ function createCharacter(primary, accent, profile = {}) {
   shadow.scale.set(isChase ? 0.88 : 1, 1, isChase ? 0.88 : 1);
   group.add(shadow);
 
-  return { group, leftLeg, rightLeg, leftArm, rightArm, shadow, torso, jacket, hood, hoodTail, shoulderShell, waistShell, hemShell, shirtPanel, zipperLine, leftString, rightString, head, hair, hairMaterial, armMat, legMat, neck, jaw, leftBrow, rightBrow, leftEye, rightEye, noseBridge, noseTip, mouthLine };
+  return { group, leftLeg, rightLeg, leftArm, rightArm, shadow, torso, jacket, hood, hoodTail, shoulderShell, waistShell, hemShell, shirtPanel, zipperLine, leftString, rightString, head, hair, hairMaterial, armMat, legMat, neck, jaw, leftBrow, rightBrow, leftEye, rightEye, noseBridge, noseTip,
+ mouthLine };
 }
+
+/* ===================== DRAIN CLOWNS ===================== */
+
+function buildDrainClown() {
+  const group = new THREE.Group();
+
+  // silver / grey clown suit
+  const suitMat = new THREE.MeshStandardMaterial({ color: 0xcfcfd6, roughness: 0.78 });
+  const torso = new THREE.Mesh(new THREE.CapsuleGeometry(0.42, 1.0, 6, 12), suitMat);
+  torso.position.y = 1.28;
+  group.add(torso);
+
+  // red ruffle collar
+  const collar = new THREE.Mesh(new THREE.TorusGeometry(0.45, 0.09, 8, 16),
+    new THREE.MeshStandardMaterial({ color: 0xd42a2a, roughness: 0.7 }));
+  collar.rotation.x = Math.PI / 2;
+  collar.position.y = 1.78;
+  group.add(collar);
+
+  // puffy sleeves
+  const sleeveMat = new THREE.MeshStandardMaterial({ color: 0xe8e8ec, roughness: 0.8 });
+  for (const side of [-1, 1]) {
+    const arm = new THREE.Mesh(new THREE.CapsuleGeometry(0.13, 0.72, 4, 8), sleeveMat);
+    arm.position.set(side * 0.56, 1.38, 0);
+    arm.rotation.z = side * 0.22;
+    group.add(arm);
+    const cuff = new THREE.Mesh(new THREE.SphereGeometry(0.15, 10, 10),
+      new THREE.MeshStandardMaterial({ color: 0xd42a2a, roughness: 0.7 }));
+    cuff.position.set(side * 0.56, 0.92, 0);
+    group.add(cuff);
+  }
+
+  // baggy pants
+  const pantsMat = new THREE.MeshStandardMaterial({ color: 0xb8b8c0, roughness: 0.88 });
+  for (const side of [-1, 1]) {
+    const leg = new THREE.Mesh(new THREE.CapsuleGeometry(0.17, 0.78, 4, 8), pantsMat);
+    leg.position.set(side * 0.2, 0.48, 0);
+    group.add(leg);
+  }
+
+  // big red clown shoes
+  for (const side of [-1, 1]) {
+    const shoe = new THREE.Mesh(new THREE.SphereGeometry(0.22, 10, 10),
+      new THREE.MeshStandardMaterial({ color: 0xc41e1e, roughness: 0.6 }));
+    shoe.scale.set(1.4, 0.7, 1.0);
+    shoe.position.set(side * 0.2, 0.12, 0.12);
+    group.add(shoe);
+  }
+
+  // white face
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.32, 16, 16),
+    new THREE.MeshStandardMaterial({ color: 0xf0f0f0, roughness: 0.65 }));
+  head.position.y = 2.18;
+  group.add(head);
+
+  // red nose
+  const nose = new THREE.Mesh(new THREE.SphereGeometry(0.072, 10, 10),
+    new THREE.MeshStandardMaterial({ color: 0xe53935, roughness: 0.5 }));
+  nose.position.set(0, 2.16, 0.30);
+  group.add(nose);
+
+  // red smile – thin torus arc
+  const smile = new THREE.Mesh(new THREE.TorusGeometry(0.14, 0.018, 8, 16, Math.PI),
+    new THREE.MeshBasicMaterial({ color: 0xc41e1e }));
+  smile.position.set(0, 2.04, 0.27);
+  smile.rotation.z = Math.PI;
+  group.add(smile);
+
+  // eyes – dark sockets, NO emissive blowout
+  const eyeMat = new THREE.MeshBasicMaterial({ color: 0x1a1a1a });
+  const leftEye = new THREE.Mesh(new THREE.SphereGeometry(0.038, 8, 8), eyeMat);
+  leftEye.position.set(-0.09, 2.22, 0.27);
+  const rightEye = leftEye.clone();
+  rightEye.position.x = 0.09;
+  group.add(leftEye, rightEye);
+
+  // orange pom-poms down the front
+  for (let i = 0; i < 3; i++) {
+    const pom = new THREE.Mesh(new THREE.SphereGeometry(0.075, 10, 10),
+      new THREE.MeshStandardMaterial({ color: 0xff6a00, roughness: 0.7 }));
+    pom.position.set(0, 1.55 - i * 0.28, 0.42);
+    group.add(pom);
+  }
+
+  // red curly hair puffs
+  const hairMat = new THREE.MeshStandardMaterial({ color: 0xd93600, roughness: 0.9 });
+  for (const [x, y, z] of [[-0.28,2.28,0], [0.28,2.28,0], [0,2.42,-0.15]]) {
+    const puff = new THREE.Mesh(new THREE.SphereGeometry(0.16, 10, 10), hairMat);
+    puff.position.set(x, y, z);
+    group.add(puff);
+  }
+
+  // point light so he's visible at night, subtle
+  const glow = new THREE.PointLight(0xff8a5a, 0.55, 6, 2);
+  glow.position.set(0, 1.6, 0);
+  group.add(glow);
+
+  group.visible = false;
+  group.scale.set(0.92, 0.92, 0.92);
+  return { group, head, leftEye, rightEye };
+}
+
+function createStormDrain(x, z) {
+  const grate = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.85, 0.85, 0.08, 16),
+    new THREE.MeshStandardMaterial({ color: 0x2b2b2b, roughness: 0.95, metalness: 0.4 })
+  );
+  grate.position.set(x, 0.04, z);
+  scene.add(grate);
+
+  // dark hole underneath
+  const hole = new THREE.Mesh(
+    new THREE.CircleGeometry(0.72, 20),
+    new THREE.MeshBasicMaterial({ color: 0x050505 })
+  );
+  hole.rotation.x = -Math.PI / 2;
+  hole.position.set(x, 0.015, z);
+  scene.add(hole);
+
+  return { x, z, grate };
+}
+
+function spawnDrainClown(x, z) {
+  const drain = createStormDrain(x, z);
+  const clown = buildDrainClown();
+  clown.group.position.set(x, -1.8, z);
+  scene.add(clown.group);
+
+  world.drainClowns.push({
+    x, z,
+    drain,
+    group: clown.group,
+    head: clown.head,
+    state: 'hidden',
+    stateTime: 0,
+    cooldown: 2 + Math.random() * 3,
+    chaseTime: 0,
+    homeX: x,
+    homeZ: z
+  });
+}
+
+function initDrainClowns() {
+  // 5 drains spread around the block
+  const spots = [
+    [  8,  -8],
+    [-14,   4],
+    [ 22,  14],
+    [-6, -22],
+    [ 18, -14]
+  ];
+  for (const [x, z] of spots) spawnDrainClown(x, z);
+}
+
+function updateDrainClowns(dt) {
+  const chasePos = chase.position;
+  const peekDist = 7.5;
+  const emergeDist = 5.0;
+  const chaseSpeed = 2.3;
+  const returnSpeed = 2.8;
+  const maxChaseDist = 18;
+
+  for (const c of world.drainClowns) {
+    const dx = chasePos.x - c.x;
+    const dz = chasePos.z - c.z;
+    const dist = Math.hypot(dx, dz);
+    c.stateTime += dt;
+
+    const g = c.group;
+
+    if (c.state === 'hidden') {
+      g.visible = false;
+      c.cooldown -= dt;
+      if (dist < peekDist && c.cooldown <= 0) {
+        c.state = 'peeking';
+        c.stateTime = 0;
+        g.visible = true;
+        g.position.set(c.x, 0.35, c.z);
+      }
+      continue;
+    }
+
+    g.visible = true;
+
+    if (c.state === 'peeking') {
+      // head poking out of the drain
+      g.position.set(c.x, 0.35 + Math.sin(c.stateTime * 5) * 0.035, c.z);
+      // look at Chase
+      g.rotation.y = Math.atan2(dx, dz);
+
+      if (dist < emergeDist) {
+        c.state = 'emerging';
+        c.stateTime = 0;
+      } else if (dist > peekDist + 1.5 || c.stateTime > 4.0) {
+        // duck back down
+        c.state = 'hidden';
+        c.cooldown = 1.5 + Math.random() * 2;
+      }
+      continue;
+    }
+
+    if (c.state === 'emerging') {
+      const t = Math.min(1, c.stateTime / 1.2);
+      const e = 1 - Math.pow(1 - t, 3);
+      g.position.set(c.x, 0.35 + e * 1.25, c.z);
+      g.rotation.y = Math.atan2(dx, dz);
+      if (t >= 1) {
+        c.state = 'chasing';
+        c.stateTime = 0;
+        c.chaseTime = 0;
+      }
+      continue;
+    }
+
+    if (c.state === 'chasing') {
+      c.chaseTime += dt;
+      // move toward Chase - use clown's actual position, not drain home
+      const cx = g.position.x;
+      const cz = g.position.z;
+      let cdx = chasePos.x - cx;
+      let cdz = chasePos.z - cz;
+      let cdist = Math.hypot(cdx, cdz) || 0.001;
+      if (cdist > 0.8) {
+        g.position.x += (cdx / cdist) * chaseSpeed * dt;
+        g.position.z += (cdz / cdist) * chaseSpeed * dt;
+        // recompute after move for accurate collision
+        cdx = chasePos.x - g.position.x;
+        cdz = chasePos.z - g.position.z;
+        cdist = Math.hypot(cdx, cdz);
+      }
+      g.position.y = 0.02 + Math.sin(c.stateTime * 7) * 0.04;
+      g.rotation.y = Math.atan2(cdx, cdz);
+
+      // damage on touch - use clown-to-Chase distance
+      if (cdist < 1.25 && !state.ended && !state.win && state.started) {
+        state.health = Math.max(0, state.health - 18 * dt);
+        state.fear = Math.min(100, state.fear + 22 * dt);
+        if (Math.random() < 0.04) soundHit();
+        // simple pushback so clown can't phase through Chase
+        const push = 1.8 * dt;
+        chase.position.x += (cdx / cdist) * -push;
+        chase.position.z += (cdz / cdist) * -push;
+      }
+
+      // give up conditions
+      const fromHome = Math.hypot(g.position.x - c.homeX, g.position.z - c.homeZ);
+      if (fromHome > maxChaseDist || cdist > 11 || c.chaseTime > 10) {
+        c.state = 'returning';
+        c.stateTime = 0;
+      }
+      continue;
+    }
+
+    if (c.state === 'returning') {
+      const hx = c.homeX - g.position.x;
+      const hz = c.homeZ - g.position.z;
+      const hd = Math.hypot(hx, hz);
+      if (hd > 0.15) {
+        g.position.x += (hx / hd) * returnSpeed * dt;
+        g.position.z += (hz / hd) * returnSpeed * dt;
+        g.rotation.y = Math.atan2(hx, hz);
+      } else {
+        c.state = 'retreating';
+        c.stateTime = 0;
+      }
+      g.position.y = 0.02;
+      continue;
+    }
+
+    if (c.state === 'retreating') {
+      const t = Math.min(1, c.stateTime / 0.7);
+      g.position.set(c.x, 1.6 * (1 - t) + 0.35 * t - 1.8 * t, c.z);
+      if (t >= 1) {
+        c.state = 'hidden';
+        c.cooldown = 3 + Math.random() * 3;
+        g.visible = false;
+      }
+      continue;
+    }
+  }
+}
+
 
 const chaseModel = createCharacter(0x6e2130, 0x7d1627, { kind: "chase" });
 const chase = chaseModel.group;
 chase.position.set(-18, 0, 18);
 scene.add(chase);
 
-const chaseGlow = new THREE.PointLight(0xffd7ba, 1.35, 12, 2);
-chaseGlow.position.set(0, 3.3, 1.9);
+const chaseGlow = new THREE.PointLight(0xd8e0f0, 0.85, 9, 2);
+chaseGlow.position.set(0, 2.2, 0);
 chase.add(chaseGlow);
+
+// flashlight – forward cone, Friday 13th / GTA night run vibes
+const flashlight = new THREE.SpotLight(0xf0f4ff, 3.2, 28, Math.PI * 0.31, 0.42, 1.15);
+flashlight.position.set(0, 2.35, 0.35);
+flashlight.target.position.set(0, 1.2, 6);
+chase.add(flashlight);
+chase.add(flashlight.target);
+
+const flashlightFill = new THREE.PointLight(0xc8d8e8, 0.45, 5.5, 2);
+flashlightFill.position.set(0, 2.2, 0.5);
+chase.add(flashlightFill);
 
 const chaseCostumeRig = new THREE.Group();
 chase.add(chaseCostumeRig);
@@ -1761,11 +2381,43 @@ pumpkinMask.position.set(0, 2.42, 0.18);
 pumpkinMask.visible = false;
 chaseCostumeRig.add(pumpkinMask);
 
+const saintMask = new THREE.Mesh(
+  new THREE.SphereGeometry(0.27, 16, 14),
+  new THREE.MeshStandardMaterial({ color: 0xf4ead2, emissive: 0xffdca6, emissiveIntensity: 0.35, roughness: 0.4 })
+);
+saintMask.scale.set(1, 1.05, 0.82);
+saintMask.position.set(0, 2.44, 0.19);
+saintMask.visible = false;
+chaseCostumeRig.add(saintMask);
+
+const saintGrin = new THREE.Mesh(
+  new THREE.PlaneGeometry(0.16, 0.05),
+  new THREE.MeshBasicMaterial({ color: 0x2a1b14 })
+);
+saintGrin.position.set(0, 2.365, 0.31);
+saintGrin.visible = false;
+chaseCostumeRig.add(saintGrin);
+
+const corruptedAura = new THREE.PointLight(0xff2f4d, 1.6, 10, 2);
+corruptedAura.position.set(0, 2.4, 0.2);
+corruptedAura.visible = false;
+chase.add(corruptedAura);
+
+const protectiveCharmRing = new THREE.Mesh(
+  new THREE.TorusGeometry(0.7, 0.05, 10, 28),
+  new THREE.MeshBasicMaterial({ color: 0x7cf4da, transparent: true, opacity: 0 })
+);
+protectiveCharmRing.rotation.x = Math.PI / 2;
+protectiveCharmRing.position.y = 0.05;
+chase.add(protectiveCharmRing);
+
 const costumeStyles = [
   { name: "Block Runner", torso: 0x6e2130, arms: 0x6e2130, jacket: 0x7d1627, shirt: 0xa4a4aa, legs: 0x1c2029, hair: 0x2a1b15, head: 0xb79274, hat: false, horns: false, pumpkin: false },
   { name: "Pumpkin Phantom", torso: 0x22252d, arms: 0x22252d, jacket: 0xff8a32, legs: 0x14161b, hair: 0x2a1b15, head: 0xb79274, hat: false, horns: false, pumpkin: true },
   { name: "Witch Knight", torso: 0x59328c, arms: 0x59328c, jacket: 0x3b215e, shirt: 0xded7f0, legs: 0x1b1b2b, hair: 0x241813, head: 0xb79274, hat: true, horns: false, pumpkin: false },
-  { name: "Devil Dash", torso: 0x8f2736, arms: 0x8f2736, jacket: 0x61131c, shirt: 0xf0d2d2, legs: 0x281419, hair: 0x26140f, head: 0xb79274, hat: false, horns: true, pumpkin: false }
+  { name: "Devil Dash", torso: 0x8f2736, arms: 0x8f2736, jacket: 0x61131c, shirt: 0xf0d2d2, legs: 0x281419, hair: 0x26140f, head: 0xb79274, hat: false, horns: true, pumpkin: false },
+  { name: "Grinning Saint", locked: true, unlockKey: "grinningSaint", torso: 0xece1c8, arms: 0xece1c8, jacket: 0x241b2e, shirt: 0xffe1a8, legs: 0x1a1420, hair: 0x1a1420, head: 0xece1c8, hat: false, horns: false, pumpkin: false, grin: true },
+  { name: "Corrupted Saint", locked: true, unlockKey: "corruptedSaint", torso: 0x241b2e, arms: 0x241b2e, jacket: 0x3d0f1f, shirt: 0x7a1030, legs: 0x0d0710, hair: 0x0d0710, head: 0x241b2e, hat: false, horns: false, pumpkin: false, grin: true, corrupted: true }
 ];
 
 function applyChaseCostume(index) {
@@ -1802,6 +2454,25 @@ function applyChaseCostume(index) {
   witchHat.visible = style.hat;
   devilHorns.visible = style.horns;
   pumpkinMask.visible = style.pumpkin;
+  saintMask.visible = !!style.grin;
+  saintGrin.visible = !!style.grin;
+  if (style.grin) {
+    saintMask.material.color.set(style.corrupted ? 0x241b2e : 0xf4ead2);
+    saintMask.material.emissive.set(style.corrupted ? 0x7a1030 : 0xffdca6);
+    saintMask.material.emissiveIntensity = style.corrupted ? 0.7 : 0.35;
+  }
+  corruptedAura.visible = !!style.corrupted;
+}
+
+function nextUnlockedCostumeIndex(start) {
+  let idx = start;
+  for (let i = 0; i < costumeStyles.length; i++) {
+    idx = (idx + 1) % costumeStyles.length;
+    if (!costumeStyles[idx].locked) {
+      return idx;
+    }
+  }
+  return start;
 }
 
 applyChaseCostume(state.costumeIndex);
@@ -1810,6 +2481,8 @@ const noFaceModel = createCharacter(0x441013, 0x22070b, { kind: "noface" });
 const noFace = noFaceModel.group;
 noFace.position.set(10, 0, -10);
 scene.add(noFace);
+
+initDrainClowns();
 
 const noFaceMask = new THREE.Mesh(
   new THREE.SphereGeometry(0.22, 12, 12),
@@ -2101,6 +2774,8 @@ function nearestZone() {
   return { zone: best, distance: bestDistance };
 }
 
+const carEnterRadius = 2.6;
+
 function nearestCar() {
   let best = null;
   let bestDistance = Infinity;
@@ -2127,15 +2802,17 @@ function updatePrompt() {
   }
 
   const { car, distance: carDistance } = nearestCar();
-  if (car && carDistance <= car.entryRadius) {
+  const { zone, distance } = nearestZone();
+  const carClose = car && carDistance <= carEnterRadius;
+  const zoneClose = zone && distance <= zone.radius + 1.1;
+
+  if (carClose && (!zoneClose || carDistance <= distance)) {
     ui.promptText.textContent = "Press E to get in the car.";
     ui.promptCard.classList.add("on");
     return;
   }
 
-  const { zone, distance } = nearestZone();
-  const threshold = zone ? zone.radius + 1.1 : Infinity;
-  if (!zone || distance > threshold) {
+  if (!zoneClose) {
     ui.promptCard.classList.remove("on");
     return;
   }
@@ -2200,6 +2877,9 @@ function interactWithZone(zone) {
 
   if (zone.type === "safehouse") {
     if (state.mission === "escape") {
+      if (missionState.status === "active") {
+        failMission("abandoned");
+      }
       state.win = true;
       state.ended = true;
       state.health = Math.max(state.health, 35);
@@ -2254,19 +2934,50 @@ function interactWithZone(zone) {
   }
 
   if (zone.type === "costume") {
-    state.costumeIndex = (state.costumeIndex + 1) % costumeStyles.length;
-    applyChaseCostume(state.costumeIndex);
-    state.upgrades.costume = state.costumeIndex !== 0;
-    state.fear = Math.max(0, state.fear - (state.upgrades.costume ? 12 : 4));
     if (!state.story.disguise) {
+      state.costumeIndex = (state.costumeIndex + 1) % costumeStyles.length;
+      applyChaseCostume(state.costumeIndex);
+      state.upgrades.costume = state.costumeIndex !== 0;
+      state.fear = Math.max(0, state.fear - (state.upgrades.costume ? 12 : 4));
       state.story.disguise = true;
       state.mission = "garage";
       showToast(`Disguise on: ${costumeStyles[state.costumeIndex].name}.`);
       setRadio("Costume Crypt is handled. Hearse Garage next. Get the keys before No-Face catches on.");
+      soundUpgrade();
+      updateObjectiveText();
+      window.setTimeout(() => {
+        if (missionState.status === "available") {
+          showToast("Morrow: \"Hey — swing back by here before the night's out.\"");
+        }
+      }, 4500);
+      return;
+    }
+
+    if (missionState.status === "active" && missionState.phase === 6) {
+      openFinalConfrontation();
+      return;
+    }
+    if (missionState.status === "available") {
+      startCostumeDebtMission();
+      return;
+    }
+    if (missionState.status === "active") {
+      showToast("Morrow's still waiting on that mask.");
+    }
+
+    state.costumeIndex = nextUnlockedCostumeIndex(state.costumeIndex);
+    applyChaseCostume(state.costumeIndex);
+    state.upgrades.costume = state.costumeIndex !== 0;
+    let fearRelief = state.upgrades.costume ? 12 : 4;
+    if (missionState.worldEffects.morrowHostile) {
+      fearRelief = 0;
+      state.fear = Math.min(100, state.fear + 2);
+      showToast("Morrow won't look at you. Quick change, no chat.");
     } else {
       showToast(`Chase changed into ${costumeStyles[state.costumeIndex].name}.`);
       setRadio(state.upgrades.costume ? "Costume Crypt wardrobe swap complete. Chase looks Halloween-ready now." : "Back to Chase's default fit. Clean reset.");
     }
+    state.fear = Math.max(0, state.fear - fearRelief);
     soundUpgrade();
     updateObjectiveText();
     return;
@@ -2284,19 +2995,34 @@ function interactWithZone(zone) {
       updateObjectiveText();
       return;
     }
+    if (missionState.status === "active" && missionState.phase === 2 && !missionState.route.garage) {
+      openRookDialogue();
+      return;
+    }
+    if (missionState.status === "active" && missionState.route.garage === "search" && missionState.phase === 2) {
+      showToast("Keep looking around the garage for clues.");
+      return;
+    }
+
     if (state.upgrades.sprintBoost) {
       showToast("Sprint Boost already installed.");
       return;
     }
-    if (!canAfford(250)) {
-      showToast("Need $250 for Sprint Boost.");
+    let sprintPrice = 250;
+    if (missionState.relationships.rookTrust > 0) {
+      sprintPrice -= 100;
+    } else if (missionState.relationships.rookTrust < 0) {
+      sprintPrice += 100;
+    }
+    if (!canAfford(sprintPrice)) {
+      showToast(`Need $${sprintPrice} for Sprint Boost.`);
       return;
     }
-    spend(250);
+    spend(sprintPrice);
     state.upgrades.sprintBoost = true;
     state.stamina = 100;
     showToast("Sprint Boost installed.");
-    setRadio("Hearse Garage tune complete. Chase moves quicker now.");
+    setRadio(missionState.relationships.rookTrust > 0 ? "Rook cuts you a deal on the garage tune." : "Hearse Garage tune complete. Chase moves quicker now.");
     soundUpgrade();
     return;
   }
@@ -2312,6 +3038,11 @@ function interactWithZone(zone) {
       updateObjectiveText();
       return;
     }
+    if (missionState.status === "active" && missionState.phase === 4) {
+      openHexBrokerDialogue();
+      return;
+    }
+
     if (state.upgrades.ward) {
       showToast("Ward Sigil already active.");
       return;
@@ -2345,7 +3076,7 @@ function interactWithZone(zone) {
 }
 
 function shootEgg() {
-  if (!state.started || state.ended || state.win) {
+  if (!state.started || state.ended || state.win || input.locked || state.driving) {
     return;
   }
   if (state.eggCooldown > 0) {
@@ -2388,6 +3119,1006 @@ function shootEgg() {
   soundThrow();
 }
 
+/* ===================== THE COSTUME DEBT — side mission ===================== */
+
+world.missionEnemies = [];
+world.missionPickups = [];
+
+const missionState = {
+  id: "costumeDebt",
+  status: "available",
+  phase: 0,
+  objective: "Talk to Morrow at Costume Crypt.",
+  subObjective: "",
+  approach: null,
+  flags: {
+    complicationFired: false,
+    returnTriggered: false,
+    finalOpen: false,
+    ambushPending: false,
+    pursuitPrimed: false,
+    garageResolved: false
+  },
+  relationships: {
+    morrowTrust: 0,
+    rookTrust: 0,
+    brokerTrust: 0
+  },
+  reputation: 0,
+  heat: {
+    supernatural: 0,
+    police: 0
+  },
+  inventory: {
+    hasMask: false,
+    maskReal: true,
+    evidence: false,
+    destructionClue: false,
+    keptCopy: false
+  },
+  route: {
+    garage: null,
+    hex: null
+  },
+  hexInProgress: false,
+  cluesFound: 0,
+  timer: { active: false, remaining: 0, total: 0, kind: null },
+  blackout: { active: false, timer: 0 },
+  phoneTimer: 0,
+  finalOutcome: null,
+  failureReason: null,
+  rewards: { fearResist: false, noFaceAggro: 0, protectiveCharm: false },
+  worldEffects: { morrowHostile: false }
+};
+
+const phoneHistory = [];
+const dialogue = { open: false, node: null, selected: 0 };
+
+const missionArrow = new THREE.Group();
+const missionArrowBody = new THREE.Mesh(
+  new THREE.ConeGeometry(0.26, 0.9, 12),
+  new THREE.MeshStandardMaterial({ color: 0xff5fb0, emissive: 0xff2f86, emissiveIntensity: 0.9, roughness: 0.35 })
+);
+missionArrowBody.rotation.x = Math.PI;
+missionArrowBody.position.y = 3.5;
+missionArrow.add(missionArrowBody);
+const missionArrowRing = new THREE.Mesh(
+  new THREE.TorusGeometry(0.36, 0.06, 10, 24),
+  new THREE.MeshBasicMaterial({ color: 0xff8fce, transparent: true, opacity: 0.85 })
+);
+missionArrowRing.rotation.x = Math.PI / 2;
+missionArrowRing.position.y = 3.0;
+missionArrow.add(missionArrowRing);
+missionArrow.visible = false;
+scene.add(missionArrow);
+
+/* ---- dialogue engine ---- */
+
+function openDialogue(def) {
+  dialogue.node = {
+    speaker: def.speaker,
+    text: def.text,
+    closable: def.closable !== false,
+    choices: def.choices || []
+  };
+  dialogue.open = true;
+  dialogue.selected = 0;
+  input.locked = true;
+  input.forward = 0;
+  input.strafe = 0;
+  input.fireQueued = false;
+  input.interactQueued = false;
+  ui.dialogueOverlay.classList.add("on");
+  renderDialogue();
+}
+
+function closeDialogue() {
+  dialogue.open = false;
+  dialogue.node = null;
+  input.locked = false;
+  ui.dialogueOverlay.classList.remove("on");
+  ui.dialogueChoices.innerHTML = "";
+}
+
+function renderDialogue() {
+  const node = dialogue.node;
+  if (!node) {
+    return;
+  }
+  ui.dialogueSpeaker.textContent = node.speaker;
+  ui.dialogueText.textContent = node.text;
+  ui.dialogueChoices.innerHTML = "";
+  node.choices.forEach((choice, index) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    const disabled = choice.enabled === false;
+    btn.className = "dialogueChoice" + (index === dialogue.selected ? " active" : "") + (disabled ? " disabled" : "");
+    btn.disabled = disabled;
+    const key = document.createElement("span");
+    key.className = "choiceKey";
+    key.textContent = `${index + 1}. ${choice.label}`;
+    btn.appendChild(key);
+    if (disabled && choice.reason) {
+      const reason = document.createElement("span");
+      reason.className = "choiceReason";
+      reason.textContent = choice.reason;
+      btn.appendChild(reason);
+    }
+    btn.addEventListener("click", () => selectChoice(index));
+    ui.dialogueChoices.appendChild(btn);
+  });
+  if (node.closable) {
+    const closeBtn = document.createElement("button");
+    closeBtn.type = "button";
+    closeBtn.className = "dialogueChoice";
+    closeBtn.textContent = "Walk away. (Esc)";
+    closeBtn.addEventListener("click", () => closeDialogue());
+    ui.dialogueChoices.appendChild(closeBtn);
+  }
+}
+
+function moveDialogueSelection(delta) {
+  if (!dialogue.open || !dialogue.node || dialogue.node.choices.length === 0) {
+    return;
+  }
+  const count = dialogue.node.choices.length;
+  dialogue.selected = (dialogue.selected + delta + count) % count;
+  renderDialogue();
+}
+
+function confirmDialogueSelection() {
+  if (!dialogue.open || !dialogue.node) {
+    return;
+  }
+  selectChoice(dialogue.selected);
+}
+
+function selectChoice(index) {
+  const node = dialogue.node;
+  if (!node) {
+    return;
+  }
+  const choice = node.choices[index];
+  if (!choice || choice.enabled === false) {
+    return;
+  }
+  closeDialogue();
+  if (choice.action) {
+    choice.action();
+  }
+}
+
+/* ---- phone message system ---- */
+
+function sendPhoneMessage(sender, text) {
+  phoneHistory.push({ sender, text });
+  if (phoneHistory.length > 6) {
+    phoneHistory.shift();
+  }
+  ui.phoneSender.textContent = sender;
+  ui.phoneText.textContent = text;
+  ui.phoneOverlay.classList.add("on");
+  missionState.phoneTimer = 6.5;
+  renderPhoneHistory();
+  soundPickup();
+}
+
+function renderPhoneHistory() {
+  ui.phoneHistory.innerHTML = "";
+  phoneHistory.slice(0, -1).slice(-3).forEach((msg) => {
+    const row = document.createElement("div");
+    row.textContent = `${msg.sender}: ${msg.text}`;
+    ui.phoneHistory.appendChild(row);
+  });
+}
+
+function hidePhoneOverlay() {
+  ui.phoneOverlay.classList.remove("on");
+}
+
+/* ---- mission panel + world marker ---- */
+
+function phaseLabel() {
+  switch (missionState.phase) {
+    case 1: return "Phase 1 — The Accusation";
+    case 2: return "Phase 2 — Find the Lead";
+    case 3: return "Phase 3 — Complication";
+    case 4: return "Phase 4 — Hex Market Infiltration";
+    case 5: return "Phase 5 — The Reveal";
+    case 6: return "Phase 6 — Return Under Pressure";
+    case 7: return "Phase 7 — Final Confrontation";
+    default: return "Side job";
+  }
+}
+
+function updateMissionPanel() {
+  const visible = missionState.status !== "available" || missionState.phase > 0 || missionState.flags.finalOpen;
+  ui.missionPanel.classList.toggle("on", visible);
+  if (!visible) {
+    return;
+  }
+  ui.missionPhase.textContent = missionState.status === "failed" ? "Failed" : missionState.status === "complete" ? "Resolved" : phaseLabel();
+  ui.missionObjective.textContent = missionState.objective;
+  ui.missionSub.textContent = missionState.subObjective || "";
+  if (missionState.timer.active) {
+    ui.missionTimer.classList.remove("hidden");
+    ui.missionTimer.textContent = `Time left: ${Math.max(0, Math.ceil(missionState.timer.remaining))}s`;
+  } else {
+    ui.missionTimer.classList.add("hidden");
+  }
+  ui.missionMeters.innerHTML = "";
+  const rows = [
+    ["Approach", missionState.approach || "—"],
+    ["Morrow trust", missionState.relationships.morrowTrust],
+    ["Rook", missionState.relationships.rookTrust],
+    ["Reputation", missionState.reputation],
+    ["Supernatural heat", Math.round(missionState.heat.supernatural)],
+    ["Police heat", Math.round(missionState.heat.police)]
+  ];
+  rows.forEach(([label, value]) => {
+    const row = document.createElement("div");
+    row.textContent = `${label}: ${value}`;
+    ui.missionMeters.appendChild(row);
+  });
+  const heatHigh = missionState.heat.supernatural >= 70 || missionState.heat.police >= 70;
+  ui.missionWarn.classList.toggle("hidden", !heatHigh);
+  if (heatHigh) {
+    ui.missionWarn.textContent = "Heat is critical. Move.";
+  }
+}
+
+let missionCollapsed = false;
+ui.missionCollapse.addEventListener("click", () => {
+  missionCollapsed = !missionCollapsed;
+  ui.missionBody.classList.toggle("collapsed", missionCollapsed);
+});
+
+function missionTargetZone() {
+  if (missionState.status !== "active") {
+    return null;
+  }
+  if (missionState.phase === 1) return costumeZone;
+  if (missionState.phase === 2) return garageZone;
+  if (missionState.phase === 3 || missionState.phase === 4) return wardZone;
+  if (missionState.phase >= 5) return costumeZone;
+  return null;
+}
+
+function updateMissionArrow() {
+  if (protectiveCharmRing.material.opacity > 0) {
+    protectiveCharmRing.rotation.z += 0.01;
+  }
+  const zone = missionTargetZone();
+  if (!zone) {
+    missionArrow.visible = false;
+    return;
+  }
+  missionArrow.visible = true;
+  missionArrow.position.set(chase.position.x, 0.5 + Math.sin(clock.elapsedTime * 3) * 0.08, chase.position.z);
+  const dx = zone.x - chase.position.x;
+  const dz = zone.z - chase.position.z;
+  missionArrow.rotation.y = Math.atan2(dx, dz);
+  missionArrowRing.rotation.z += 0.03;
+}
+
+/* ---- mission enemies ---- */
+
+function spawnMissionEnemy(kind, x, z, opts = {}) {
+  const group = new THREE.Group();
+  const bodyColor = kind === "guard" ? 0x7a2a55 : 0x8ef2ff;
+  const body = new THREE.Mesh(
+    new THREE.SphereGeometry(0.6, 14, 14),
+    new THREE.MeshStandardMaterial({
+      color: bodyColor,
+      emissive: bodyColor,
+      emissiveIntensity: 0.7,
+      transparent: kind !== "guard",
+      opacity: kind === "guard" ? 1 : 0.62,
+      roughness: 0.3
+    })
+  );
+  body.scale.y = 1.2;
+  group.add(body);
+  const tail = new THREE.Mesh(new THREE.ConeGeometry(0.48, 1, 12), body.material);
+  tail.position.y = -0.8;
+  group.add(tail);
+  const baseY = kind === "guard" ? 0.9 : 2.2;
+  group.position.set(x, baseY, z);
+  scene.add(group);
+  const enemy = {
+    group,
+    body,
+    kind,
+    hp: opts.hp || 1,
+    speed: opts.speed || 2.2,
+    damage: opts.damage || 9,
+    fearGain: opts.fearGain || 6,
+    lastHit: -10,
+    baseY,
+    onDefeated: opts.onDefeated || null
+  };
+  world.missionEnemies.push(enemy);
+  return enemy;
+}
+
+function removeMissionEnemy(enemy) {
+  scene.remove(enemy.group);
+  const idx = world.missionEnemies.indexOf(enemy);
+  if (idx >= 0) {
+    world.missionEnemies.splice(idx, 1);
+  }
+}
+
+function clearMissionEnemies() {
+  for (const enemy of [...world.missionEnemies]) {
+    removeMissionEnemy(enemy);
+  }
+}
+
+function updateMissionEnemies(dt) {
+  for (const enemy of [...world.missionEnemies]) {
+    const toPlayer = new THREE.Vector3(chase.position.x - enemy.group.position.x, 0, chase.position.z - enemy.group.position.z);
+    const distance = toPlayer.length();
+    if (distance > 0.6) {
+      toPlayer.normalize();
+      enemy.group.position.addScaledVector(toPlayer, enemy.speed * dt);
+      enemy.group.rotation.y = Math.atan2(toPlayer.x, toPlayer.z);
+    }
+    enemy.group.position.y = enemy.baseY + Math.sin(clock.elapsedTime * 2 + enemy.group.position.x) * 0.12;
+    if (distance < 1.5 && clock.elapsedTime - enemy.lastHit > 0.9 && !state.ended && !state.win) {
+      enemy.lastHit = clock.elapsedTime;
+      state.health = Math.max(0, state.health - enemy.damage);
+      state.fear = Math.min(100, state.fear + enemy.fearGain * (missionState.rewards.fearResist ? 0.6 : 1));
+      showToast(enemy.kind === "guard" ? "Hex guard got a hit in." : "Something cold just touched Chase.");
+      soundFail();
+    }
+  }
+}
+
+/* ---- mission pickups (clues / stealth glyphs) ---- */
+
+function spawnMissionPickup(kind, x, z, onCollect) {
+  const group = new THREE.Group();
+  const color = kind === "clue" ? 0xffd86f : 0x87ffb4;
+  const ring = new THREE.Mesh(
+    new THREE.TorusGeometry(0.34, 0.05, 10, 20),
+    new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.85 })
+  );
+  ring.rotation.x = Math.PI / 2;
+  group.add(ring);
+  const core = new THREE.Mesh(
+    new THREE.OctahedronGeometry(0.18, 0),
+    new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 0.6, roughness: 0.4 })
+  );
+  core.position.y = 0.3;
+  group.add(core);
+  group.position.set(x, 0.1, z);
+  scene.add(group);
+  const pickup = { group, core, kind, phase: Math.random() * Math.PI * 2, onCollect };
+  world.missionPickups.push(pickup);
+  return pickup;
+}
+
+function clearMissionPickups() {
+  for (const pickup of world.missionPickups) {
+    scene.remove(pickup.group);
+  }
+  world.missionPickups.length = 0;
+}
+
+function updateMissionPickups(dt) {
+  for (const pickup of [...world.missionPickups]) {
+    pickup.group.rotation.y += dt * 1.6;
+    pickup.core.position.y = 0.3 + Math.sin(clock.elapsedTime * 2.5 + pickup.phase) * 0.1;
+    const distance = getFlatDistance(chase.position, pickup.group.position);
+    if (distance < 1.5) {
+      scene.remove(pickup.group);
+      const idx = world.missionPickups.indexOf(pickup);
+      if (idx >= 0) {
+        world.missionPickups.splice(idx, 1);
+      }
+      if (pickup.onCollect) {
+        pickup.onCollect();
+      }
+    }
+  }
+}
+
+/* ---- blackout ---- */
+
+function triggerBlackout(duration = 5) {
+  missionState.blackout = { active: true, timer: duration };
+  showToast("The streetlamps just died.");
+  setRadio("Pumpkin FM: uh, we're losing signal near you. That's not normal.");
+}
+
+function updateBlackout(dt) {
+  if (!missionState.blackout.active) {
+    return;
+  }
+  missionState.blackout.timer -= dt;
+  if (missionState.blackout.timer > 0.4) {
+    for (const lamp of world.lamps) {
+      lamp.light.intensity = 0.05;
+    }
+  } else if (missionState.blackout.timer > 0) {
+    const fade = 1 - missionState.blackout.timer / 0.4;
+    for (const lamp of world.lamps) {
+      lamp.light.intensity = 0.05 + fade * 1.8;
+    }
+  } else {
+    missionState.blackout.active = false;
+  }
+}
+
+/* ---- timers ---- */
+
+function startMissionTimer(kind, seconds) {
+  missionState.timer.active = true;
+  missionState.timer.kind = kind;
+  missionState.timer.total = seconds;
+  missionState.timer.remaining = seconds;
+}
+
+function stopMissionTimer() {
+  missionState.timer.active = false;
+  missionState.timer.kind = null;
+}
+
+function updateMissionTimer(dt) {
+  if (!missionState.timer.active) {
+    return;
+  }
+  missionState.timer.remaining -= dt;
+  if (missionState.timer.remaining <= 0) {
+    const kind = missionState.timer.kind;
+    stopMissionTimer();
+    failMission(kind === "return" ? "return-timeout" : "timeout");
+  }
+}
+
+function updateMissionPhoneTimer(dt) {
+  if (missionState.phoneTimer > 0) {
+    missionState.phoneTimer -= dt;
+    if (missionState.phoneTimer <= 0) {
+      hidePhoneOverlay();
+    }
+  }
+}
+
+function checkMissionWorldFailures() {
+  if (missionState.status === "active" && state.story.beacon && missionState.phase < 6) {
+    failMission("beacon");
+  }
+}
+
+/* ---- cleanup / fail / complete ---- */
+
+function cleanupMissionScene() {
+  clearMissionEnemies();
+  clearMissionPickups();
+  stopMissionTimer();
+  missionArrow.visible = false;
+  missionState.blackout = { active: false, timer: 0 };
+  missionState.hexInProgress = false;
+  for (const lamp of world.lamps) {
+    lamp.light.intensity = 1.85;
+  }
+}
+
+const missionFailReasons = {
+  timeout: "Morrow's deadline ran out.",
+  "return-timeout": "No-Face caught up before Chase got back.",
+  beacon: "The ritual beacon lit before the debt was settled.",
+  fear: "Chase panicked and lost the trail.",
+  abandoned: "Chase went home before finishing the job.",
+  defeated: "Chase went down before the debt was settled."
+};
+
+function failMission(reason) {
+  if (missionState.status !== "active") {
+    return;
+  }
+  missionState.status = "failed";
+  missionState.failureReason = reason;
+  missionState.objective = "Costume Debt failed.";
+  missionState.subObjective = missionFailReasons[reason] || "";
+  showToast("Costume Debt failed: " + (missionFailReasons[reason] || reason));
+  setRadio("Pumpkin FM: word is Morrow's done waiting on Chase.");
+  soundFail();
+  cleanupMissionScene();
+}
+
+function completeMission(outcome) {
+  if (missionState.status !== "active") {
+    return;
+  }
+  missionState.status = "complete";
+  missionState.finalOutcome = outcome;
+  missionState.objective = "Costume Debt resolved: " + outcome;
+  missionState.subObjective = "";
+  cleanupMissionScene();
+}
+
+function unlockCostume(key) {
+  const style = costumeStyles.find((s) => s.unlockKey === key);
+  if (style) {
+    style.locked = false;
+  }
+}
+
+function applyProtectiveCharm() {
+  missionState.rewards.protectiveCharm = true;
+  protectiveCharmRing.material.opacity = 0.75;
+}
+
+/* ---- Phase 1: The Accusation ---- */
+
+function startCostumeDebtMission() {
+  if (missionState.status !== "available") {
+    return;
+  }
+  missionState.status = "active";
+  missionState.phase = 1;
+  missionState.objective = "Hear Morrow out.";
+  openMorrowAccusation();
+}
+
+function openMorrowAccusation() {
+  const payOk = canAfford(1500);
+  openDialogue({
+    speaker: "Morrow",
+    text: "You lost my mask, Chase. The Grinning Saint doesn't just walk off.\n$1,500. Or bring it back. Or bring me something I can use. No-Face has been busier since it vanished — you've got until that beacon lights, or the night's gone.",
+    closable: true,
+    choices: [
+      {
+        label: "Pay the debt now — $1,500",
+        enabled: payOk,
+        reason: payOk ? "" : "Not enough cash.",
+        action: () => resolvePayDebt()
+      },
+      { label: "I'll find the mask.", action: () => chooseApproach("findMask") },
+      { label: "I'll find leverage on whoever took it.", action: () => chooseApproach("leverage") }
+    ]
+  });
+}
+
+function chooseApproach(approach) {
+  missionState.approach = approach;
+  missionState.phase = 2;
+  missionState.objective = "Find the lead. Check your phone.";
+  missionState.subObjective = "Dre might know something.";
+  startMissionTimer("main", 480);
+  showToast("Costume Debt: mission started.");
+  window.setTimeout(() => {
+    if (missionState.status === "active" && missionState.phase === 2) {
+      sendPhoneMessage("Dre", "Mask changed hands. Hearse Garage. Ask for Rook. Don't say my name.");
+      missionState.subObjective = "Head to Hearse Garage and ask for Rook.";
+    }
+  }, 3200);
+}
+
+function resolvePayDebt() {
+  if (!canAfford(1500)) {
+    return;
+  }
+  spend(1500);
+  completeMission("payDebt");
+  showToast("Debt paid. Morrow backs off.");
+  setRadio("Costume Crypt says the account's settled. Keep your nose clean, Chase.");
+  soundUpgrade();
+}
+
+/* ---- Phase 2: Find the Lead (Hearse Garage / Rook) ---- */
+
+function openRookDialogue() {
+  const bribeOk = canAfford(250);
+  openDialogue({
+    speaker: "Rook",
+    text: "Dre sent you? Cute. You want the mask's trail, that's not free — and staying quiet about it isn't either.",
+    closable: true,
+    choices: [
+      {
+        label: "Bribe him — $250",
+        enabled: bribeOk,
+        reason: bribeOk ? "" : "Not enough cash.",
+        action: () => resolveGarageRoute("bribe")
+      },
+      { label: "Threaten him.", action: () => resolveGarageRoute("threaten") },
+      { label: "Search the garage instead.", action: () => resolveGarageRoute("search") }
+    ]
+  });
+}
+
+function resolveGarageRoute(route) {
+  missionState.route.garage = route;
+  if (route === "bribe") {
+    spend(250);
+    missionState.relationships.rookTrust += 1;
+    missionState.heat.police += 4;
+    showToast("Rook takes the cash and talks.");
+    setRadio("Rook: mask went to Hex Market. Ask for nobody. Just look broke and desperate.");
+    advanceToHexMarket();
+  } else if (route === "threaten") {
+    missionState.relationships.rookTrust -= 2;
+    missionState.heat.police += 18;
+    missionState.flags.ambushPending = true;
+    showToast("Rook talks scared. Heat's up.");
+    setRadio("Rook: fine! Hex Market! Just — get off me.");
+    advanceToHexMarket();
+  } else if (route === "search") {
+    missionState.subObjective = "Find two clues around Hearse Garage.";
+    spawnGarageClues();
+  }
+}
+
+function spawnGarageClues() {
+  missionState.cluesFound = 0;
+  const positions = [
+    [garageZone.x + 3.4, garageZone.z - 2.6],
+    [garageZone.x - 3.1, garageZone.z + 2.2]
+  ];
+  positions.forEach(([x, z]) => {
+    spawnMissionPickup("clue", x, z, () => {
+      missionState.cluesFound += 1;
+      soundPickup();
+      if (missionState.cluesFound === 1) {
+        showToast("Clue found: a torn receipt, Hex Market stamp.");
+      } else {
+        showToast("Clue found: a scrawled note on burning the mask instead of moving it.");
+        missionState.inventory.destructionClue = true;
+      }
+      if (missionState.cluesFound >= 2) {
+        finishGarageSearch();
+      }
+    });
+  });
+}
+
+function finishGarageSearch() {
+  missionState.inventory.evidence = true;
+  const detected = Math.random() < 0.3;
+  if (detected) {
+    missionState.heat.police += 12;
+    state.health = Math.max(0, state.health - 10);
+    showToast("Rook clocks you on the way out.");
+    setRadio("Rook: hey — HEY. You didn't see anything.");
+  } else {
+    showToast("Clean search. Nobody saw a thing.");
+  }
+  setRadio("Garage search says Hex Market. Evidence in hand.");
+  advanceToHexMarket();
+}
+
+function advanceToHexMarket() {
+  if (missionState.flags.garageResolved) {
+    return;
+  }
+  missionState.flags.garageResolved = true;
+  missionState.phase = 3;
+  missionState.objective = "Something's wrong. Watch the street.";
+  triggerComplication();
+}
+
+/* ---- Phase 3: Complication ---- */
+
+function triggerComplication() {
+  if (missionState.flags.complicationFired) {
+    openHexMarketPhase();
+    return;
+  }
+  missionState.flags.complicationFired = true;
+  window.setTimeout(() => {
+    if (missionState.status === "active") {
+      sendPhoneMessage("Unknown", "Do not bring the mask back to Morrow. He knows what it does.");
+    }
+  }, 1200);
+  triggerBlackout(4.5);
+  state.fear = Math.min(100, state.fear + 14);
+  missionState.heat.supernatural += missionState.route.garage === "threaten" ? 20 : 12;
+  const angle = Math.random() * Math.PI * 2;
+  spawnMissionEnemy("wraith", chase.position.x + Math.cos(angle) * 9, chase.position.z + Math.sin(angle) * 9, {
+    hp: 1, speed: 2.6, damage: 7, fearGain: 10
+  });
+  showToast("Something's watching from the dark.");
+  window.setTimeout(() => {
+    if (missionState.status === "active" && missionState.phase === 3) {
+      openHexMarketPhase();
+    }
+  }, 2600);
+}
+
+function openHexMarketPhase() {
+  missionState.phase = 4;
+  missionState.objective = "Reach Hex Market and take the mask back.";
+  missionState.subObjective = "Talk to the broker to choose your approach.";
+}
+
+/* ---- Phase 4: Hex Market Infiltration ---- */
+
+function openHexBrokerDialogue() {
+  if (missionState.hexInProgress) {
+    showToast("Finish what you started here first.");
+    return;
+  }
+  openDialogue({
+    speaker: "The Broker",
+    text: "The Grinning Saint. Popular piece this year. You want it quiet, you want it loud, or you want to just buy it back?",
+    closable: true,
+    choices: [
+      { label: "Go stealth — slip in and take it.", action: () => startHexRoute("stealth") },
+      { label: "Go loud — take it by force.", action: () => startHexRoute("force") },
+      { label: "Make a deal.", action: () => openBrokerDeal() }
+    ]
+  });
+}
+
+function startHexRoute(route) {
+  missionState.route.hex = route;
+  missionState.hexInProgress = true;
+  if (route === "stealth") {
+    missionState.subObjective = "Disable both wards without being seen.";
+    spawnHexStealthPoints();
+  } else if (route === "force") {
+    missionState.subObjective = "Take down the hex guards with candy bombs.";
+    spawnHexGuards();
+  }
+}
+
+function spawnHexStealthPoints() {
+  const positions = [
+    [wardZone.x + 3, wardZone.z + 2.4],
+    [wardZone.x - 2.6, wardZone.z - 2.8]
+  ];
+  let done = 0;
+  positions.forEach(([x, z]) => {
+    spawnMissionPickup("glyph", x, z, () => {
+      done += 1;
+      soundPickup();
+      const guardPost = new THREE.Vector3(wardZone.x, 0, wardZone.z);
+      const risk = getFlatDistance(chase.position, guardPost) < 4 && Math.random() < 0.35;
+      if (risk) {
+        missionState.heat.supernatural += 10;
+        showToast("A ward flickers — something noticed.");
+      } else {
+        showToast(`Ward disabled (${done}/2).`);
+      }
+      if (done >= 2) {
+        finishHexInfiltration("stealth");
+      }
+    });
+  });
+}
+
+function spawnHexGuards() {
+  const angleA = Math.random() * Math.PI * 2;
+  spawnMissionEnemy("guard", wardZone.x + Math.cos(angleA) * 4, wardZone.z + Math.sin(angleA) * 4, {
+    hp: 1, speed: 2.3, damage: 11, fearGain: 5, onDefeated: () => checkHexGuardsCleared()
+  });
+  spawnMissionEnemy("guard", wardZone.x + Math.cos(angleA + Math.PI) * 4, wardZone.z + Math.sin(angleA + Math.PI) * 4, {
+    hp: 1, speed: 2.3, damage: 11, fearGain: 5, onDefeated: () => checkHexGuardsCleared()
+  });
+  showToast("Hex guards are up. Hit them with candy bombs.");
+}
+
+function checkHexGuardsCleared() {
+  const remaining = world.missionEnemies.filter((e) => e.kind === "guard").length;
+  if (remaining <= 0) {
+    finishHexInfiltration("force");
+  }
+}
+
+function openBrokerDeal() {
+  const cashOk = canAfford(500);
+  const candyOk = state.candy >= 3;
+  const evidenceOk = missionState.inventory.evidence;
+  openDialogue({
+    speaker: "The Broker",
+    text: "Cash, candy, or something with real weight. Your call.",
+    closable: true,
+    choices: [
+      { label: "Pay $500 cash.", enabled: cashOk, reason: cashOk ? "" : "Not enough cash.", action: () => resolveBrokerDeal("cash") },
+      { label: "Trade 3 loot stashes.", enabled: candyOk, reason: candyOk ? "" : "Need 3 loot stashes.", action: () => resolveBrokerDeal("candy") },
+      { label: "Offer up your evidence.", enabled: evidenceOk, reason: evidenceOk ? "" : "You don't have anything on anyone yet.", action: () => resolveBrokerDeal("evidence") }
+    ]
+  });
+}
+
+function resolveBrokerDeal(payType) {
+  missionState.route.hex = "deal";
+  missionState.hexInProgress = true;
+  if (payType === "cash") {
+    spend(500);
+  } else if (payType === "candy") {
+    state.candy = Math.max(0, state.candy - 3);
+  } else if (payType === "evidence") {
+    missionState.inventory.evidence = false;
+  }
+  missionState.relationships.brokerTrust += payType === "evidence" ? -1 : 1;
+  missionState.heat.supernatural += 8;
+  const betrayed = missionState.relationships.brokerTrust < 0 || Math.random() < 0.25;
+  if (betrayed) {
+    missionState.inventory.maskReal = false;
+    showToast("The broker hands it over a little too fast.");
+    setRadio("Something about that mask feels wrong.");
+  } else {
+    showToast("Deal done. Mask changes hands.");
+  }
+  finishHexInfiltration("deal");
+}
+
+function finishHexInfiltration(route) {
+  missionState.hexInProgress = false;
+  missionState.inventory.hasMask = true;
+  clearMissionPickups();
+  if (route === "stealth") {
+    missionState.reputation += 2;
+    missionState.heat.supernatural += 4;
+    missionState.inventory.evidence = true;
+  } else if (route === "force") {
+    missionState.heat.supernatural += 22;
+    missionState.heat.police += 10;
+    missionState.inventory.evidence = true;
+    missionState.flags.pursuitPrimed = true;
+  }
+  revealTruth();
+}
+
+/* ---- Phase 5: The Reveal ---- */
+
+function revealTruth() {
+  missionState.phase = 5;
+  showToast("Mask secured. Something's tucked inside the lining...");
+  window.setTimeout(() => {
+    if (missionState.status !== "active") {
+      return;
+    }
+    if (missionState.inventory.evidence) {
+      sendPhoneMessage("Unknown", "That's Morrow's handwriting on that ledger. He sold access to the mask. He didn't lose control — he gave it away.");
+    } else {
+      sendPhoneMessage("Unknown", "Ask Morrow why the Grinning Saint has his signature stitched inside the seam.");
+    }
+  }, 1500);
+  startReturnPhase();
+}
+
+/* ---- Phase 6: Return Under Pressure ---- */
+
+function startReturnPhase() {
+  missionState.phase = 6;
+  missionState.flags.returnTriggered = true;
+  missionState.objective = "Get back to Costume Crypt before the street closes in.";
+  missionState.subObjective = "No-Face is closer than usual.";
+  stopMissionTimer();
+  startMissionTimer("return", 100);
+  missionState.rewards.noFaceAggro = Math.max(missionState.rewards.noFaceAggro, missionState.heat.supernatural / 140);
+  triggerBlackout(3.5);
+  window.setTimeout(() => {
+    if (missionState.status === "active") {
+      sendPhoneMessage("Morrow", "Where is it. Bring it here. Now.");
+    }
+  }, 900);
+  if (missionState.flags.pursuitPrimed || missionState.route.garage === "threaten") {
+    const angle = Math.random() * Math.PI * 2;
+    spawnMissionEnemy("wraith", chase.position.x + Math.cos(angle) * 10, chase.position.z + Math.sin(angle) * 10, {
+      hp: 1, speed: 3.1, damage: 9, fearGain: 9
+    });
+  }
+  if (missionState.flags.ambushPending) {
+    missionState.flags.ambushPending = false;
+    window.setTimeout(() => {
+      if (missionState.status === "active") {
+        spawnMissionEnemy("guard", garageZone.x - 4, garageZone.z, { hp: 1, speed: 2.4, damage: 10, fearGain: 6 });
+        showToast("Rook's crew jumps you on the way out.");
+      }
+    }, 1800);
+  }
+}
+
+/* ---- Phase 7: Final Confrontation ---- */
+
+function openFinalConfrontation() {
+  missionState.phase = 7;
+  missionState.flags.finalOpen = true;
+  stopMissionTimer();
+  const hasMask = missionState.inventory.hasMask;
+  const hasEvidence = missionState.inventory.evidence;
+  const canBlackmail = hasEvidence && missionState.reputation >= 2;
+  const canSell = (missionState.route.hex === "deal" || missionState.relationships.brokerTrust > 0) && hasMask;
+  const canDestroy = missionState.inventory.destructionClue && hasMask;
+  const canPay = canAfford(1500);
+
+  openDialogue({
+    speaker: "Morrow",
+    text: hasMask
+      ? "You actually got it. ...Or you got something. Let's see it, Chase."
+      : "You're standing here empty-handed. Talk fast.",
+    closable: false,
+    choices: [
+      { label: "Return the mask.", enabled: hasMask, reason: hasMask ? "" : "You don't have the mask.", action: () => finalOutcomeReturnMask() },
+      { label: "Expose what you found.", enabled: hasEvidence, reason: hasEvidence ? "" : "You have no evidence against him.", action: () => finalOutcomeExpose() },
+      { label: "Blackmail him.", enabled: canBlackmail, reason: canBlackmail ? "" : "Needs evidence and more street reputation.", action: () => finalOutcomeBlackmail() },
+      { label: "Keep it — sell to the broker instead.", enabled: canSell, reason: canSell ? "" : "You'd need the mask and a line to the broker.", action: () => finalOutcomeSell() },
+      { label: "Destroy the mask.", enabled: canDestroy, reason: canDestroy ? "" : "You never found how to destroy it.", action: () => finalOutcomeDestroy() },
+      { label: "Just pay the $1,500.", enabled: canPay, reason: canPay ? "" : "Not enough cash.", action: () => resolvePayDebt() }
+    ]
+  });
+}
+
+function finalOutcomeReturnMask() {
+  if (!missionState.inventory.maskReal) {
+    missionState.relationships.morrowTrust -= 3;
+    missionState.heat.supernatural += 15;
+    missionState.worldEffects.morrowHostile = true;
+    completeMission("fakeExposed");
+    showToast("Morrow knows a fake the second he touches it.");
+    setRadio("Costume Crypt: Morrow's screaming about a fake. That's bad.");
+    soundFail();
+    return;
+  }
+  missionState.relationships.morrowTrust += 3;
+  missionState.heat.supernatural = Math.max(0, missionState.heat.supernatural - 15);
+  unlockCostume("grinningSaint");
+  missionState.rewards.fearResist = true;
+  if (!missionState.inventory.keptCopy) {
+    missionState.inventory.evidence = false;
+  }
+  completeMission("returnMask");
+  showToast("Mask returned. Grinning Saint costume unlocked.");
+  setRadio("Costume Crypt: Morrow's steady again. Chase is still welcome here.");
+  soundUpgrade();
+}
+
+function finalOutcomeExpose() {
+  missionState.relationships.morrowTrust = -5;
+  missionState.reputation += 3;
+  missionState.heat.police += 12;
+  missionState.worldEffects.morrowHostile = true;
+  state.cash += 200;
+  completeMission("exposeMorrow");
+  showToast("Morrow's secret is out. Costume Crypt goes cold on Chase.");
+  setRadio("Street's talking. Morrow sold access to a cursed mask. Costume Crypt's done pretending.");
+  soundUpgrade();
+}
+
+function finalOutcomeBlackmail() {
+  missionState.relationships.morrowTrust = -8;
+  state.cash += 900;
+  missionState.worldEffects.morrowHostile = true;
+  completeMission("blackmailMorrow");
+  showToast("Morrow pays up. He will not forget this.");
+  setRadio("Costume Crypt: Morrow's paying quiet money to keep this buried.");
+  soundUpgrade();
+}
+
+function finalOutcomeSell() {
+  state.cash += 1400;
+  missionState.heat.supernatural += 40;
+  missionState.rewards.noFaceAggro = Math.max(missionState.rewards.noFaceAggro, 0.5);
+  missionState.relationships.morrowTrust = -10;
+  missionState.worldEffects.morrowHostile = true;
+  unlockCostume("corruptedSaint");
+  completeMission("sellMask");
+  showToast("The broker pays big. No-Face is not going to calm down after this.");
+  setRadio("Pumpkin FM: something's very wrong near the old market tonight.");
+  soundUpgrade();
+}
+
+function finalOutcomeDestroy() {
+  state.fear = Math.max(0, state.fear - 20);
+  missionState.heat.supernatural = Math.max(0, missionState.heat.supernatural - 40);
+  missionState.rewards.fearResist = true;
+  missionState.relationships.morrowTrust = -4;
+  missionState.worldEffects.morrowHostile = true;
+  completeMission("destroyMask");
+  showToast("The Grinning Saint burns. Chase feels lighter.");
+  setRadio("Costume Crypt: Morrow's furious. Doesn't matter. That thing's gone.");
+  soundUpgrade();
+  applyProtectiveCharm();
+}
+
+/* ===================== end Costume Debt side mission ===================== */
+
 function startGame() {
   state.started = true;
   runStartTime = clock.elapsedTime;
@@ -2409,6 +4140,39 @@ ui.howButton.addEventListener("click", () => {
 
 window.addEventListener("keydown", (event) => {
   ensureAudio();
+  if (dialogue.open) {
+    if (event.code.startsWith("Digit")) {
+      const num = parseInt(event.code.replace("Digit", ""), 10);
+      if (num >= 1 && num <= 9) {
+        event.preventDefault();
+        selectChoice(num - 1);
+      }
+      return;
+    }
+    if (event.code === "ArrowUp" || event.code === "KeyW") {
+      event.preventDefault();
+      moveDialogueSelection(-1);
+      return;
+    }
+    if (event.code === "ArrowDown" || event.code === "KeyS") {
+      event.preventDefault();
+      moveDialogueSelection(1);
+      return;
+    }
+    if (event.code === "Enter") {
+      event.preventDefault();
+      confirmDialogueSelection();
+      return;
+    }
+    if (event.code === "Escape") {
+      event.preventDefault();
+      if (dialogue.node && dialogue.node.closable) {
+        closeDialogue();
+      }
+      return;
+    }
+    return;
+  }
   if (!state.started && (event.code === "Enter" || event.code === "Space")) {
     event.preventDefault();
     startGame();
@@ -2424,6 +4188,7 @@ window.addEventListener("keydown", (event) => {
     input.fireQueued = true;
   }
   if (event.code === "KeyE") input.interactQueued = true;
+  if (event.code === "KeyH") toggleHaunt();
   if (event.code === "KeyR" && (state.ended || state.win)) restartGame();
 });
 
@@ -2441,6 +4206,9 @@ canvas.addEventListener("mousedown", (event) => {
   ensureAudio();
   if (!state.started) {
     startGame();
+  }
+  if (dialogue.open) {
+    return;
   }
   if (event.button === 2) {
     input.dragging = true;
@@ -2477,6 +4245,15 @@ window.addEventListener("resize", () => {
 });
 
 function applyMovement(dt) {
+  if (input.locked) {
+    chaseModel.leftLeg.rotation.x *= Math.exp(-8 * dt);
+    chaseModel.rightLeg.rotation.x *= Math.exp(-8 * dt);
+    chaseModel.leftArm.rotation.x *= Math.exp(-8 * dt);
+    chaseModel.rightArm.rotation.x *= Math.exp(-8 * dt);
+    chase.rotation.z *= Math.exp(-8 * dt);
+    chaseModel.torso.rotation.x *= Math.exp(-8 * dt);
+    return;
+  }
   const moveVector = new THREE.Vector2(input.strafe, input.forward);
   const moveLength = moveVector.length();
   const sprinting = input.sprint && state.stamina > 5 && moveLength > 0.1;
@@ -2506,17 +4283,25 @@ function applyMovement(dt) {
     chase.rotation.y = Math.atan2(worldMove.x, worldMove.z);
 
     const swing = clock.elapsedTime * (sprinting ? 12 : 8);
-    chaseModel.leftLeg.rotation.x = Math.sin(swing) * 0.55;
-    chaseModel.rightLeg.rotation.x = Math.sin(swing + Math.PI) * 0.55;
-    chaseModel.leftArm.rotation.x = Math.sin(swing + Math.PI) * 0.4;
-    chaseModel.rightArm.rotation.x = Math.sin(swing) * 0.4;
-    chase.position.y = Math.sin(swing * 2) * 0.03;
+    const legAmp = sprinting ? 0.64 : 0.55;
+    const armAmp = sprinting ? 0.48 : 0.4;
+    chaseModel.leftLeg.rotation.x = Math.sin(swing) * legAmp;
+    chaseModel.rightLeg.rotation.x = Math.sin(swing + Math.PI) * legAmp;
+    chaseModel.leftArm.rotation.x = Math.sin(swing + Math.PI) * armAmp;
+    chaseModel.rightArm.rotation.x = Math.sin(swing) * armAmp;
+    chase.position.y = Math.sin(swing * 2) * (sprinting ? 0.045 : 0.03);
+
+    const leanTarget = -moveVector.x * (sprinting ? 0.16 : 0.09);
+    chase.rotation.z = THREE.MathUtils.lerp(chase.rotation.z, leanTarget, 1 - Math.exp(-10 * dt));
+    chaseModel.torso.rotation.x = THREE.MathUtils.lerp(chaseModel.torso.rotation.x, sprinting ? 0.14 : 0.03, 1 - Math.exp(-8 * dt));
   } else {
     chase.position.y *= Math.exp(-8 * dt);
     chaseModel.leftLeg.rotation.x *= Math.exp(-8 * dt);
     chaseModel.rightLeg.rotation.x *= Math.exp(-8 * dt);
     chaseModel.leftArm.rotation.x *= Math.exp(-8 * dt);
     chaseModel.rightArm.rotation.x *= Math.exp(-8 * dt);
+    chase.rotation.z *= Math.exp(-8 * dt);
+    chaseModel.torso.rotation.x *= Math.exp(-8 * dt);
   }
 
   if (sprinting) {
@@ -2526,34 +4311,18 @@ function applyMovement(dt) {
   }
 }
 
-function carSolidCollides(x, z, ignoreCar) {
-  for (const solid of world.solids) {
-    const nearestX = clamp(x, solid.minX, solid.maxX);
-    const nearestZ = clamp(z, solid.minZ, solid.maxZ);
-    if (Math.hypot(x - nearestX, z - nearestZ) < CAR_RADIUS) {
-      return true;
-    }
-  }
-  for (const other of world.cars) {
-    if (other === ignoreCar) {
-      continue;
-    }
-    if (getFlatDistance({ x, z }, other.group.position) < CAR_RADIUS * 1.55) {
-      return true;
-    }
-  }
-  return false;
-}
+/* ---- drivable cars ---- */
 
 function enterCar(car) {
   ensureAudio();
   state.driving = true;
   activeCar = car;
+  car.speed = 0;
   chase.visible = false;
+  chase.rotation.z = 0;
+  chaseModel.torso.rotation.x = 0;
   scene.add(chaseGlow);
   chaseGlow.position.set(car.group.position.x, car.group.position.y + 2.6, car.group.position.z);
-  chase.position.copy(car.group.position);
-  chase.rotation.y = car.group.rotation.y;
   showToast("Chase jacks the ride and floors it.");
   setRadio("Pumpkin FM traffic: a car just peeled out on the block. Watch for it.");
   startEngineSound();
@@ -2564,73 +4333,93 @@ function exitCar() {
     return;
   }
   const car = activeCar;
-  car.speed = 0;
-  const exitOffset = new THREE.Vector3(Math.cos(car.group.rotation.y), 0, -Math.sin(car.group.rotation.y)).multiplyScalar(1.9);
-  chase.position.copy(car.group.position).add(exitOffset);
-  chase.position.x = clamp(chase.position.x, -worldBounds, worldBounds);
-  chase.position.z = clamp(chase.position.z, -worldBounds, worldBounds);
-  chase.rotation.y = car.group.rotation.y;
+  const heading = car.group.rotation.y;
+  const rightVec = new THREE.Vector3(-Math.sin(heading), 0, -Math.cos(heading));
+  const exitX = clamp(car.group.position.x + rightVec.x * 1.9, -worldBounds, worldBounds);
+  const exitZ = clamp(car.group.position.z + rightVec.z * 1.9, -worldBounds, worldBounds);
+  chase.position.set(exitX, 0, exitZ);
   chase.add(chaseGlow);
   chaseGlow.position.set(0, 3.3, 1.9);
   chase.visible = true;
   state.driving = false;
   activeCar = null;
-  showToast("Back on foot.");
+  car.speed = 0;
+  showToast("Chase hops out.");
   stopEngineSound();
 }
 
-function updateDriving(dt) {
+function driveCar(dt) {
   const car = activeCar;
-  const group = car.group;
+  if (!car) {
+    state.driving = false;
+    return;
+  }
+  const throttleInput = input.locked ? 0 : input.forward;
+  const steerInput = input.locked ? 0 : input.strafe;
 
-  if (input.forward > 0) {
-    car.speed = Math.min(CAR_MAX_SPEED, car.speed + CAR_ACCEL * dt);
-  } else if (input.forward < 0) {
-    car.speed = Math.max(CAR_REVERSE_SPEED, car.speed - CAR_ACCEL * dt);
+  const maxSpeed = 15.5;
+  const maxReverse = -6.5;
+  const accel = 11;
+  const brakeAccel = 16;
+  const drag = 5.5;
+
+  if (throttleInput > 0) {
+    car.speed = Math.min(maxSpeed, car.speed + (car.speed < 0 ? brakeAccel : accel) * dt);
+  } else if (throttleInput < 0) {
+    car.speed = Math.max(maxReverse, car.speed - (car.speed > 0 ? brakeAccel : accel) * dt);
   } else {
-    const drag = CAR_DRAG * dt;
-    if (car.speed > 0) {
-      car.speed = Math.max(0, car.speed - drag);
-    } else if (car.speed < 0) {
-      car.speed = Math.min(0, car.speed + drag);
+    car.speed -= Math.sign(car.speed) * Math.min(Math.abs(car.speed), drag * dt);
+  }
+
+  const steerAuthority = clamp(Math.abs(car.speed) / 3, 0.15, 1);
+  if (steerInput !== 0 && Math.abs(car.speed) > 0.05) {
+    const turnRate = 1.9 * steerAuthority * Math.sign(car.speed || 1);
+    car.group.rotation.y += -steerInput * turnRate * dt;
+  }
+
+  const heading = car.group.rotation.y;
+  const forwardVec = new THREE.Vector3(Math.cos(heading), 0, -Math.sin(heading));
+  const carRadius = 1.55;
+  const collides = (x, z) => {
+    const hitsSolid = world.solids.some((solid) => {
+      const nearestX = clamp(x, solid.minX, solid.maxX);
+      const nearestZ = clamp(z, solid.minZ, solid.maxZ);
+      return Math.hypot(x - nearestX, z - nearestZ) < carRadius;
+    });
+    if (hitsSolid) {
+      return true;
     }
-  }
+    return world.cars.some((other) => other !== car && getFlatDistance({ x, z }, other.group.position) < carRadius * 1.6);
+  };
 
-  if (input.sprint && car.speed !== 0) {
-    const brake = CAR_BRAKE * dt;
-    if (car.speed > 0) {
-      car.speed = Math.max(0, car.speed - brake);
-    } else {
-      car.speed = Math.min(0, car.speed + brake);
-    }
-  }
-
-  if (Math.abs(car.speed) > 0.15) {
-    const speedFrac = clamp(Math.abs(car.speed) / CAR_MAX_SPEED, 0, 1);
-    const turnDir = car.speed > 0 ? 1 : -1;
-    group.rotation.y += input.strafe * CAR_TURN_RATE * (0.35 + speedFrac * 0.65) * turnDir * dt;
-  }
-
-  const forward = new THREE.Vector3(Math.sin(group.rotation.y), 0, Math.cos(group.rotation.y));
-  const nextX = clamp(group.position.x + forward.x * car.speed * dt, -worldBounds, worldBounds);
-  const nextZ = clamp(group.position.z + forward.z * car.speed * dt, -worldBounds, worldBounds);
-
-  if (!carSolidCollides(nextX, group.position.z, car)) {
-    group.position.x = nextX;
+  const nextX = clamp(car.group.position.x + forwardVec.x * car.speed * dt, -worldBounds, worldBounds);
+  const nextZ = clamp(car.group.position.z + forwardVec.z * car.speed * dt, -worldBounds, worldBounds);
+  if (!collides(nextX, car.group.position.z)) {
+    car.group.position.x = nextX;
   } else {
-    car.speed *= 0.2;
+    car.speed *= 0.35;
   }
-  if (!carSolidCollides(group.position.x, nextZ, car)) {
-    group.position.z = nextZ;
+  if (!collides(car.group.position.x, nextZ)) {
+    car.group.position.z = nextZ;
   } else {
-    car.speed *= 0.2;
+    car.speed *= 0.35;
   }
 
-  chase.position.copy(group.position);
-  chase.rotation.y = group.rotation.y;
-  chaseGlow.position.set(group.position.x, group.position.y + 2.6, group.position.z);
-
+  chase.position.set(car.group.position.x, 0, car.group.position.z);
   updateEngineSound(car.speed);
+}
+
+function updateDrivingCamera(dt) {
+  const car = activeCar;
+  if (!car) {
+    return;
+  }
+  const heading = car.group.rotation.y;
+  const backVec = new THREE.Vector3(-Math.cos(heading), 0, Math.sin(heading));
+  const offset = backVec.multiplyScalar(7.6).add(new THREE.Vector3(0, 4.6, 0));
+  const ideal = car.group.position.clone().add(offset);
+  camera.position.lerp(ideal, 1 - Math.exp(-5 * dt));
+  camera.lookAt(car.group.position.x, 1.2, car.group.position.z);
 }
 
 function updateCandies(dt) {
@@ -2680,7 +4469,8 @@ function updateEnemy(dt) {
     enemyVelocity.multiplyScalar(Math.exp(-5 * dt));
   } else {
     noFaceModel.torso.material.emissiveIntensity = 0.12;
-    const chaseSpeed = 2.5 + smoothstep(10, 80, state.fear) * 1.4 + (state.mission === "escape" ? 0.55 : 0);
+    const missionAggro = missionState.rewards.noFaceAggro + (missionState.status === "active" ? missionState.heat.supernatural / 200 : 0);
+    const chaseSpeed = 2.5 + smoothstep(10, 80, state.fear) * 1.4 + (state.mission === "escape" ? 0.55 : 0) + missionAggro;
     const slow = 1 - lampInfluence * 0.18;
     if (distance > 1.1) {
       const move = new THREE.Vector3(toPlayer.x, 0, toPlayer.z).normalize();
@@ -2692,13 +4482,16 @@ function updateEnemy(dt) {
   if (distance < 1.65 && clock.elapsedTime - state.lastDamageTime > 0.9 && !state.ended && !state.win) {
     state.lastDamageTime = clock.elapsedTime;
     state.health = Math.max(0, state.health - 13);
-    const fearGain = state.costumeIndex !== 0 ? 8 : 14;
+    const fearGain = (state.costumeIndex !== 0 ? 8 : 14) * (missionState.rewards.fearResist ? 0.6 : 1);
     state.fear = Math.min(100, state.fear + fearGain);
     showToast("No-Face got a swipe in.");
     soundFail();
   }
 
   if (state.health <= 0 || state.fear >= 100) {
+    if (missionState.status === "active") {
+      failMission(state.health <= 0 ? "defeated" : "fear");
+    }
     state.ended = true;
     const { score } = computeScore(false);
     const isNewBest = setHighScoreIfBetter(score);
@@ -2743,6 +4536,31 @@ function updateProjectiles(dt) {
       continue;
     }
 
+    let hitMissionEnemy = false;
+    for (const enemy of world.missionEnemies) {
+      const enemyHitDistance = getFlatDistance(shot.projectile.position, enemy.group.position);
+      if (enemyHitDistance < hitRadius + 0.3 && Math.abs(shot.projectile.position.y - (enemy.baseY + 1.2)) < 1.8) {
+        enemy.hp -= 1;
+        missionState.heat.supernatural = Math.min(100, missionState.heat.supernatural + (enemy.kind === "guard" ? 2 : 4));
+        soundHit();
+        if (enemy.hp <= 0) {
+          showToast(enemy.kind === "guard" ? "Hex guard down." : "It scatters into mist.");
+          const callback = enemy.onDefeated;
+          removeMissionEnemy(enemy);
+          if (callback) callback();
+        } else {
+          showToast("Hit landed.");
+        }
+        scene.remove(shot.projectile);
+        world.projectiles.splice(i, 1);
+        hitMissionEnemy = true;
+        break;
+      }
+    }
+    if (hitMissionEnemy) {
+      continue;
+    }
+
     if (shot.projectile.position.y < 0 || shot.age > 3.2) {
       scene.remove(shot.projectile);
       world.projectiles.splice(i, 1);
@@ -2751,8 +4569,45 @@ function updateProjectiles(dt) {
 }
 
 function updateAtmosphere(dt) {
+  // streetlamps – subtle flicker, rare outages
   for (const lamp of world.lamps) {
-    lamp.light.intensity = 1.85 + Math.sin(clock.elapsedTime * 6 + lamp.phase) * 0.24 + Math.random() * 0.08;
+    lamp.flickerTime += dt;
+    const baseIntensity = 1.65;
+    let intensity = baseIntensity;
+    const emissiveBase = 0.85;
+    let emissiveIntensity = emissiveBase;
+
+    if (lamp.isDead) {
+      // dead lamp – occasional sputter back to life
+      if (Math.random() < 0.004) {
+        lamp.isDead = false;
+        lamp.flickerTime = 0;
+      }
+      intensity = 0.15 + Math.random() * 0.08;
+      emissiveIntensity = 0.12;
+    } else {
+      // subtle flicker
+      const buzz = Math.sin(clock.elapsedTime * 14 + lamp.phase * 3.7) * 0.06;
+      const slow = Math.sin(clock.elapsedTime * 1.8 + lamp.phase) * 0.08;
+      const noise = (Math.random() - 0.5) * 0.035;
+      intensity = baseIntensity + buzz + slow + noise;
+
+      // occasional flicker – 0.6% chance per frame
+      if (Math.random() < 0.006) {
+        intensity *= 0.45 + Math.random() * 0.35;
+      }
+      // rare blackout – 0.015% chance
+      if (Math.random() < 0.00015) {
+        lamp.isDead = true;
+        lamp.flickerTime = 0;
+      }
+      intensity = Math.max(0.55, Math.min(1.95, intensity));
+      emissiveIntensity = 0.55 + (intensity / baseIntensity) * 0.4;
+    }
+    lamp.light.intensity = intensity;
+    if (lamp.lantern && lamp.lantern.material && lamp.lantern.material.emissiveIntensity !== undefined) {
+      lamp.lantern.material.emissiveIntensity = emissiveIntensity;
+    }
   }
 
   chaseGlow.intensity = 1.2 + Math.sin(clock.elapsedTime * 2.4) * 0.12;
@@ -2797,6 +4652,182 @@ function updateAtmosphere(dt) {
   rain.position.set(chase.position.x, 0, chase.position.z);
 }
 
+/* ---- haunted houses – breathing / melting ---- */
+
+function updateHauntedHouses(dt) {
+  const h = state.haunt;
+  h.t += dt;
+
+  // auto-trigger when beacon lights, or when No-Face is close
+  if (!h.active && state.story.beacon) {
+    h.active = true;
+    h.intensity = 0.01;
+    showToast("The street is waking up…");
+    setRadio("Pumpkin FM: — is anyone out there? The houses — they're breathing —");
+  }
+
+  // ease intensity in/out
+  const target = h.active ? 1 : 0;
+  h.intensity += (target - h.intensity) * dt * 1.8;
+
+  if (h.intensity < 0.001) {
+    // snap everything clean and bail early
+    for (const house of world.houses) {
+      if (!house.wallMorphs) continue;
+      for (const p of house.wallMorphs) {
+        p.mesh.position.copy(p.basePos);
+        p.mesh.scale.copy(p.baseScale);
+        p.mesh.rotation.set(p.baseRot.x, p.baseRot.y, p.baseRot.z);
+      }
+      for (const p of house.roofMorphs) {
+        p.mesh.position.copy(p.basePos);
+        p.mesh.scale.copy(p.baseScale);
+        p.mesh.rotation.set(p.baseRot.x, p.baseRot.y, p.baseRot.z);
+      }
+      for (const p of house.doorMorphs) {
+        p.mesh.position.copy(p.basePos);
+        p.mesh.scale.copy(p.baseScale);
+      }
+    }
+    return;
+  }
+
+  const k = h.intensity;
+  const k2 = k * k; // ease-in feel
+  const time = h.t;
+
+  for (const house of world.houses) {
+    if (!house.wallMorphs) continue;
+
+    const phase = house.hauntPhase;
+    const phase2 = house.hauntPhase2;
+
+    // breathing pulse – slow inhale/exhale
+    const breathe = Math.sin(time * 1.15 + phase) * 0.5 + 0.5; // 0..1
+    const breatheSlow = Math.sin(time * 0.72 + phase2) * 0.5 + 0.5;
+
+    // melt wobble
+    const wob = Math.sin(time * 2.1 + phase);
+    const wob2 = Math.cos(time * 1.67 + phase2);
+
+    // walls – breathe + sag
+    for (let i = 0; i < house.wallMorphs.length; i++) {
+      const p = house.wallMorphs[i];
+      const m = p.mesh;
+      const bp = p.basePos;
+      const bs = p.baseScale;
+
+      const ib = 0.92 + breathe * 0.16 * k2; // X/Z puff
+      const ob = 0.92 + breatheSlow * 0.14 * k2;
+      const ySquash = 1 - breathe * 0.055 * k;
+
+      m.scale.set(bs.x * ib, bs.y * ySquash, bs.z * ob);
+      m.position.set(
+        bp.x + wob * 0.035 * k,
+        bp.y - breathe * 0.065 * k,
+        bp.z + wob2 * 0.03 * k
+      );
+      m.rotation.set(
+        p.baseRot.x + wob * 0.022 * k,
+        p.baseRot.y,
+        p.baseRot.z + wob2 * 0.018 * k
+      );
+
+      // color shift -> sick flesh / haunted
+      if (house.wallMaterials && house.wallMaterials[0]) {
+        const mat = house.wallMaterials[0];
+        const bc = house.wallBaseColor;
+        // lerp toward desaturated bruised purple
+        mat.color.r = bc.r * (1 - 0.45 * k) + 0.18 * k;
+        mat.color.g = bc.g * (1 - 0.62 * k) + 0.06 * k;
+        mat.color.b = bc.b * (1 - 0.28 * k) + 0.16 * k;
+        mat.emissive.setRGB(0.06 * k, 0.008 * k, 0.035 * k);
+        mat.emissiveIntensity = 0.35 * k;
+      }
+    }
+
+    // roof – drip / sag / tilt
+    for (const p of house.roofMorphs) {
+      const m = p.mesh;
+      const bp = p.basePos;
+      const br = p.baseRot;
+      const sag = breathe * 0.11 * k;
+      m.position.set(
+        bp.x + wob * 0.05 * k,
+        bp.y - sag * 0.9,
+        bp.z + wob2 * 0.04 * k
+      );
+      m.scale.set(
+        p.baseScale.x * (1 + wob * 0.04 * k),
+        p.baseScale.y * (1 - sag * 0.35),
+        p.baseScale.z * (1 + wob2 * 0.035 * k)
+      );
+      m.rotation.set(
+        br.x + wob * 0.045 * k,
+        br.y,
+        br.z + wob2 * 0.038 * k
+      );
+      if (house.roofMaterials && house.roofMaterials[0]) {
+        const mat = house.roofMaterials[0];
+        const bc = house.roofBaseColor;
+        mat.color.r = bc.r * (1 - 0.3 * k) + 0.12 * k;
+        mat.color.g = bc.g * (1 - 0.5 * k) + 0.025 * k;
+        mat.color.b = bc.b * (1 - 0.15 * k) + 0.06 * k;
+        mat.emissive.setRGB(0.04 * k, 0.005 * k, 0.015 * k);
+      }
+    }
+
+    // doors/windows – pulse / flicker eyes
+    for (let i = 0; i < house.doorMorphs.length; i++) {
+      const p = house.doorMorphs[i];
+      const m = p.mesh;
+      const bp = p.basePos;
+      const pulse = 0.96 + Math.sin(time * 3.2 + phase + i) * 0.08 * k;
+      m.scale.set(p.baseScale.x * pulse, p.baseScale.y, p.baseScale.z);
+      m.position.set(bp.x, bp.y, bp.z);
+    }
+    if (house.windowMats) {
+      for (let i = 0; i < house.windowMats.length; i++) {
+        const mat = house.windowMats[i];
+        const bc = house.windowBaseColors[i];
+        // windows go blood-amber / flicker like eyes
+        const flick = 0.7 + Math.sin(time * 9 + phase + i * 1.7) * 0.3;
+        const eye = Math.min(1, k * flick);
+        mat.color.r = bc.r * (1 - eye) + 1.0 * eye;
+        mat.color.g = bc.g * (1 - eye) + 0.18 * eye;
+        mat.color.b = bc.b * (1 - eye) + 0.04 * eye;
+        mat.opacity = 0.95 + eye * 0.05;
+      }
+    }
+
+    // whole house subtly leans/breathes
+    const leanX = Math.sin(time * 0.84 + phase) * 0.028 * k;
+    const leanZ = Math.cos(time * 0.71 + phase2) * 0.024 * k;
+    house.group.rotation.x = leanX;
+    house.group.rotation.z = leanZ;
+    // keep Y rotation at 0 (houses aren't rotated)
+  }
+}
+
+function toggleHaunt(force) {
+  const h = state.haunt;
+  h.active = force !== undefined ? force : !h.active;
+  if (h.active) {
+    showToast("THE VEIL DROPS — the houses are alive.");
+    setRadio("Pumpkin FM: !! — run Chase, RUN —");
+    soundFail();
+  } else {
+    showToast("The street exhales… houses going still.");
+  }
+  // reset house group tilts when turning off
+  if (!h.active) {
+    for (const house of world.houses) {
+      house.group.rotation.x = 0;
+      house.group.rotation.z = 0;
+    }
+  }
+}
+
 function updateTargetArrow() {
   const target = currentObjectiveTarget();
   if (!target) {
@@ -2833,6 +4864,11 @@ function updateMissionProximity() {
 }
 
 function runQueuedActions() {
+  if (input.locked) {
+    input.fireQueued = false;
+    input.interactQueued = false;
+    return;
+  }
   if (input.fireQueued) {
     if (!state.driving) {
       shootEgg();
@@ -2845,13 +4881,13 @@ function runQueuedActions() {
       exitCar();
     } else {
       const { car, distance: carDistance } = nearestCar();
-      if (car && carDistance <= car.entryRadius) {
+      const { zone, distance } = nearestZone();
+      const carClose = car && carDistance <= carEnterRadius;
+      const zoneClose = zone && distance <= zone.radius + 1.1;
+      if (carClose && (!zoneClose || carDistance <= distance)) {
         enterCar(car);
-      } else {
-        const { zone, distance } = nearestZone();
-        if (zone && distance <= zone.radius + 1.1) {
-          interactWithZone(zone);
-        }
+      } else if (zoneClose) {
+        interactWithZone(zone);
       }
     }
     input.interactQueued = false;
@@ -2872,22 +4908,37 @@ function tick() {
     }
 
     if (state.driving) {
-      updateDriving(dt);
+      driveCar(dt);
     } else {
       applyMovement(dt);
     }
     updateCandies(dt);
     updateEnemy(dt);
     updateProjectiles(dt);
+    updateDrainClowns(dt);
+    updateMissionEnemies(dt);
+    updateMissionPickups(dt);
+    updateMissionTimer(dt);
+    updateMissionPhoneTimer(dt);
+    checkMissionWorldFailures();
     updateAtmosphere(dt);
+    updateHauntedHouses(dt);
+    updateBlackout(dt);
     updateTargetArrow();
-    updateCamera(dt);
+    updateMissionArrow();
+    if (state.driving) {
+      updateDrivingCamera(dt);
+    } else {
+      updateCamera(dt);
+    }
     updateMissionProximity();
     updatePrompt();
     runQueuedActions();
   } else {
     updateAtmosphere(dt);
+    updateHauntedHouses(dt);
     updateTargetArrow();
+    updateMissionArrow();
     updateCamera(dt);
   }
 
@@ -2907,6 +4958,7 @@ function tick() {
 
   refreshMissionProgress();
   updateStatusUI();
+  updateMissionPanel();
   renderer.render(scene, camera);
 }
 
