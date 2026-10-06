@@ -46,6 +46,7 @@
     width: 100vw;
     height: 100vh;
     cursor: crosshair;
+    touch-action: none;
   }
 
   .overlay {
@@ -306,6 +307,7 @@
 
   #centerCard {
     position: absolute;
+    touch-action: manipulation;
     left: 50%;
     top: 50%;
     width: min(560px, calc(100vw - 32px));
@@ -344,6 +346,8 @@
 
   button {
     appearance: none;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
     border: 0;
     border-radius: 999px;
     padding: 12px 18px;
@@ -783,8 +787,8 @@
   <p>Slip Chase into a disguise, raid the block for gear, light the ritual beacon, and outrun No-Face back to the safehouse. Any parked car on the block is fair game, hop in and drive.</p>
   <p class="score-line" id="bestScoreLine"></p>
   <div class="button-row">
-    <button id="startButton">Start the Night</button>
-    <button class="secondary" id="howButton">Show Mission</button>
+    <button id="startButton" type="button">Start the Night</button>
+    <button class="secondary" id="howButton" type="button">Show Mission</button>
   </div>
 </section>
 
@@ -2899,7 +2903,7 @@ function interactWithZone(zone) {
           <button id="restartWin">Run It Again</button>
         </div>
       `;
-      document.getElementById("restartWin").addEventListener("click", restartGame);
+      bindPress(document.getElementById("restartWin"), restartGame);
       updateObjectiveText();
       return;
     }
@@ -4120,6 +4124,9 @@ function finalOutcomeDestroy() {
 /* ===================== end Costume Debt side mission ===================== */
 
 function startGame() {
+  if (state.started) {
+    return;
+  }
   state.started = true;
   runStartTime = clock.elapsedTime;
   ui.centerCard.classList.add("hidden");
@@ -4133,8 +4140,19 @@ function restartGame() {
   window.location.reload();
 }
 
-ui.startButton.addEventListener("click", startGame);
-ui.howButton.addEventListener("click", () => {
+function bindPress(element, handler) {
+  const run = (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    handler(event);
+  };
+  element.addEventListener("click", run);
+  element.addEventListener("pointerup", run);
+  element.addEventListener("touchend", run, { passive: false });
+}
+
+bindPress(ui.startButton, startGame);
+bindPress(ui.howButton, () => {
   ui.centerCard.querySelector("p").textContent = "Mission route: hit Costume Crypt for Chase's disguise, break into Hearse Garage for the keys, grab the ward sigil from Hex Market, light the beacon, then sprint Chase home. Loot stashes fund upgrades, lamp light lowers fear, candy bombs still buy time against No-Face, and any parked car on the block is yours to steal and drive.";
 });
 
@@ -4506,7 +4524,7 @@ function updateEnemy(dt) {
         <button id="restartLose">Restart</button>
       </div>
     `;
-    document.getElementById("restartLose").addEventListener("click", restartGame);
+    bindPress(document.getElementById("restartLose"), restartGame);
     updateObjectiveText();
   }
 }
