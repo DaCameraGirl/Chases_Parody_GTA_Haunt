@@ -788,8 +788,17 @@
   </div>
 </section>
 
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
 <script type="module">
-import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js";
+import * as THREE from "three";
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 
 const canvas = document.getElementById("scene");
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
@@ -2040,7 +2049,15 @@ function createCharacter(primary, accent, profile = {}) {
 
 /* ===================== DRAIN CLOWNS ===================== */
 
+let drainClownTemplate = null;
+
 function buildDrainClown() {
+  if (drainClownTemplate) {
+    const group = drainClownTemplate.clone();
+    group.visible = false;
+    return { group, head: null, leftEye: null, rightEye: null };
+  }
+
   const group = new THREE.Group();
 
   // silver / grey clown suit
@@ -2482,7 +2499,30 @@ const noFace = noFaceModel.group;
 noFace.position.set(10, 0, -10);
 scene.add(noFace);
 
-initDrainClowns();
+const CLOWN_GLB_URL = "./assets/evil-clown.glb";
+const CLOWN_TARGET_HEIGHT = 2.45;
+new GLTFLoader().load(
+  CLOWN_GLB_URL,
+  (gltf) => {
+    const model = gltf.scene;
+    model.traverse((child) => {
+      if (child.isMesh) {
+        child.castShadow = true;
+      }
+    });
+    const size = new THREE.Box3().setFromObject(model).getSize(new THREE.Vector3());
+    if (size.y > 0) {
+      model.scale.setScalar(CLOWN_TARGET_HEIGHT / size.y);
+    }
+    drainClownTemplate = model;
+    initDrainClowns();
+  },
+  undefined,
+  (err) => {
+    console.warn("Evil clown GLB failed to load, using fallback model.", err);
+    initDrainClowns();
+  }
+);
 
 const noFaceMask = new THREE.Mesh(
   new THREE.SphereGeometry(0.22, 12, 12),
