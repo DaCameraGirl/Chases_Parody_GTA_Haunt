@@ -2748,6 +2748,58 @@ function nextUnlockedCostumeIndex(start) {
 
 applyChaseCostume(state.costumeIndex);
 
+const CHASE_GLB_URL = "./assets/chase.glb";
+const CHASE_TARGET_HEIGHT = 3.43;
+new GLTFLoader().load(
+  CHASE_GLB_URL,
+  (gltf) => {
+    const model = gltf.scene;
+    model.traverse((child) => {
+      if (child.isMesh) {
+        child.castShadow = true;
+      }
+    });
+    const size = new THREE.Box3().setFromObject(model).getSize(new THREE.Vector3());
+    if (size.y > 0) {
+      model.scale.setScalar(CHASE_TARGET_HEIGHT / size.y);
+    }
+
+    const glbTorso = model.getObjectByName("torso");
+    const glbLeftArm = model.getObjectByName("left-arm");
+    const glbRightArm = model.getObjectByName("right-arm");
+    const glbLeftLeg = model.getObjectByName("left-leg");
+    const glbRightLeg = model.getObjectByName("right-leg");
+    if (!glbTorso || !glbLeftArm || !glbRightArm || !glbLeftLeg || !glbRightLeg) {
+      return;
+    }
+
+    // Hide every primitive mesh/group (costume recolor code keeps a safe,
+    // simply-invisible target to write to - see applyChaseCostume). The
+    // walk-cycle animation in applyMovement() only ever touches the five
+    // fields repointed below, so swapping those references is enough to
+    // carry the existing animation over to the GLB without touching it.
+    for (const key of Object.keys(chaseModel)) {
+      const part = chaseModel[key];
+      if (part && part !== chaseModel.group && part !== chaseModel.shadow && typeof part.visible === "boolean") {
+        part.visible = false;
+      }
+    }
+
+    chaseModel.torso = glbTorso;
+    chaseModel.leftArm = glbLeftArm;
+    chaseModel.rightArm = glbRightArm;
+    chaseModel.leftLeg = glbLeftLeg;
+    chaseModel.rightLeg = glbRightLeg;
+
+    chase.add(model);
+  },
+  undefined,
+  () => {
+    // Falls back to the primitive block-person automatically - nothing
+    // was hidden, so the existing visible model just keeps working.
+  }
+);
+
 const noFaceModel = createCharacter(0x441013, 0x22070b, { kind: "noface" });
 const noFace = noFaceModel.group;
 noFace.position.set(10, 0, -10);
