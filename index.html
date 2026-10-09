@@ -866,6 +866,54 @@
   #touchInteractBtn {
     bottom: max(32px, calc(env(safe-area-inset-bottom) + 32px));
   }
+
+  #bodySwitcher {
+    position: absolute;
+    left: 50%;
+    top: max(12px, env(safe-area-inset-top));
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    background: rgba(8, 12, 25, 0.76);
+    border: 1px solid rgba(255, 153, 71, 0.34);
+    border-radius: 999px;
+    z-index: 12;
+    pointer-events: auto;
+  }
+
+  .bodySwitcherLabel {
+    font: 700 0.62rem/1 "Azeret Mono", monospace;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding-right: 4px;
+    white-space: nowrap;
+  }
+
+  .bodySwitcherBtn {
+    padding: 4px 10px;
+    font-size: 0.72rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--ink);
+    white-space: nowrap;
+  }
+
+  .bodySwitcherBtn.active {
+    background: var(--accent);
+    color: #1a1208;
+    font-weight: 700;
+  }
+
+  @media (max-width: 980px) {
+    #bodySwitcher {
+      top: auto;
+      bottom: max(190px, calc(env(safe-area-inset-bottom) + 190px));
+      transform: translateX(-50%) scale(0.82);
+    }
+  }
 </style>
 </head>
 <body>
@@ -1000,6 +1048,12 @@
   </div>
   <button id="touchFireBtn" type="button">🍬</button>
   <button id="touchInteractBtn" type="button">🚪</button>
+</div>
+
+<div id="bodySwitcher">
+  <span class="bodySwitcherLabel">Body (branch preview)</span>
+  <button class="bodySwitcherBtn" type="button" data-body="longsleeve">Long Sleeve</button>
+  <button class="bodySwitcherBtn" type="button" data-body="man">Man</button>
 </div>
 
 <div id="crosshair"></div>
@@ -2803,6 +2857,14 @@ new GLTFLoader().load(
     }
 
     chase.add(model);
+
+    // This whole head group (skull + hair + nose + ears + chin, already
+    // carrying the face-texture + emissive fix above) is the reusable
+    // template grafted onto the upgraded Quaternius bodies below. Clone it
+    // per body so each body owns independent material/transform state.
+    chaseHeadTemplate = model.getObjectByName("head");
+    loadBodyVariant("longsleeve", "./assets/body-man-longsleeve.glb", true);
+    loadBodyVariant("man", "./assets/body-man.glb", false);
   },
   undefined,
   () => {
@@ -2810,6 +2872,220 @@ new GLTFLoader().load(
     // was hidden, so the existing visible model just keeps working.
   }
 );
+
+// ===================== Upgraded body variants (feature branch) =====================
+// Real clothed/rigged low-poly bodies (Quaternius "Animated Men Pack", CC0 -
+// see assets/THIRD_PARTY_LICENSES.md) with Chase's own face grafted onto
+// their Head bone, driven by real Idle/Walk/Run clips via AnimationMixer
+// instead of the hand-rotated limb animation. Falls back to the chase.glb
+// full-body swap above (and ultimately the primitive block-person) if these
+// fail to load - every stage here is additive, nothing upstream is removed.
+let chaseHeadTemplate = null;
+const bodyVariants = {};
+let activeBodyKey = null;
+const BODY_ANIM_FADE = 0.25;
+
+function loadBodyVariant(key, url, isPreferredDefault) {
+  new GLTFLoader().load(
+    url,
+    (gltf) => {
+      const model = gltf.scene;
+      model.traverse((child) => {
+        if (child.isMesh) {
+          child.castShadow = true;
+        }
+        // Each clothing/skin/hair region is its own SkinnedMesh primitive
+        // (named via its material, not the object). Hiding Hair + Eyes is a
+        // real mesh-level removal, not a z-fighting hack.
+        if (child.isSkinnedMesh && child.material && (child.material.name === "Hair" || child.material.name === "Eyes")) {
+          child.visible = false;
+        }
+        // Sizing Chase's head to fully occlude the body's own built-in face
+        // was tried first and measurably failed - the built-in head (eyes
+        // removed, but still with its own sculpted nose/jaw/ears) is wider
+        // than Chase's head, so it kept showing through as a second,
+        // competing face behind his. The actual fix is removing those
+        // vertices: the Skin primitive's skinIndex/skinWeight data says
+        // exactly which vertices the Head bone drives, so cut only the
+        // triangles that touch one, leaving the arms/hands (same material)
+        // untouched.
+        if (child.isSkinnedMesh && child.material && child.material.name === "Skin") {
+          const skeleton = child.skeleton;
+          const headBoneIndex = skeleton.bones.findIndex((b) => b.name === "Head");
+          if (headBoneIndex !== -1) {
+            const geo = child.geometry;
+            const skinIndexAttr = geo.attributes.skinIndex;
+            const skinWeightAttr = geo.attributes.skinWeight;
+            const posAttr = geo.attributes.position;
+            const isHeadVertex = new Uint8Array(posAttr.count);
+            for (let i = 0; i < posAttr.count; i++) {
+              for (let j = 0; j < 4; j++) {
+                if (skinIndexAttr.getComponent(i, j) === headBoneIndex && skinWeightAttr.getComponent(i, j) > 0.5) {
+                  isHeadVertex[i] = 1;
+                }
+              }
+            }
+            const oldIndex = geo.index.array;
+            const newIndices = [];
+            for (let i = 0; i < oldIndex.length; i += 3) {
+              const a = oldIndex[i];
+              const b = oldIndex[i + 1];
+              const c = oldIndex[i + 2];
+              if (isHeadVertex[a] || isHeadVertex[b] || isHeadVertex[c]) {
+                continue;
+              }
+              newIndices.push(a, b, c);
+            }
+            geo.setIndex(newIndices);
+          }
+        }
+      });
+      // Skinned-mesh geometry bounding boxes reflect rest-pose local space,
+      // not the posed skeleton, so height comes from real bone/marker world
+      // positions (foot bones to the Head_end tip marker) instead of
+      // Box3.setFromObject. Head_end and the Foot*_end markers are plain
+      // Object3D tip nodes, not Bone instances, so getObjectByName (not an
+      // isBone-filtered traverse) is what actually finds them.
+      const headEndNode = model.getObjectByName("Head_end");
+      const footL = model.getObjectByName("FootL");
+      const footR = model.getObjectByName("FootR");
+      let lowestFootY = Infinity;
+      for (const foot of [footL, footR]) {
+        if (foot) {
+          foot.updateWorldMatrix(true, false);
+          lowestFootY = Math.min(lowestFootY, new THREE.Vector3().setFromMatrixPosition(foot.matrixWorld).y);
+        }
+      }
+      let headEndY = null;
+      if (headEndNode) {
+        headEndNode.updateWorldMatrix(true, false);
+        headEndY = new THREE.Vector3().setFromMatrixPosition(headEndNode.matrixWorld).y;
+      }
+      const rawHeight = headEndY !== null && Number.isFinite(lowestFootY) ? headEndY - lowestFootY : null;
+      if (rawHeight && rawHeight > 0) {
+        model.scale.setScalar(CHASE_TARGET_HEIGHT / rawHeight);
+      }
+      model.updateMatrixWorld(true);
+
+      const headBone = model.getObjectByName("Head");
+      const neckBone = model.getObjectByName("Neck");
+      const headEndBone = model.getObjectByName("Head_end");
+      if (chaseHeadTemplate && headBone && neckBone && headEndBone) {
+        const headClone = chaseHeadTemplate.clone(true);
+        headClone.position.set(0, 0, 0);
+        headClone.rotation.set(0, 0, 0);
+        headClone.scale.set(1, 1, 1);
+
+        // Size Chase's head to this body's own neck->crown span (measured
+        // in the body's post-scale world units) rather than reusing the
+        // chibi-proportioned size from chase.glb's own body, which would
+        // look mismatched on a realistically-proportioned body.
+        neckBone.updateWorldMatrix(true, false);
+        headEndBone.updateWorldMatrix(true, false);
+        headBone.updateWorldMatrix(true, false);
+        const neckWorldPos = new THREE.Vector3().setFromMatrixPosition(neckBone.matrixWorld);
+        const headEndWorldPos = new THREE.Vector3().setFromMatrixPosition(headEndBone.matrixWorld);
+        const targetHeadSpan = Math.max(0.05, headEndWorldPos.y - neckWorldPos.y) * 1.35;
+        const headBox = new THREE.Box3().setFromObject(headClone);
+        const headOwnHeight = headBox.max.y - headBox.min.y;
+
+        // Bone hierarchies can bake in their own scale independent of the
+        // model root (this pack's rig carries a hidden ~100x factor, likely
+        // an FBX-to-glTF centimeter/meter artifact) - model.scale alone
+        // undercounts it by orders of magnitude. Decomposing the bone's own
+        // matrixWorld picks up every ancestor's contribution correctly,
+        // whatever it turns out to be, instead of assuming a single cause.
+        const boneWorldScale = new THREE.Vector3();
+        headBone.matrixWorld.decompose(new THREE.Vector3(), new THREE.Quaternion(), boneWorldScale);
+        if (headOwnHeight > 0 && boneWorldScale.x) {
+          headClone.scale.setScalar((targetHeadSpan / headOwnHeight) / boneWorldScale.x);
+        }
+
+        // Likewise, a local position offset gets multiplied through that
+        // same hidden bone scale on the way to world space, so compute the
+        // desired position in world units first and let worldToLocal()
+        // invert the real (possibly weird) parent chain correctly.
+        const desiredWorldPos = new THREE.Vector3(
+          neckWorldPos.x,
+          neckWorldPos.y + targetHeadSpan * 0.08,
+          neckWorldPos.z
+        );
+        headBone.add(headClone);
+        headBone.worldToLocal(desiredWorldPos);
+        headClone.position.copy(desiredWorldPos);
+      }
+
+      const mixer = new THREE.AnimationMixer(model);
+      const actions = {};
+      for (const clip of gltf.animations) {
+        const shortName = clip.name.split("_").pop();
+        actions[shortName] = mixer.clipAction(clip);
+      }
+
+      model.visible = false;
+      chase.add(model);
+      bodyVariants[key] = { model, mixer, actions, currentAction: null };
+
+      if (isPreferredDefault || !activeBodyKey) {
+        setActiveBody(key);
+      }
+    },
+    undefined,
+    () => {
+      // Leaves whichever earlier tier (chase.glb full body, or the
+      // primitive) already visible - no partial/broken state possible.
+    }
+  );
+}
+
+function setActiveBody(key) {
+  const variant = bodyVariants[key];
+  if (!variant) {
+    return;
+  }
+  for (const otherKey of Object.keys(bodyVariants)) {
+    bodyVariants[otherKey].model.visible = otherKey === key;
+  }
+  document.querySelectorAll(".bodySwitcherBtn").forEach((btn) => {
+    btn.classList.toggle("active", btn.dataset.body === key);
+  });
+  // Hide the chase.glb full-body swap (tier 2) and every primitive part
+  // (tier 3) now that an upgraded body (tier 1) is actually available -
+  // same "hide, never remove" rule as the chase.glb block above, so
+  // costume-recolor code still has a safe, simply-invisible target.
+  for (const k of Object.keys(chaseModel)) {
+    const part = chaseModel[k];
+    if (part && part !== chaseModel.group && part !== chaseModel.shadow && typeof part.visible === "boolean") {
+      part.visible = false;
+    }
+  }
+  activeBodyKey = key;
+}
+
+function playBodyAction(variant, name) {
+  const next = variant.actions[name];
+  if (!next || variant.currentAction === next) {
+    return;
+  }
+  next.reset().setEffectiveWeight(1).fadeIn(BODY_ANIM_FADE).play();
+  if (variant.currentAction) {
+    variant.currentAction.fadeOut(BODY_ANIM_FADE);
+  }
+  variant.currentAction = next;
+}
+
+function updateBodyAnimation(dt, moving, sprinting) {
+  if (!activeBodyKey) {
+    return;
+  }
+  const variant = bodyVariants[activeBodyKey];
+  if (!variant) {
+    return;
+  }
+  const desired = !moving ? "Idle" : sprinting ? "Run" : "Walk";
+  playBodyAction(variant, desired);
+  variant.mixer.update(dt);
+}
 
 const noFaceModel = createCharacter(0x441013, 0x22070b, { kind: "noface" });
 const noFace = noFaceModel.group;
@@ -4644,6 +4920,12 @@ if (mobileExpandToggle) {
   });
 }
 
+document.querySelectorAll(".bodySwitcherBtn").forEach((btn) => {
+  bindPress(btn, () => {
+    setActiveBody(btn.dataset.body);
+  });
+});
+
 const touchJoystickZone = document.getElementById("touchJoystickZone");
 const touchJoystickThumb = document.getElementById("touchJoystickThumb");
 const touchCameraZone = document.getElementById("touchCameraZone");
@@ -4759,12 +5041,15 @@ bindPress(touchInteractBtn, () => {
 
 function applyMovement(dt) {
   if (input.locked) {
-    chaseModel.leftLeg.rotation.x *= Math.exp(-8 * dt);
-    chaseModel.rightLeg.rotation.x *= Math.exp(-8 * dt);
-    chaseModel.leftArm.rotation.x *= Math.exp(-8 * dt);
-    chaseModel.rightArm.rotation.x *= Math.exp(-8 * dt);
+    if (!activeBodyKey) {
+      chaseModel.leftLeg.rotation.x *= Math.exp(-8 * dt);
+      chaseModel.rightLeg.rotation.x *= Math.exp(-8 * dt);
+      chaseModel.leftArm.rotation.x *= Math.exp(-8 * dt);
+      chaseModel.rightArm.rotation.x *= Math.exp(-8 * dt);
+      chaseModel.torso.rotation.x *= Math.exp(-8 * dt);
+    }
     chase.rotation.z *= Math.exp(-8 * dt);
-    chaseModel.torso.rotation.x *= Math.exp(-8 * dt);
+    updateBodyAnimation(dt, false, false);
     return;
   }
   const moveVector = new THREE.Vector2(input.strafe, input.forward);
@@ -4795,27 +5080,33 @@ function applyMovement(dt) {
     }
     chase.rotation.y = Math.atan2(worldMove.x, worldMove.z);
 
-    const swing = clock.elapsedTime * (sprinting ? 12 : 8);
-    const legAmp = sprinting ? 0.64 : 0.55;
-    const armAmp = sprinting ? 0.48 : 0.4;
-    chaseModel.leftLeg.rotation.x = Math.sin(swing) * legAmp;
-    chaseModel.rightLeg.rotation.x = Math.sin(swing + Math.PI) * legAmp;
-    chaseModel.leftArm.rotation.x = Math.sin(swing + Math.PI) * armAmp;
-    chaseModel.rightArm.rotation.x = Math.sin(swing) * armAmp;
-    chase.position.y = Math.sin(swing * 2) * (sprinting ? 0.045 : 0.03);
-
     const leanTarget = -moveVector.x * (sprinting ? 0.16 : 0.09);
     chase.rotation.z = THREE.MathUtils.lerp(chase.rotation.z, leanTarget, 1 - Math.exp(-10 * dt));
-    chaseModel.torso.rotation.x = THREE.MathUtils.lerp(chaseModel.torso.rotation.x, sprinting ? 0.14 : 0.03, 1 - Math.exp(-8 * dt));
+
+    if (!activeBodyKey) {
+      const swing = clock.elapsedTime * (sprinting ? 12 : 8);
+      const legAmp = sprinting ? 0.64 : 0.55;
+      const armAmp = sprinting ? 0.48 : 0.4;
+      chaseModel.leftLeg.rotation.x = Math.sin(swing) * legAmp;
+      chaseModel.rightLeg.rotation.x = Math.sin(swing + Math.PI) * legAmp;
+      chaseModel.leftArm.rotation.x = Math.sin(swing + Math.PI) * armAmp;
+      chaseModel.rightArm.rotation.x = Math.sin(swing) * armAmp;
+      chase.position.y = Math.sin(swing * 2) * (sprinting ? 0.045 : 0.03);
+      chaseModel.torso.rotation.x = THREE.MathUtils.lerp(chaseModel.torso.rotation.x, sprinting ? 0.14 : 0.03, 1 - Math.exp(-8 * dt));
+    }
   } else {
     chase.position.y *= Math.exp(-8 * dt);
-    chaseModel.leftLeg.rotation.x *= Math.exp(-8 * dt);
-    chaseModel.rightLeg.rotation.x *= Math.exp(-8 * dt);
-    chaseModel.leftArm.rotation.x *= Math.exp(-8 * dt);
-    chaseModel.rightArm.rotation.x *= Math.exp(-8 * dt);
     chase.rotation.z *= Math.exp(-8 * dt);
-    chaseModel.torso.rotation.x *= Math.exp(-8 * dt);
+    if (!activeBodyKey) {
+      chaseModel.leftLeg.rotation.x *= Math.exp(-8 * dt);
+      chaseModel.rightLeg.rotation.x *= Math.exp(-8 * dt);
+      chaseModel.leftArm.rotation.x *= Math.exp(-8 * dt);
+      chaseModel.rightArm.rotation.x *= Math.exp(-8 * dt);
+      chaseModel.torso.rotation.x *= Math.exp(-8 * dt);
+    }
   }
+
+  updateBodyAnimation(dt, moveLength > 0, sprinting);
 
   if (sprinting) {
     state.stamina = Math.max(0, state.stamina - 18 * dt);
