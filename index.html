@@ -2791,6 +2791,17 @@ new GLTFLoader().load(
     chaseModel.leftLeg = glbLeftLeg;
     chaseModel.rightLeg = glbRightLeg;
 
+    // The game is a dark night scene and Chase's own light sources don't
+    // point back at his own face (flashlight points forward/away, chaseGlow
+    // is a dim fill). Without this, the face photo is just unreadable at
+    // normal play distance - self-illuminate it a bit so it actually reads
+    // as a face instead of a dark smudge, without touching hair/clothing.
+    const glbSkull = model.getObjectByName("skull");
+    if (glbSkull && glbSkull.material) {
+      glbSkull.material.emissive = new THREE.Color(0xc08860);
+      glbSkull.material.emissiveIntensity = 0.16;
+    }
+
     chase.add(model);
   },
   undefined,
