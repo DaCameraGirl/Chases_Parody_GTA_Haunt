@@ -4597,6 +4597,7 @@ function setJoystickFromEvent(event) {
   let dx = event.clientX - cx;
   let dy = event.clientY - cy;
   const dist = Math.hypot(dx, dy);
+  const deflection = Math.min(1, dist / joystickRadius);
   if (dist > joystickRadius) {
     dx = (dx / dist) * joystickRadius;
     dy = (dy / dist) * joystickRadius;
@@ -4604,12 +4605,14 @@ function setJoystickFromEvent(event) {
   touchJoystickThumb.style.transform = `translate(${dx}px, ${dy}px)`;
   input.strafe = clamp(dx / joystickRadius, -1, 1);
   input.forward = clamp(-dy / joystickRadius, -1, 1);
+  input.sprint = deflection > 0.85;
 }
 
 function resetJoystick() {
   touchJoystickThumb.style.transform = "translate(0px, 0px)";
   input.strafe = 0;
   input.forward = 0;
+  input.sprint = false;
 }
 
 touchJoystickZone.addEventListener("pointerdown", (event) => {
@@ -4704,8 +4707,8 @@ function applyMovement(dt) {
   const moveVector = new THREE.Vector2(input.strafe, input.forward);
   const moveLength = moveVector.length();
   const sprinting = input.sprint && state.stamina > 5 && moveLength > 0.1;
-  const baseSpeed = state.upgrades.sprintBoost ? 5.4 : 4.5;
-  const sprintBonus = state.upgrades.sprintBoost ? 2.7 : 1.8;
+  const baseSpeed = state.upgrades.sprintBoost ? 5.7 : 4.8;
+  const sprintBonus = state.upgrades.sprintBoost ? 3.0 : 2.1;
   const speed = sprinting ? baseSpeed + sprintBonus : baseSpeed;
   const playerRadius = 0.42;
   const collides = (x, z) => world.solids.some((solid) => {
@@ -4752,7 +4755,7 @@ function applyMovement(dt) {
   }
 
   if (sprinting) {
-    state.stamina = Math.max(0, state.stamina - 22 * dt);
+    state.stamina = Math.max(0, state.stamina - 18 * dt);
   } else {
     state.stamina = Math.min(100, state.stamina + (state.upgrades.sprintBoost ? 16 : 14) * dt);
   }
@@ -4921,7 +4924,21 @@ function updateEnemy(dt) {
     const slow = 1 - lampInfluence * 0.18;
     if (distance > 1.1) {
       const move = new THREE.Vector3(toPlayer.x, 0, toPlayer.z).normalize();
-      noFace.position.addScaledVector(move, chaseSpeed * slow * dt);
+      const step = chaseSpeed * slow * dt;
+      const noFaceRadius = 0.5;
+      const noFaceBlocked = (x, z) => world.solids.some((solid) => {
+        const nearestX = clamp(x, solid.minX, solid.maxX);
+        const nearestZ = clamp(z, solid.minZ, solid.maxZ);
+        return Math.hypot(x - nearestX, z - nearestZ) < noFaceRadius;
+      });
+      const nextX = noFace.position.x + move.x * step;
+      const nextZ = noFace.position.z + move.z * step;
+      if (!noFaceBlocked(nextX, noFace.position.z)) {
+        noFace.position.x = nextX;
+      }
+      if (!noFaceBlocked(noFace.position.x, nextZ)) {
+        noFace.position.z = nextZ;
+      }
       noFace.rotation.y = Math.atan2(move.x, move.z);
     }
   }
