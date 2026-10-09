@@ -3469,7 +3469,7 @@ function shootEgg() {
 
   projectile.position.copy(chase.position);
   projectile.position.y = 1.7;
-  projectile.position.add(new THREE.Vector3(Math.sin(input.yaw) * 0.52, 0, Math.cos(input.yaw) * 0.52));
+  projectile.position.add(new THREE.Vector3(-Math.sin(input.yaw) * 0.52, 0, -Math.cos(input.yaw) * 0.52));
 
   const speed = state.upgrades.stickyEggs ? 20 : 16.5;
   const velocity = direction.multiplyScalar(speed);
