@@ -29,6 +29,7 @@
   html, body {
     margin: 0;
     min-height: 100%;
+    min-height: 100dvh;
     overflow: hidden;
     background:
       radial-gradient(circle at top, rgba(71, 88, 159, 0.12), transparent 34%),
@@ -45,6 +46,7 @@
     display: block;
     width: 100vw;
     height: 100vh;
+    height: 100dvh;
     cursor: crosshair;
     touch-action: none;
   }
@@ -88,6 +90,7 @@
     gap: 16px;
     padding: calc(18px + env(safe-area-inset-top)) calc(18px + env(safe-area-inset-right)) calc(18px + env(safe-area-inset-bottom)) calc(18px + env(safe-area-inset-left));
     pointer-events: none;
+    z-index: 8;
   }
 
   .cardHead {
@@ -104,6 +107,7 @@
     background: rgba(255, 255, 255, 0.08);
     color: var(--ink);
     flex: 0 0 auto;
+    pointer-events: auto;
   }
 
   .brand .cardBody {
@@ -114,6 +118,10 @@
 
   .cardBody.collapsed {
     display: none;
+  }
+
+  .cardHead.mobileObjectiveHead {
+    display: block;
   }
 
   .panel {
@@ -689,13 +697,103 @@
     display: inline-flex;
   }
 
-  .touch-ui #objectiveCard,
-  .touch-ui #statusCard {
-    padding: 10px 14px;
+  .touch-ui #hud {
+    gap: 6px;
+  }
+
+  /* Nonessential panels: hidden by default on touch, revealed only via the
+     compact strip's menu toggle (body.panels-expanded). */
+  .touch-ui .touch-hideable {
+    display: none;
+  }
+
+  .touch-ui.panels-expanded .touch-hideable {
+    display: block;
+  }
+
+  .mobileExpandToggle {
+    display: none;
+  }
+
+  .touch-ui .mobileExpandToggle {
+    display: inline-flex;
+  }
+
+  .touch-ui .mobileObjectiveHead {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  /* Compact objective strip: single line, no hint text, no padding bloat. */
+  .touch-ui #objectiveCard {
+    padding: 6px 12px;
+    text-align: left;
+  }
+
+  .touch-ui #objectiveTitle {
+    margin: 0;
+  }
+
+  .touch-ui #objectiveText {
+    margin: 2px 0 0;
+    font-size: clamp(0.8rem, 3.6vw, 0.95rem);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .touch-ui #objectiveHint {
     display: none;
+  }
+
+  /* Compact status strip: meters only, no label row, no secondary stats
+     grid, no card header, by default. */
+  .touch-ui #statusCard {
+    padding: 6px 12px;
+  }
+
+  .touch-ui #statusCard .cardHead {
+    display: none;
+  }
+
+  .touch-ui #statusCard .meter {
+    margin-top: 0;
+    gap: 4px;
+  }
+
+  .touch-ui #statusCard .meter-row {
+    gap: 2px;
+  }
+
+  .touch-ui #statusCard .meter-head {
+    font-size: 0.62rem;
+  }
+
+  .touch-ui #statusCard .track {
+    height: 6px;
+  }
+
+  .touch-ui #statusCard .cardBody {
+    display: none;
+  }
+
+  .touch-ui.panels-expanded #statusCard .cardBody {
+    display: block;
+  }
+
+  .touch-ui #warnBadge {
+    display: none;
+    margin-top: 6px;
+  }
+
+  .touch-ui #warnBadge.on {
+    display: block;
+  }
+
+  .touch-ui #promptCard {
+    padding: 6px 12px;
   }
 
   #touchControls {
@@ -778,7 +876,7 @@
 <div class="overlay" id="flash"></div>
 
 <div id="hud">
-  <section class="panel hud-card brand collapsible-card" id="brandCard">
+  <section class="panel hud-card brand collapsible-card touch-hideable" id="brandCard">
     <div class="cardHead">
       <span class="eyebrow">Pumpkin FM 104.6</span>
       <button class="cardToggle" type="button" data-target="brandBody">_</button>
@@ -790,7 +888,10 @@
   </section>
 
   <section class="panel hud-card" id="objectiveCard">
-    <p id="objectiveTitle">Current Objective</p>
+    <div class="cardHead mobileObjectiveHead">
+      <p id="objectiveTitle">Current Objective</p>
+      <button class="cardToggle mobileExpandToggle" id="mobileExpandToggle" type="button">&#9776;</button>
+    </div>
     <p id="objectiveText">Collect six loot stashes.</p>
     <p id="objectiveHint">Stay near streetlamps to cool fear, throw candy bombs to stun No-Face, and use shops to gear up between runs.</p>
   </section>
@@ -837,7 +938,7 @@
     <div id="warnBadge">No-Face is breathing down your neck.</div>
   </section>
 
-  <section class="panel hud-card collapsible-card" id="radioCard">
+  <section class="panel hud-card collapsible-card touch-hideable" id="radioCard">
     <div class="cardHead">
       <span class="utility">Radio Chatter</span>
       <button class="cardToggle" type="button" data-target="radioBody">_</button>
@@ -851,7 +952,7 @@
     <p id="promptText">Press E to interact.</p>
   </section>
 
-  <section class="panel hud-card collapsible-card" id="controlsCard">
+  <section class="panel hud-card collapsible-card touch-hideable" id="controlsCard">
     <div class="cardHead">
       <span class="utility">Controls</span>
       <button class="cardToggle" type="button" data-target="controlsBody">_</button>
@@ -4337,7 +4438,13 @@ function restartGame() {
 }
 
 function bindPress(element, handler) {
+  let lastFired = 0;
   const run = (event) => {
+    const now = Date.now();
+    if (now - lastFired < 300) {
+      return;
+    }
+    lastFired = now;
     event.preventDefault();
     event.stopPropagation();
     handler(event);
@@ -4458,7 +4565,7 @@ window.addEventListener("resize", () => {
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
-document.querySelectorAll(".cardToggle").forEach((toggle) => {
+document.querySelectorAll(".cardToggle:not(.mobileExpandToggle)").forEach((toggle) => {
   bindPress(toggle, () => {
     const body = document.getElementById(toggle.dataset.target);
     if (body) {
@@ -4466,6 +4573,13 @@ document.querySelectorAll(".cardToggle").forEach((toggle) => {
     }
   });
 });
+
+const mobileExpandToggle = document.getElementById("mobileExpandToggle");
+if (mobileExpandToggle) {
+  bindPress(mobileExpandToggle, () => {
+    document.body.classList.toggle("panels-expanded");
+  });
+}
 
 const touchJoystickZone = document.getElementById("touchJoystickZone");
 const touchJoystickThumb = document.getElementById("touchJoystickThumb");
