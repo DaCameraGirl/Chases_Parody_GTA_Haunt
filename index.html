@@ -2358,12 +2358,47 @@ function createCharacter(primary, accent, profile = {}) {
 /* ===================== DRAIN CLOWNS ===================== */
 
 let drainClownTemplate = null;
+const drainCreatureTemplates = {};
+
+function collectDrainClownRig(group) {
+  const makePart = (name) => {
+    const object = group.getObjectByName(name);
+    return object ? { object, base: object.rotation.clone() } : null;
+  };
+  return {
+    head: makePart("head"),
+    leftArm: makePart("left-arm"),
+    rightArm: makePart("right-arm"),
+    leftLeg: makePart("left-leg"),
+    rightLeg: makePart("right-leg")
+  };
+}
+
+function applyDrainClownPose(clown, mode) {
+  if (!clown.rig) return;
+  const t = clown.stateTime + clown.animPhase;
+  const walkSwing = Math.sin(t * 8.5);
+  const idleSwing = Math.sin(t * 2.2);
+  const headBob = Math.sin(t * 3.2);
+  const intensity = mode === "walk" ? 1 : 0.28;
+
+  const pose = (part, x = 0, y = 0, z = 0) => {
+    if (!part) return;
+    part.object.rotation.set(part.base.x + x, part.base.y + y, part.base.z + z);
+  };
+
+  pose(clown.rig.head, headBob * 0.06 * intensity, idleSwing * 0.08 * intensity, idleSwing * 0.04);
+  pose(clown.rig.leftArm, -walkSwing * 0.55 * intensity, 0, -0.08 - Math.abs(walkSwing) * 0.08 * intensity);
+  pose(clown.rig.rightArm, walkSwing * 0.55 * intensity, 0, 0.08 + Math.abs(walkSwing) * 0.08 * intensity);
+  pose(clown.rig.leftLeg, walkSwing * 0.48 * intensity, 0, 0);
+  pose(clown.rig.rightLeg, -walkSwing * 0.48 * intensity, 0, 0);
+}
 
 function buildDrainClown() {
   if (drainClownTemplate) {
-    const group = drainClownTemplate.clone();
+    const group = drainClownTemplate.clone(true);
     group.visible = false;
-    return { group, head: null, leftEye: null, rightEye: null };
+    return { group, rig: collectDrainClownRig(group) };
   }
 
   const group = new THREE.Group();
@@ -2385,6 +2420,7 @@ function buildDrainClown() {
   const sleeveMat = new THREE.MeshStandardMaterial({ color: 0xe8e8ec, roughness: 0.8 });
   for (const side of [-1, 1]) {
     const arm = new THREE.Mesh(new THREE.CapsuleGeometry(0.13, 0.72, 4, 8), sleeveMat);
+    arm.name = side < 0 ? "left-arm" : "right-arm";
     arm.position.set(side * 0.56, 1.38, 0);
     arm.rotation.z = side * 0.22;
     group.add(arm);
@@ -2398,6 +2434,7 @@ function buildDrainClown() {
   const pantsMat = new THREE.MeshStandardMaterial({ color: 0xb8b8c0, roughness: 0.88 });
   for (const side of [-1, 1]) {
     const leg = new THREE.Mesh(new THREE.CapsuleGeometry(0.17, 0.78, 4, 8), pantsMat);
+    leg.name = side < 0 ? "left-leg" : "right-leg";
     leg.position.set(side * 0.2, 0.48, 0);
     group.add(leg);
   }
@@ -2414,6 +2451,7 @@ function buildDrainClown() {
   // white face
   const head = new THREE.Mesh(new THREE.SphereGeometry(0.32, 16, 16),
     new THREE.MeshStandardMaterial({ color: 0xf0f0f0, roughness: 0.65 }));
+  head.name = "head";
   head.position.y = 2.18;
   group.add(head);
 
@@ -2461,7 +2499,7 @@ function buildDrainClown() {
 
   group.visible = false;
   group.scale.set(0.92, 0.92, 0.92);
-  return { group, head, leftEye, rightEye };
+  return { group, rig: collectDrainClownRig(group) };
 }
 
 function createStormDrain(x, z) {
@@ -2484,9 +2522,19 @@ function createStormDrain(x, z) {
   return { x, z, grate };
 }
 
-function spawnDrainClown(x, z) {
+function buildDrainCreature(creatureKey) {
+  const template = creatureKey === "clown" ? drainClownTemplate : drainCreatureTemplates[creatureKey];
+  if (template) {
+    const group = template.clone(true);
+    group.visible = false;
+    return { group, rig: collectDrainClownRig(group) };
+  }
+  return buildDrainClown();
+}
+
+function spawnDrainClown(x, z, creatureKey = "clown") {
   const drain = createStormDrain(x, z);
-  const clown = buildDrainClown();
+  const clown = buildDrainCreature(creatureKey);
   clown.group.position.set(x, -1.8, z);
   scene.add(clown.group);
 
@@ -2494,9 +2542,11 @@ function spawnDrainClown(x, z) {
     x, z,
     drain,
     group: clown.group,
-    head: clown.head,
+    rig: clown.rig,
+    creatureKey,
     state: 'hidden',
     stateTime: 0,
+    animPhase: Math.random() * Math.PI * 2,
     cooldown: 2 + Math.random() * 3,
     chaseTime: 0,
     homeX: x,
@@ -2505,15 +2555,15 @@ function spawnDrainClown(x, z) {
 }
 
 function initDrainClowns() {
-  // 5 drains spread around the block
+  // Each drain gets a different in-house GLB_FACTORY creature.
   const spots = [
-    [  8,  -8],
-    [-14,   4],
-    [ 22,  14],
-    [-6, -22],
-    [ 18, -14]
+    [  8,  -8, "clown"],
+    [-14,   4, "scorpion"],
+    [ 22,  14, "monster"],
+    [-6, -22, "gator"],
+    [ 18, -14, "lionfish"]
   ];
-  for (const [x, z] of spots) spawnDrainClown(x, z);
+  for (const [x, z, creatureKey] of spots) spawnDrainClown(x, z, creatureKey);
 }
 
 function updateDrainClowns(dt) {
@@ -2545,6 +2595,7 @@ function updateDrainClowns(dt) {
     }
 
     g.visible = true;
+    applyDrainClownPose(c, "idle");
 
     if (c.state === 'peeking') {
       // head poking out of the drain
@@ -2594,6 +2645,7 @@ function updateDrainClowns(dt) {
       }
       g.position.y = 0.02 + Math.sin(c.stateTime * 7) * 0.04;
       g.rotation.y = Math.atan2(cdx, cdz);
+      applyDrainClownPose(c, "walk");
 
       // damage on touch - use clown-to-Chase distance
       if (cdist < 1.25 && !state.ended && !state.win && state.started) {
@@ -2628,6 +2680,7 @@ function updateDrainClowns(dt) {
         c.stateTime = 0;
       }
       g.position.y = 0.02;
+      applyDrainClownPose(c, "walk");
       continue;
     }
 
@@ -2856,6 +2909,7 @@ new GLTFLoader().load(
       glbSkull.material.emissiveIntensity = 0.16;
     }
 
+    chaseGlbRoot = model;
     chase.add(model);
 
     // This whole head group (skull + hair + nose + ears + chin, already
@@ -2881,9 +2935,12 @@ new GLTFLoader().load(
 // full-body swap above (and ultimately the primitive block-person) if these
 // fail to load - every stage here is additive, nothing upstream is removed.
 let chaseHeadTemplate = null;
+let chaseGlbRoot = null;
 const bodyVariants = {};
 let activeBodyKey = null;
 const BODY_ANIM_FADE = 0.25;
+const CHASE_UPGRADED_HEAD_SCALE = 1.08;
+const CHASE_HEAD_OVERLAY_PARTS = new Set(["hair-afro", "nose", "chin"]);
 
 function loadBodyVariant(key, url, isPreferredDefault) {
   new GLTFLoader().load(
@@ -2972,6 +3029,11 @@ function loadBodyVariant(key, url, isPreferredDefault) {
       const headEndBone = model.getObjectByName("Head_end");
       if (chaseHeadTemplate && headBone && neckBone && headEndBone) {
         const headClone = chaseHeadTemplate.clone(true);
+        headClone.traverse((child) => {
+          if (child.isMesh && CHASE_HEAD_OVERLAY_PARTS.has(child.name)) {
+            child.visible = false;
+          }
+        });
         headClone.position.set(0, 0, 0);
         headClone.rotation.set(0, 0, 0);
         headClone.scale.set(1, 1, 1);
@@ -2985,7 +3047,7 @@ function loadBodyVariant(key, url, isPreferredDefault) {
         headBone.updateWorldMatrix(true, false);
         const neckWorldPos = new THREE.Vector3().setFromMatrixPosition(neckBone.matrixWorld);
         const headEndWorldPos = new THREE.Vector3().setFromMatrixPosition(headEndBone.matrixWorld);
-        const targetHeadSpan = Math.max(0.05, headEndWorldPos.y - neckWorldPos.y) * 1.35;
+        const targetHeadSpan = Math.max(0.05, headEndWorldPos.y - neckWorldPos.y) * CHASE_UPGRADED_HEAD_SCALE;
         const headBox = new THREE.Box3().setFromObject(headClone);
         const headOwnHeight = headBox.max.y - headBox.min.y;
 
@@ -3053,6 +3115,9 @@ function setActiveBody(key) {
   // (tier 3) now that an upgraded body (tier 1) is actually available -
   // same "hide, never remove" rule as the chase.glb block above, so
   // costume-recolor code still has a safe, simply-invisible target.
+  if (chaseGlbRoot) {
+    chaseGlbRoot.visible = false;
+  }
   for (const k of Object.keys(chaseModel)) {
     const part = chaseModel[k];
     if (part && part !== chaseModel.group && part !== chaseModel.shadow && typeof part.visible === "boolean") {
@@ -3094,21 +3159,51 @@ scene.add(noFace);
 
 const CLOWN_GLB_URL = "./assets/evil-clown.glb";
 const CLOWN_TARGET_HEIGHT = 2.45;
+const DRAIN_CREATURE_ASSETS = [
+  { key: "scorpion", url: "./assets/glbfactory-scorpion.glb", height: 2.3 },
+  { key: "monster", url: "./assets/glbfactory-monster.glb", height: 2.45 },
+  { key: "gator", url: "./assets/glbfactory-gator.glb", height: 2.25 },
+  { key: "lionfish", url: "./assets/glbfactory-lionfish.glb", height: 2.35 }
+];
+
+function prepareDrainCreatureModel(model, targetHeight) {
+  model.traverse((child) => {
+    if (child.isMesh) {
+      child.castShadow = true;
+      child.receiveShadow = true;
+    }
+  });
+  const size = new THREE.Box3().setFromObject(model).getSize(new THREE.Vector3());
+  if (size.y > 0) {
+    model.scale.setScalar(targetHeight / size.y);
+  }
+  model.visible = false;
+}
+
+function loadDrainCreatureTemplate(asset) {
+  return new Promise((resolve) => {
+    new GLTFLoader().load(
+      asset.url,
+      (gltf) => {
+        prepareDrainCreatureModel(gltf.scene, asset.height);
+        drainCreatureTemplates[asset.key] = gltf.scene;
+        resolve();
+      },
+      undefined,
+      (err) => {
+        console.warn(`GLB_FACTORY ${asset.key} failed to load; that drain will use the clown fallback.`, err);
+        resolve();
+      }
+    );
+  });
+}
+
 new GLTFLoader().load(
   CLOWN_GLB_URL,
   (gltf) => {
-    const model = gltf.scene;
-    model.traverse((child) => {
-      if (child.isMesh) {
-        child.castShadow = true;
-      }
-    });
-    const size = new THREE.Box3().setFromObject(model).getSize(new THREE.Vector3());
-    if (size.y > 0) {
-      model.scale.setScalar(CLOWN_TARGET_HEIGHT / size.y);
-    }
-    drainClownTemplate = model;
-    initDrainClowns();
+    prepareDrainCreatureModel(gltf.scene, CLOWN_TARGET_HEIGHT);
+    drainClownTemplate = gltf.scene;
+    Promise.all(DRAIN_CREATURE_ASSETS.map(loadDrainCreatureTemplate)).then(initDrainClowns);
   },
   undefined,
   (err) => {
